@@ -31,6 +31,8 @@ Simulateurs disponibles : famille iPhone 17. Trois schemes partagés — `FloorM
 
 ## CI/CD & Release (Xcode Cloud)
 
+**Modèle de branches (GitFlow léger)** : le travail quotidien se fait sur **`develop`** (branche par défaut) — chaque push y est testé par la CI, sans livraison. Merger `develop` → `main` est la décision de livrer un TestFlight staging. Les tags `v*` déclenchent la prod. Ne jamais committer directement sur `main`.
+
 Trois workflows Xcode Cloud (stockés dans App Store Connect, **pas dans le dépôt**) :
 
 | Workflow | Déclencheur | Actions |
