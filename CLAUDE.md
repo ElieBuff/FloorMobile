@@ -20,14 +20,35 @@ Les échanges se font en français ; code, commentaires et noms en anglais.
 ```bash
 xcodebuild -list -project FloorMobile.xcodeproj
 
-xcodebuild -project FloorMobile.xcodeproj -scheme FloorMobile \
+xcodebuild -project FloorMobile.xcodeproj -scheme "FloorMobile Dev" \
   -destination 'platform=iOS Simulator,name=iPhone 17' build
 
 .claude/skills/swiftui-testing/scripts/run-tests.sh            # tests unitaires
 .claude/skills/swiftui-testing/scripts/run-tests.sh --ui       # UI tests
 ```
 
-Simulateurs disponibles : famille iPhone 17. Aucun scheme n'est encore partagé (`xcshareddata/` absent) : à faire, avec les deux test targets rattachés, pour que `xcodebuild test` fonctionne.
+Simulateurs disponibles : famille iPhone 17. Trois schemes partagés — `FloorMobile Dev`/`Staging`/`Prod` — un par environnement (xcconfig `Dev`/`Staging`/`Prod` : issuer Zitadel, bundle id `ai.floorapp.floormobile[.dev|.staging]`, nom d'affichage). Le test UI du login lit ses identifiants dans `FloorMobileUITests/TestCredentialsSecret.json` (gitignoré, modèle dans `TestCredentials.example.json`) et se marque « skipped » si le fichier est absent.
+
+## CI/CD & Release (Xcode Cloud)
+
+Trois workflows Xcode Cloud (stockés dans App Store Connect, **pas dans le dépôt**) :
+
+| Workflow | Déclencheur | Actions |
+|---|---|---|
+| `CI` | push sur toute branche | build + tests unitaires (scheme Dev) |
+| `Staging TestFlight` | push/merge sur `main` | tests + archive (scheme Staging) → TestFlight interne |
+| `Prod Release` | tag `v*` | tests + archive (scheme Prod) → TestFlight / App Store |
+
+Fiches App Store Connect : « Floor Clienteling Staging » (`ai.floorapp.floormobile.staging`) et « Floor Clienteling » (`ai.floorapp.floormobile`). Le numéro de build est auto-incrémenté par Xcode Cloud ; `ITSAppUsesNonExemptEncryption=false` est déclaré dans l'`Info.plist`.
+
+**Rituel de release prod** (seuls gestes manuels du processus) :
+
+1. Bumper `MARKETING_VERSION` (target → General → Version) — un choix, pas un compteur.
+2. `git commit` + `git push` (la CI valide ce commit).
+3. `git tag vX.Y.Z && git push origin vX.Y.Z` → déclenche `Prod Release`.
+4. La soumission App Store finale reste un clic manuel dans App Store Connect.
+
+À faire avant une vraie prod : remplacer les placeholders Zitadel de `Staging.xcconfig`/`Prod.xcconfig` (TODO dans les fichiers), domaine `login.staging.floorapp.ai`/`login.floorapp.ai`, branding de la page de login Zitadel.
 
 ## Structure cible (`FloorMobile/`)
 
