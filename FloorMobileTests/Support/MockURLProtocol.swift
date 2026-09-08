@@ -4,17 +4,30 @@
 //
 
 import Foundation
+import Synchronization
 
-/// Intercepts every request of a test `URLSession` (see `session()`), so no
-/// unit test ever touches the real network. Each test installs a `handler`
-/// that receives the request and fabricates the response.
+/// Intercepts every request of a test `URLSession`, so no unit test ever
+/// touches the real network.
+///
+/// Each call to `session(handler:)` gets its own handler, keyed by a unique
+/// header injected into the session's requests. Test suites can therefore run
+/// in parallel without seeing each other's traffic — a single shared handler
+/// caused cross-suite interference when suites overlapped on CI.
 final class MockURLProtocol: URLProtocol {
-    nonisolated(unsafe) static var handler: (@Sendable (URLRequest) throws -> (HTTPURLResponse, Data))?
+    typealias Handler = @Sendable (URLRequest) throws -> (HTTPURLResponse, Data)
 
-    /// A session whose requests are all served by this protocol.
-    nonisolated static func session() -> URLSession {
+    private static let handlers = Mutex<[String: Handler]>([:])
+    private static let headerField = "X-Mock-Session"
+
+    /// A session whose requests are all served by the given handler,
+    /// isolated from every other mock session.
+    nonisolated static func session(handler: @escaping Handler) -> URLSession {
+        let key = UUID().uuidString
+        handlers.withLock { $0[key] = handler }
+
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [MockURLProtocol.self]
+        configuration.httpAdditionalHeaders = [headerField: key]
         return URLSession(configuration: configuration)
     }
 
@@ -22,7 +35,9 @@ final class MockURLProtocol: URLProtocol {
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
     override func startLoading() {
-        guard let handler = Self.handler else {
+        guard let key = request.value(forHTTPHeaderField: Self.headerField),
+              let handler = Self.handlers.withLock({ $0[key] })
+        else {
             client?.urlProtocol(self, didFailWithError: URLError(.unsupportedURL))
             return
         }

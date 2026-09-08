@@ -11,7 +11,7 @@ import os
 /// Any user data (names, emails, identifiers, URLs containing them) must be
 /// logged with `privacy: .private`. Tokens, passwords and auth response bodies
 /// are never logged at all, at any level.
-enum AppLog {
+nonisolated enum AppLog {
     private static let subsystem = Bundle.main.bundleIdentifier ?? "FloorMobile"
 
     static let auth = Logger(subsystem: subsystem, category: "auth")

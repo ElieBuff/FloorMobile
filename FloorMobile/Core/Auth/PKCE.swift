@@ -28,7 +28,7 @@ nonisolated struct PKCE: Sendable {
     }
 }
 
-extension Data {
+nonisolated extension Data {
     /// Base64url without padding (RFC 4648 §5).
     func base64URLEncodedString() -> String {
         base64EncodedString()

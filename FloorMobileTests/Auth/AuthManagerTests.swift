@@ -8,9 +8,7 @@ import Synchronization
 import Testing
 @testable import FloorMobile
 
-// Serialized because MockURLProtocol.handler is shared static state — the
-// one deviation the testing skill allows.
-@Suite("AuthManager", .serialized)
+@Suite("AuthManager")
 struct AuthManagerTests {
 
     let now = Date(timeIntervalSince1970: 1_800_000_000)
@@ -21,10 +19,8 @@ struct AuthManagerTests {
     func signInHappyPath() async throws {
         let stub = StubWebAuthenticator()
         let store = InMemoryTokenStore()
-        let manager = makeManager(stub: stub, store: store)
         let discoveryData = try Fixture.data("openid_configuration")
-
-        MockURLProtocol.handler = { request in
+        let manager = makeManager(stub: stub, store: store) { request in
             if Self.isDiscovery(request) {
                 return (Self.ok(request), discoveryData)
             }
@@ -52,10 +48,8 @@ struct AuthManagerTests {
         let stub = StubWebAuthenticator()
         stub.forcedState = "evil-state"
         let store = InMemoryTokenStore()
-        let manager = makeManager(stub: stub, store: store)
         let discoveryData = try Fixture.data("openid_configuration")
-
-        MockURLProtocol.handler = { request in
+        let manager = makeManager(stub: stub, store: store) { request in
             (Self.ok(request), Self.isDiscovery(request) ? discoveryData : Self.tokenJSON(nonce: nil))
         }
 
@@ -74,10 +68,8 @@ struct AuthManagerTests {
             accessToken: "seeded-token", refreshToken: "rt", idToken: "id",
             expiresAt: now.addingTimeInterval(3_600)
         ))
-        let manager = makeManager(stub: StubWebAuthenticator(), store: store)
-
         let requestCount = Mutex(0)
-        MockURLProtocol.handler = { request in
+        let manager = makeManager(stub: StubWebAuthenticator(), store: store) { request in
             requestCount.withLock { $0 += 1 }
             return (Self.ok(request), Data())
         }
@@ -93,11 +85,9 @@ struct AuthManagerTests {
             accessToken: "expired-token", refreshToken: "rt-old", idToken: "id",
             expiresAt: now
         ))
-        let manager = makeManager(stub: StubWebAuthenticator(), store: store)
         let discoveryData = try Fixture.data("openid_configuration")
-
         let refreshCount = Mutex(0)
-        MockURLProtocol.handler = { request in
+        let manager = makeManager(stub: StubWebAuthenticator(), store: store) { request in
             if Self.isDiscovery(request) {
                 return (Self.ok(request), discoveryData)
             }
@@ -130,10 +120,8 @@ struct AuthManagerTests {
             accessToken: "expired-token", refreshToken: "rt-dead", idToken: "id",
             expiresAt: now
         ))
-        let manager = makeManager(stub: StubWebAuthenticator(), store: store)
         let discoveryData = try Fixture.data("openid_configuration")
-
-        MockURLProtocol.handler = { request in
+        let manager = makeManager(stub: StubWebAuthenticator(), store: store) { request in
             if Self.isDiscovery(request) {
                 return (Self.ok(request), discoveryData)
             }
@@ -148,11 +136,15 @@ struct AuthManagerTests {
 
     // MARK: - Helpers
 
-    private func makeManager(stub: StubWebAuthenticator, store: InMemoryTokenStore) -> AuthManager {
+    private func makeManager(
+        stub: StubWebAuthenticator,
+        store: InMemoryTokenStore,
+        handler: @escaping MockURLProtocol.Handler
+    ) -> AuthManager {
         AuthManager(
             store: store,
             webAuthenticator: stub,
-            urlSession: MockURLProtocol.session(),
+            urlSession: MockURLProtocol.session(handler: handler),
             now: { [now] in now }
         )
     }

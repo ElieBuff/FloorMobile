@@ -91,7 +91,7 @@ nonisolated struct IDTokenClaims: Sendable {
     }
 }
 
-extension Data {
+nonisolated extension Data {
     /// Decodes base64url (RFC 4648 §5), re-adding the stripped padding.
     init?(base64URLEncoded string: String) {
         var base64 = string
