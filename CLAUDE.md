@@ -11,7 +11,7 @@ Les échanges se font en français ; code, commentaires et noms en anglais.
 ## Stack
 
 - iOS 26.5 min, Xcode 26, `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`, `SWIFT_APPROACHABLE_CONCURRENCY = YES`. Le language mode est encore Swift 5 : passer en Swift 6 avant d'écrire le socle.
-- Bundle : `com.app.emeria.FloorMobile` (hérité, à renommer avant toute soumission).
+- Bundle : `ai.floorapp.mobile` (+ suffixes `.dev`/`.staging` par environnement, via les xcconfig ; targets de test en `ai.floorapp.mobile.tests`/`.uitests`).
 - Dépendances SPM : autorisées quand elles apportent une vraie valeur ajoutée, à évaluer au cas par cas. Prévue : socket.io-client-swift, derrière `RealtimeService`.
 - Auth : Zitadel OIDC natif, PKCE. Client ID et URLs dans le skill `floor-dev`.
 
