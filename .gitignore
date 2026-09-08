@@ -20,3 +20,4 @@ DerivedData/
 # Secrets — never commit credentials or local overrides
 *.local.xcconfig
 .env
+TestCredentialsSecret.json

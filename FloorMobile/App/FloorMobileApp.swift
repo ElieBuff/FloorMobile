@@ -50,7 +50,15 @@ struct FloorMobileApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
-                .task { await session.start() }
+                .task {
+                    #if DEBUG
+                    // UI tests launch with --wipe-session to start signed out.
+                    if CommandLine.arguments.contains("--wipe-session") {
+                        try? await KeychainTokenStore().clear()
+                    }
+                    #endif
+                    await session.start()
+                }
         }
         .modelContainer(sharedModelContainer)
         .environment(session)
