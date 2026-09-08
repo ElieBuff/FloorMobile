@@ -1,0 +1,23 @@
+{
+  "skill_name": "swiftui-testing",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "J'ai ce modèle SwiftData dans FloorMobile/Features/Products/Product.swift. Ajoute-lui une méthode `isLowStock(threshold:)` qui renvoie true quand la somme des stocks de ses variantes est sous le seuil, et écris les tests qui vont avec.",
+      "expected_output": "Une méthode sur le @Model, un fichier <Type>Tests.swift en Swift Testing (struct @Suite, #expect, cas paramétrés), container SwiftData en mémoire si nécessaire, pas de XCTest, @testable import du bon nom de module, tests placés dans le test target sous un dossier par feature.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Je veux tester que quand deux requêtes reçoivent un 401 en même temps, le refresh du token n'est appelé qu'une seule fois. Le code d'auth est dans FloorMobile/Core/Auth/AuthManager.swift. Écris le test, et si le code n'est pas testable en l'état dis-moi ce qu'il faut changer.",
+      "expected_output": "Un test asynchrone qui lance deux appels concurrents via un URLSession/Session avec MockURLProtocol, compte les appels de refresh, vérifie == 1 ; aucun accès au vrai Keychain (TokenStore en mémoire injecté) ; explication des changements d'injection nécessaires sans réintroduire de Repository/UseCase.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "lance les tests unitaires du projet et dis-moi ce qui se passe",
+      "expected_output": "Utilise le script run-tests.sh ou xcodebuild avec un simulateur qui existe (iPhone 17, pas 16), identifie que le test target n'est pas dans le scheme et/ou que TEST_HOST est périmé, explique la correction côté projet Xcode sans modifier les tests.",
+      "files": []
+    }
+  ]
+}

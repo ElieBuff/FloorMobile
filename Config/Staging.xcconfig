@@ -1,0 +1,10 @@
+// Staging environment — Zitadel instance and app identity.
+// TODO: replace the Zitadel values once the staging instance exists;
+// these are the Dev placeholders.
+
+AUTH_ISSUER = https:/$()/dev-q7qkap.eu1.zitadel.cloud
+AUTH_CLIENT_ID = 389695826299033234
+AUTH_PROJECT_ID = 378848396062002729
+
+APP_DISPLAY_NAME = Floor Staging
+PRODUCT_BUNDLE_IDENTIFIER = com.app.emeria.floormobile.staging

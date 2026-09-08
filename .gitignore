@@ -1,0 +1,22 @@
+# macOS
+.DS_Store
+
+# Xcode user state (per-developer, never shared)
+xcuserdata/
+*.xcuserstate
+
+# Build artifacts
+build/
+DerivedData/
+*.ipa
+*.dSYM
+*.dSYM.zip
+*.xcresult
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# Secrets — never commit credentials or local overrides
+*.local.xcconfig
+.env

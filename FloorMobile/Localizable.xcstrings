@@ -1,0 +1,60 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Add Item" : {
+
+    },
+    "FloorMobile" : {
+
+    },
+    "Item at %@" : {
+
+    },
+    "Loading…" : {
+
+    },
+    "Réessayer" : {
+
+    },
+    "Select an item" : {
+
+    },
+    "Sign in" : {
+
+    },
+    "Sign in to access your store data." : {
+
+    },
+    "Sign-in failed. Please try again." : {
+
+    },
+    "Sign-in was cancelled." : {
+
+    },
+    "Something went wrong. Please try again." : {
+
+    },
+    "Synchronizing data…" : {
+
+    },
+    "The server response could not be read. Please try again later." : {
+
+    },
+    "The server returned an error (%lld). Please try again later." : {
+
+    },
+    "Unable to reach the server. Check your connection and try again." : {
+
+    },
+    "Your data could not be saved on this device." : {
+
+    },
+    "Your session could not be renewed. Please sign in again." : {
+
+    },
+    "Your session has expired. Please sign in again." : {
+
+    }
+  },
+  "version" : "1.0"
+}

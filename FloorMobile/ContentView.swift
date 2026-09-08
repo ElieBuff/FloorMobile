@@ -14,6 +14,9 @@ struct ContentView: View {
 
     var body: some View {
         NavigationSplitView {
+            MetaOrbView()
+                .frame(width: 20, height: 20)
+
             List {
                 ForEach(items) { item in
                     NavigationLink {
