@@ -40,8 +40,8 @@ struct SectionHeader<Trailing: View>: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
             Text(title)
-                .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(.white)
+                .font(.callout.weight(.medium))
+                .foregroundStyle(Color(.textPrimary))
             Spacer()
             trailing()
         }
@@ -57,8 +57,8 @@ extension SectionHeader where Trailing == Button<Text> {
         self.trailing = {
             Button(action: action) {
                 Text(actionLabel)
-                    .font(.system(size: 14))
-                    .foregroundStyle(.white.opacity(0.75))
+                    .font(.subheadline)
+                    .foregroundStyle(Color(.textSecondary))
             }
         }
     }

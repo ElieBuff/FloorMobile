@@ -58,8 +58,8 @@ struct EmptySectionCard<Icon: View>: View {
                 .frame(width: 34, height: 38)
 
             Text(message)
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(.white)
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(Color(.textPrimary))
 
             Spacer(minLength: 12)
 
@@ -71,21 +71,22 @@ struct EmptySectionCard<Icon: View>: View {
                         }
                         Text(action.label)
                     }
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.white)
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(Color(.textPrimary))
                     .padding(.horizontal, 18)
                     .padding(.vertical, 13)
                 }
                 .buttonStyle(.plain)
                 .overlay {
-                    Capsule().stroke(.white.opacity(0.35), lineWidth: 1)
+                    Capsule().stroke(Color(.controlStroke), lineWidth: 1)
                 }
             }
         }
         .padding(.leading, 18)
         .padding(.trailing, 12)
-        .frame(height: 74)
-        .background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 26))
+        // Minimum, not fixed: the card must grow when Dynamic Type does.
+        .frame(minHeight: 74)
+        .background(Color(.cardBackground), in: RoundedRectangle(cornerRadius: 26))
     }
 }
 
