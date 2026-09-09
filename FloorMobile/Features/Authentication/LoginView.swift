@@ -39,6 +39,8 @@ struct LoginView: View {
             .disabled(session.state == .authenticating)
         }
         .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .ambientBackground()
     }
 }
 
