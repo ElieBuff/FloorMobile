@@ -30,7 +30,7 @@ struct RootView: View {
     private var syncedContent: some View {
         switch syncManager.state {
         case .finished:
-            ContentView()
+            HomeView()
         case .failed(let message):
             LoadingView(message: message) {
                 Task { await syncManager.synchronize(context: modelContext) }

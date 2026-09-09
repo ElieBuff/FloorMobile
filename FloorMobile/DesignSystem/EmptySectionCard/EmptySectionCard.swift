@@ -73,6 +73,8 @@ struct EmptySectionCard<Icon: View>: View {
                     }
                     .font(.footnote.weight(.medium))
                     .foregroundStyle(Color(.textPrimary))
+                    // The label never wraps; the message column shrinks instead.
+                    .fixedSize()
                     .padding(.horizontal, 18)
                     .padding(.vertical, 13)
                 }
@@ -87,6 +89,10 @@ struct EmptySectionCard<Icon: View>: View {
         // Minimum, not fixed: the card must grow when Dynamic Type does.
         .frame(minHeight: 74)
         .background(Color(.cardBackground), in: RoundedRectangle(cornerRadius: 26))
+        .overlay {
+            RoundedRectangle(cornerRadius: 26)
+                .strokeBorder(Color(.controlStroke), lineWidth: 1)
+        }
     }
 }
 

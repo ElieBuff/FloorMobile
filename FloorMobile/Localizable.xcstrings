@@ -1,22 +1,31 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "Add Item" : {
+    "AI recommendations" : {
+
+    },
+    "Create task" : {
 
     },
     "FloorMobile" : {
 
     },
-    "Item at %@" : {
-
-    },
     "Loading…" : {
 
     },
-    "Réessayer" : {
+    "Next appointment" : {
 
     },
-    "Select an item" : {
+    "No appointment today" : {
+
+    },
+    "No recommendation yet" : {
+
+    },
+    "No task today" : {
+
+    },
+    "Réessayer" : {
 
     },
     "Sign in" : {
@@ -43,7 +52,16 @@
     "The server returned an error (%lld). Please try again later." : {
 
     },
+    "Today's tasks" : {
+
+    },
     "Unable to reach the server. Check your connection and try again." : {
+
+    },
+    "View agenda" : {
+
+    },
+    "View all" : {
 
     },
     "Your data could not be saved on this device." : {
