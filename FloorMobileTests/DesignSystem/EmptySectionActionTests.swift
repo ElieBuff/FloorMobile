@@ -7,6 +7,7 @@ import Testing
 @testable import FloorMobile
 
 @Suite("EmptySectionCard action")
+@MainActor
 struct EmptySectionActionTests {
     @Test("An action defaults to having no leading symbol")
     func defaultsToNoSystemImage() {
