@@ -5,28 +5,34 @@
 
 import SwiftUI
 
-/// The app-wide two-layer ambient background: a static backdrop photo that
-/// never moves, and a color wash + grain texture that travels with the
-/// scrolling content above it.
+/// The app-wide two-layer ambient background:
+///
+/// - **Pinned layer** — the designer's full composition exported from Figma
+///   (`AmbientBackdrop`: flat fill + backdrop photo + color halos). It never
+///   moves; the screen shows its top window, identical at any scroll depth.
+/// - **Moving layer** — the grain texture, travelling with the scrolling
+///   content and repeating forever.
 ///
 /// Screens never place this view directly — they opt in through the
 /// `.ambientBackground()` modifier (see `AmbientBackgroundModifier`), which
 /// pins the backdrop, hides the scrollable's own background and feeds the
-/// live scroll offset. This guarantees the backdrop stays static on every
-/// screen, scrollable or not.
+/// live scroll offset.
 ///
-/// All geometry and values are transcribed from the Figma mockup (frame
-/// 393×1381; wash group 728×852 at (-227, -90), coordinates below are
-/// converted to screen space).
+/// Transcribing the composition natively (blurred shapes, blend modes,
+/// image-fill crops) proved unfaithful to the mockup, so the exported image
+/// is the source of truth. Re-export the Figma frame (grain hidden, PNG 2x)
+/// if the design changes.
 struct AmbientBackground: View {
-    /// How far the content above has scrolled; the wash moves against it.
+    /// How far the content above has scrolled; the grain moves against it.
     var scrollOffset: CGFloat = 0
 
-    /// Height of the design's reference canvas: in Figma the backdrop image
-    /// is a "Fill" of the whole 393×1381 frame, and the phone screen only
-    /// shows its top window. Framing the image against this height (instead
-    /// of the screen) reproduces the exact crop and softness of the mockup.
-    private static let referenceCanvasHeight: CGFloat = 1381
+    /// Point size of the design's reference canvas. The Figma frame is
+    /// 393×1381 but positions the composition 288 pt lower than the Home
+    /// screen mockup shows it; since the backdrop is pinned top-aligned, that
+    /// top band would never be visible, so the asset is the export with its
+    /// top 288 pt cropped off (alignment measured by cross-correlating the
+    /// export against the mockup).
+    private static let referenceCanvasSize = CGSize(width: 393, height: 1093)
 
     /// Size of the Figma grain image (727×1492). The grain repeats itself
     /// vertically with this period, so scrolling can go on forever: noise is
@@ -35,73 +41,33 @@ struct AmbientBackground: View {
     private static let grainSize = CGSize(width: 727, height: 1492)
 
     var body: some View {
-        // The wash and grain are much larger than the screen; as overlays
-        // they decorate without inflating the layout — the backdrop alone
+        // The grain is much larger than the screen; as an overlay it
+        // decorates without inflating the layout — the backdrop alone
         // (which fills the screen) dictates the size.
         fixedBackdrop
-            .overlay(alignment: .topLeading) {
-                colorWash.offset(y: -scrollOffset)
-            }
             .overlay(alignment: .topLeading) {
                 grain
             }
             .allowsHitTesting(false)
     }
 
-    // MARK: - Layer 1 — pinned backdrop
-
-    /// Flat fill + backdrop photo, pinned to the screen.
+    /// The designer's composition, pinned to the screen and scaled against
+    /// the screen width so wider phones keep the framing. The flat color
+    /// backs up any area the image would not cover.
     private var fixedBackdrop: some View {
         ZStack(alignment: .top) {
             Color(red: 0.961, green: 0.961, blue: 0.961) // #F5F5F5
             GeometryReader { geometry in
-                Image("HomeBackground")
+                let scale = geometry.size.width / Self.referenceCanvasSize.width
+                Image("AmbientBackdrop")
                     .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: geometry.size.width, height: Self.referenceCanvasHeight)
-                    .clipped()
-                    .opacity(0.4)
+                    .frame(
+                        width: geometry.size.width,
+                        height: Self.referenceCanvasSize.height * scale
+                    )
             }
         }
         .ignoresSafeArea()
-    }
-
-    // MARK: - Layer 2 — moving wash
-
-    /// The four soft blurred color blobs decorating the top of the content.
-    /// They scroll away with it, by design. Frames, positions, opacities and
-    /// blur radii come straight from the Figma layers.
-    private var colorWash: some View {
-        ZStack(alignment: .topLeading) {
-            AmbientBlob( // #EAE9E5
-                color: Color(red: 0.918, green: 0.914, blue: 0.898),
-                size: CGSize(width: 587, height: 561),
-                topLeft: CGPoint(x: -189, y: 318),
-                blurRadius: 150,
-                opacity: 0.7
-            )
-            AmbientBlob( // #B9B9B7
-                color: Color(red: 0.725, green: 0.725, blue: 0.718),
-                size: CGSize(width: 509, height: 393),
-                topLeft: CGPoint(x: -59, y: -219),
-                blurRadius: 150,
-                opacity: 1
-            )
-            AmbientBlob( // #777777 (a freeform blob in Figma, close enough to an ellipse)
-                color: Color(red: 0.467, green: 0.467, blue: 0.467),
-                size: CGSize(width: 494, height: 717),
-                topLeft: CGPoint(x: -260, y: -111),
-                blurRadius: 140,
-                opacity: 0.9
-            )
-            AmbientBlob( // #FEE9E7
-                color: Color(red: 0.996, green: 0.914, blue: 0.906),
-                size: CGSize(width: 401, height: 529),
-                topLeft: CGPoint(x: 137, y: -17),
-                blurRadius: 150,
-                opacity: 0.9
-            )
-        }
     }
 
     /// The grain texture, moving with the content and repeating forever.
@@ -119,7 +85,10 @@ struct AmbientBackground: View {
             grainTile
             grainTile
         }
-        .opacity(0.15)
+        // 0.18 rather than Figma's 0.15: measured against the mockup export,
+        // plain alpha compositing renders the grain ~20% weaker over the
+        // photo/halo area than Figma does, and this compensates.
+        .opacity(0.18)
         .offset(x: -168, y: -111 - wrapped)
     }
 
@@ -130,32 +99,13 @@ struct AmbientBackground: View {
     }
 }
 
-/// A soft, blurred ellipse of color — the building block of the ambient
-/// color wash. Positioned by its Figma top-left corner in screen space.
-private struct AmbientBlob: View {
-    let color: Color
-    let size: CGSize
-    let topLeft: CGPoint
-    let blurRadius: CGFloat
-    let opacity: Double
-
-    var body: some View {
-        Ellipse()
-            .fill(color)
-            .frame(width: size.width, height: size.height)
-            .opacity(opacity)
-            .blur(radius: blurRadius)
-            .offset(x: topLeft.x, y: topLeft.y)
-    }
-}
-
 // MARK: - Previews
 
 #Preview("Static screen") {
     VStack(spacing: 8) {
         Text("Static content")
             .font(.title2.bold())
-        Text("Nothing here scrolls, so the wash never moves.")
+        Text("Nothing here scrolls, so only the grain would move.")
             .foregroundStyle(.secondary)
             .multilineTextAlignment(.center)
     }
@@ -175,6 +125,10 @@ private struct AmbientBlob: View {
     .ambientBackground()
 }
 
-#Preview("Wash scrolled far away (offset 5000)") {
+#Preview("Scrolled far away (offset 5000)") {
     AmbientBackground(scrollOffset: 5000)
+}
+
+#Preview("Background alone — mockup comparison") {
+    AmbientBackground()
 }
