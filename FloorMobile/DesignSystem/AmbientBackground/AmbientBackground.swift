@@ -93,7 +93,7 @@ struct AmbientBackground: View {
     }
 
     private var grainTile: some View {
-        Image("HomeNoiseOverlay")
+        Image("AmbientGrain")
             .resizable()
             .frame(width: Self.grainSize.width, height: Self.grainSize.height)
     }
