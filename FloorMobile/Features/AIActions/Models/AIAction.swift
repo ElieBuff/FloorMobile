@@ -24,9 +24,6 @@ nonisolated enum AIActionStatus: String {
 @Model
 nonisolated final class AIAction {
     @Attribute(.unique) var id: String
-    /// Every model carries its tenant: a store device can serve several
-    /// brands, and rows from one tenant must never leak into another.
-    var tenantId: String
     var agentKey: String
     /// Open server-side set (e.g. "ANNIVERSARY_TRAVEL_WISHES"): kept raw,
     /// the UI treats it as an opaque discriminator.
@@ -51,7 +48,6 @@ nonisolated final class AIAction {
 
     init(
         id: String,
-        tenantId: String,
         agentKey: String,
         type: String,
         title: String,
@@ -70,7 +66,6 @@ nonisolated final class AIAction {
         salesAssociateLastName: String? = nil
     ) {
         self.id = id
-        self.tenantId = tenantId
         self.agentKey = agentKey
         self.type = type
         self.title = title

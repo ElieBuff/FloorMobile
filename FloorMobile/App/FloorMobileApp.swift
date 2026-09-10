@@ -27,13 +27,20 @@ struct FloorMobileApp: App {
 
     /// Production wiring: environment-driven configuration, Keychain-backed
     /// tokens, real login window.
-    @State private var session = AppSession(
-        auth: .live(AuthManager(
+    @State private var session: AppSession = {
+        let authManager = AuthManager(
             configuration: Self.makeConfiguration(),
             store: KeychainTokenStore(),
             webAuthenticator: WebAuthenticator()
-        ))
-    )
+        )
+        
+        let apiClient = Self.makeAPIClient(authManager: authManager)
+        
+        return AppSession(
+            auth: .live(authManager),
+            api: apiClient
+        )
+    }()
 
     /// A missing configuration must be visible: refusing to launch with a
     /// clear message beats running against the wrong environment.
@@ -45,6 +52,22 @@ struct FloorMobileApp: App {
                 Auth configuration is missing from Info.plist. Assign the \
                 Config/*.xcconfig files to the build configurations \
                 (project → Info → Configurations). \(error)
+                """)
+        }
+    }
+    
+    /// Creates the API client with the base URL from the active xcconfig.
+    private static func makeAPIClient(authManager: AuthManager) -> APIClient {
+        do {
+            let apiConfig = try APIConfiguration.fromBundle()
+            return APIClient(
+                baseURL: apiConfig.baseURL,
+                tokens: TokenProviding.live(authManager)
+            )
+        } catch {
+            fatalError("""
+                API configuration is missing from Info.plist. Assign the \
+                Config/*.xcconfig files to the build configurations. \(error)
                 """)
         }
     }

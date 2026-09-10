@@ -10,19 +10,17 @@ import Testing
 @Suite("User")
 struct UserTests {
 
-    @Test("Maps every claim, tenant included")
+    @Test("Maps id, name, and email from claims")
     func fullMapping() throws {
         let user = try #require(User(claims: Self.claims([
             "sub": "u-1",
             "name": "Marie Martin",
             "email": "marie@example.com",
-            "urn:zitadel:iam:user:resourceowner:id": "org-42",
         ])))
 
         #expect(user.id == "u-1")
         #expect(user.name == "Marie Martin")
         #expect(user.email == "marie@example.com")
-        #expect(user.tenantID == "org-42")
     }
 
     @Test("Display name falls back to email, then to the subject")

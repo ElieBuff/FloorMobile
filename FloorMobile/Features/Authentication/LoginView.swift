@@ -46,5 +46,5 @@ struct LoginView: View {
 
 #Preview {
     LoginView()
-        .environment(AppSession(auth: .preview))
+        .environment(AppSession(auth: .preview, api: .preview))
 }

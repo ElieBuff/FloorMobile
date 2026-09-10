@@ -5,25 +5,32 @@
 
 import Foundation
 
-/// Declarative description of one API call, relative to the client's base URL.
+/// Describes an API endpoint: path, HTTP method, query parameters, and body.
 ///
-/// The encoding rule is implicit: `query` goes to the URL (typically GET),
-/// `body` is JSON-encoded (typically POST/PUT/PATCH) — callers never deal
-/// with encodings.
+/// Separates the "what to call" from the "how to call it" (authentication,
+/// retries, decoding) — all endpoints flow through `APIClient.send(_:)`.
 nonisolated struct Endpoint: Sendable {
-    var method: HTTPMethod
-    var path: String
-    var query: [URLQueryItem] = []
-    var body: (any Encodable & Sendable)?
+    enum Method: String, Sendable {
+        case get = "GET"
+        case post = "POST"
+        case put = "PUT"
+        case patch = "PATCH"
+        case delete = "DELETE"
+    }
+
+    let path: String
+    let method: Method
+    let query: [URLQueryItem]
+    let body: (any Encodable & Sendable)?
 
     init(
-        method: HTTPMethod,
         path: String,
+        method: Method = .get,
         query: [URLQueryItem] = [],
         body: (any Encodable & Sendable)? = nil
     ) {
-        self.method = method
         self.path = path
+        self.method = method
         self.query = query
         self.body = body
     }

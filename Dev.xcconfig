@@ -5,5 +5,7 @@ AUTH_ISSUER = https:/$()/dev-q7qkap.eu1.zitadel.cloud
 AUTH_CLIENT_ID = 389695826299033234
 AUTH_PROJECT_ID = 378848396062002729
 
+API_BASE_URL = http:/$()/localhost:5010/api/secure/
+
 APP_DISPLAY_NAME = Floor Dev
 PRODUCT_BUNDLE_IDENTIFIER = ai.floorapp.floormobile.dev

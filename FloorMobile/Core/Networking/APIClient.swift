@@ -25,6 +25,12 @@ nonisolated struct APIClient: Sendable {
         self.session = session
     }
 
+    /// Inert client for SwiftUI previews — never makes real network calls.
+    static let preview = APIClient(
+        baseURL: URL(string: "https://preview.example.com")!,
+        tokens: TokenProviding(validToken: { "" }, refreshedToken: { "" })
+    )
+
     /// The production session: reasonable timeout, waits for connectivity
     /// instead of failing immediately on a flaky store network.
     static func defaultSession(timeout: TimeInterval = 30) -> URLSession {

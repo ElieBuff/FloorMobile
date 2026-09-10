@@ -20,7 +20,6 @@ struct AIActionTests {
     ) -> AIAction {
         AIAction(
             id: "01TEST",
-            tenantId: "tenant-a",
             agentKey: "contact-radar",
             type: "ANNIVERSARY_TRAVEL_WISHES",
             title: "t",
@@ -32,7 +31,7 @@ struct AIActionTests {
         )
     }
 
-    @Test("Mapping from the wire format flattens people and stamps the tenant")
+    @Test("Mapping from the wire format flattens people")
     func mappingFromDTO() throws {
         let dto = try #require(
             try APIClient.makeDecoder()
@@ -40,10 +39,9 @@ struct AIActionTests {
                 .first
         )
 
-        let action = AIAction(dto: dto, tenantId: "tenant-a")
+        let action = AIAction(dto: dto)
 
         #expect(action.id == dto.id)
-        #expect(action.tenantId == "tenant-a")
         #expect(action.statusRaw == "PENDING")
         #expect(action.status == .pending)
         #expect(action.clientFirstName == "Elie")

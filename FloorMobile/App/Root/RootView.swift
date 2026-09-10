@@ -50,5 +50,5 @@ struct RootView: View {
 #Preview {
     RootView()
         .modelContainer(for: AIAction.self, inMemory: true)
-        .environment(AppSession(auth: .preview))
+        .environment(AppSession(auth: .preview, api: .preview))
 }

@@ -8,8 +8,7 @@ import Foundation
 /// Wire format of an AI action, exactly as the API serves it.
 ///
 /// A DTO is justified here (the rule is "no systematic DTOs"): the nested
-/// people objects are flattened into the local model, which also needs a
-/// `tenantId` the payload does not carry.
+/// people objects are flattened into the local model.
 nonisolated struct AIActionDTO: Decodable {
     var id: String
     var agentKey: String
@@ -29,12 +28,10 @@ nonisolated struct AIActionDTO: Decodable {
 }
 
 nonisolated extension AIAction {
-    /// Maps the wire format into the local model, flattening the nested
-    /// people and stamping the row with the session's tenant.
-    convenience init(dto: AIActionDTO, tenantId: String) {
+    /// Maps the wire format into the local model, flattening the nested people.
+    convenience init(dto: AIActionDTO) {
         self.init(
             id: dto.id,
-            tenantId: tenantId,
             agentKey: dto.agentKey,
             type: dto.type,
             title: dto.title,

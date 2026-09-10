@@ -14,7 +14,7 @@ struct AppSessionTests {
     @Test("Launch with a persisted session goes straight to authenticated")
     func restoreGoesToAuthenticated() async throws {
         let claims = try Self.claims(["sub": "u-1", "name": "Marie"])
-        let session = AppSession(auth: Self.client(restore: { claims }))
+        let session = AppSession(auth: Self.client(restore: { claims }), api: Self.stubAPIClient())
 
         await session.start()
 
@@ -24,7 +24,7 @@ struct AppSessionTests {
 
     @Test("Launch with an empty Keychain goes to unauthenticated")
     func emptyRestoreGoesToUnauthenticated() async {
-        let session = AppSession(auth: Self.client(restore: { nil }))
+        let session = AppSession(auth: Self.client(restore: { nil }), api: Self.stubAPIClient())
         await session.start()
         #expect(session.state == .unauthenticated)
     }
@@ -32,7 +32,7 @@ struct AppSessionTests {
     @Test("Successful sign-in exposes the mapped user")
     func signInSuccess() async throws {
         let claims = try Self.claims(["sub": "u-2", "email": "paul@example.com"])
-        let session = AppSession(auth: Self.client(signIn: { claims }))
+        let session = AppSession(auth: Self.client(signIn: { claims }), api: Self.stubAPIClient())
 
         await session.signIn()
 
@@ -46,9 +46,10 @@ struct AppSessionTests {
 
     @Test("A cancelled sign-in returns to unauthenticated without an error")
     func cancelledSignIn() async {
-        let session = AppSession(auth: Self.client(
-            signIn: { throw AppError.authentication(.userCancelled) }
-        ))
+        let session = AppSession(
+            auth: Self.client(signIn: { throw AppError.authentication(.userCancelled) }),
+            api: Self.stubAPIClient()
+        )
 
         await session.signIn()
 
@@ -57,9 +58,10 @@ struct AppSessionTests {
 
     @Test("A failed sign-in surfaces a user-facing message")
     func failedSignIn() async {
-        let session = AppSession(auth: Self.client(
-            signIn: { throw AppError.network(underlying: nil) }
-        ))
+        let session = AppSession(
+            auth: Self.client(signIn: { throw AppError.network(underlying: nil) }),
+            api: Self.stubAPIClient()
+        )
 
         await session.signIn()
 
@@ -74,10 +76,10 @@ struct AppSessionTests {
     func signOutResets() async throws {
         try await confirmation("signOut forwarded") { confirm in
             let claims = try Self.claims(["sub": "u-3"])
-            let session = AppSession(auth: Self.client(
-                restore: { claims },
-                signOut: { confirm() }
-            ))
+            let session = AppSession(
+                auth: Self.client(restore: { claims }, signOut: { confirm() }),
+                api: Self.stubAPIClient()
+            )
             await session.start()
 
             await session.signOut()
@@ -87,6 +89,16 @@ struct AppSessionTests {
     }
 
     // MARK: - Helpers
+
+    private static func stubAPIClient() -> APIClient {
+        APIClient(
+            baseURL: URL(string: "https://stub.example.com")!,
+            tokens: TokenProviding(
+                validToken: { throw AppError.unexpected(description: "unexpected call") },
+                refreshedToken: { throw AppError.unexpected(description: "unexpected call") }
+            )
+        )
+    }
 
     private static func client(
         restore: @Sendable @escaping () async -> IDTokenClaims? = { nil },
