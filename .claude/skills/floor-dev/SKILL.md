@@ -12,8 +12,8 @@ App iOS native **SwiftUI** de clienteling retail (clients, produits, agenda, mes
 Suivre les recommandations Apple ([Managing model data](https://developer.apple.com/documentation/SwiftUI/Managing-model-data-in-your-app), WWDC 2023 "Discover Observation").
 
 - **Pas de ViewModel par écran.** L'état d'écran vit en `@State` dans la vue. La logique métier vit dans les modèles.
-- **Organisation par feature** : `Features/<Feature>/` contient ses vues, ses modèles et son Service. Pas de sous-dossiers View/ViewModel/Store/DTO.
-- **Socle partagé** dans `Core/` : Networking, Auth, Persistence, Realtime, Sync. Design system dans `DesignSystem/`.
+- **Organisation par feature** : `Features/<Feature>/` contient tout ce qui parle le vocabulaire de la feature, sous-structuré en `Models/` (`@Model`, logique métier), `Data/` (DTO + Service) et `Views/`. Pas de ViewModels, pas de dossiers par couche à la racine du projet.
+- **Socle partagé** dans `Core/` : Networking (dont `Networking/DTO/` pour les fragments wire réutilisés par plusieurs endpoints, ex. `PersonDTO`), Auth, Persistence (schéma versionné `FloorSchemaV1` + plan de migration), Realtime, Sync. Design system dans `DesignSystem/`.
 - **Interdits, même si l'ancien code en avait :** UseCases, Repository protocole + impl, DataSources génériques, DTOs systématiques, containers de DI, singletons `.shared`.
 
 ## Flux de données : quel outil choisir

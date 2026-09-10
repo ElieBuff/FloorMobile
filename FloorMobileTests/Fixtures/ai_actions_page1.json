@@ -1,0 +1,25 @@
+[
+    {
+        "id": "01M1HSBTH7TPQV8EZQFKN1ES25",
+        "agentKey": "contact-radar",
+        "type": "ANNIVERSARY_TRAVEL_WISHES",
+        "title": "Anniversaire de mariage & départ au Portugal",
+        "reason": "Monsieur nous a annoncé que son anniversaire de mariage est demain et qu'il s'envole pour le Portugal dès le 3 septembre pour son voyage de noces. C'est l'occasion idéale de lui adresser un mot chaleureux avant son départ.",
+        "status": "PENDING",
+        "createdAt": "2026-09-02T19:26:04.327Z",
+        "displayAt": "2026-09-01T22:00:00.000Z",
+        "eventDate": null,
+        "expiresAt": "2026-09-08T22:00:00.000Z",
+        "rejectedAt": null,
+        "rejectReason": null,
+        "confidence": null,
+        "client": {
+            "firstName": "Elie",
+            "lastName": "Buff"
+        },
+        "salesAssociate": {
+            "firstName": "Elie",
+            "lastName": "Buff"
+        }
+    }
+]

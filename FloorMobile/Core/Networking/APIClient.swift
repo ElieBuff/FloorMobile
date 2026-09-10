@@ -146,7 +146,9 @@ nonisolated struct APIClient: Sendable {
         return formatter
     }()
 
-    private static func makeDecoder() -> JSONDecoder {
+    // Internal (not private) so decoding tests and fixtures use the exact
+    // same JSON configuration as production calls.
+    static func makeDecoder() -> JSONDecoder {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .custom { decoder in
             let container = try decoder.singleValueContainer()
