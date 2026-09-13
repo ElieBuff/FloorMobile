@@ -33,14 +33,14 @@ struct RootView: View {
             HomeView()
         case .failed(let message):
             LoadingView(message: message) {
-                Task { await syncManager.synchronize(context: modelContext) }
+                Task { await syncManager.synchronize(context: modelContext, tenantID: session.currentTenantID) }
             }
         case .idle, .syncing:
             LoadingView(message: String(localized: "Synchronizing data…"))
                 .task {
                     // Only start the synchronization once.
                     if syncManager.state == .idle {
-                        await syncManager.synchronize(context: modelContext)
+                        await syncManager.synchronize(context: modelContext, tenantID: session.currentTenantID)
                     }
                 }
         }

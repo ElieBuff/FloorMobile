@@ -30,7 +30,7 @@ Suivre les recommandations Apple ([Managing model data](https://developer.apple.
 Règles :
 - Un `@Observable` partagé est injecté à la racine via `.environment(...)` et lu via `@Environment(Type.self)`. Pas de `EnvironmentKey` avec une `defaultValue` qui construit un objet : une valeur manquante doit se voir, pas être remplacée en silence.
 - SwiftData est **local-first** : la vue lit via `@Query`, un Service synchronise l'API en arrière-plan via un `ModelActor`, qui appelle `save()`.
-- **Chaque `@Model` porte un `tenantId`** et le schéma est déclaré dans un `VersionedSchema` dès la première version. Une déconnexion vide le store.
+- **Isolation mono-tenant au niveau du contexte, pas par ligne** : les `@Model` ne portent pas de `tenantId`. Le store est vidé à la déconnexion **et** au changement de tenant à la connexion (`TenantGuard`). Le schéma est déclaré dans un `VersionedSchema` dès la première version.
 - Un calcul métier est une propriété calculée du modèle. On ne stocke un résultat que si un ralentissement mesuré le justifie.
 - **DTO seulement si l'API est tordue.** Sinon décoder directement dans le `@Model` ou un struct `Codable`.
 

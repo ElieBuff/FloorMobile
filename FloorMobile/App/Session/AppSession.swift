@@ -26,6 +26,12 @@ final class AppSession {
     private(set) var state: State = .loading
     private let auth: AuthClient
 
+    /// The active tenant (Zitadel org) when authenticated, else `nil`.
+    /// Drives `TenantGuard`: a change wipes the local store.
+    var currentTenantID: String? {
+        if case .authenticated(let user) = state { user.tenantID } else { nil }
+    }
+
     /// The configured API client, exposed so features drive their own syncs
     /// (e.g. `AIActionSync`) with the session's authenticated client.
     let api: APIClient

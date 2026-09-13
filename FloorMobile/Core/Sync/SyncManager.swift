@@ -26,13 +26,23 @@ final class SyncManager {
 
     private(set) var state: State = .idle
 
+    private let tenantGuard: TenantGuard
+
+    init(tenantGuard: TenantGuard = .live) {
+        self.tenantGuard = tenantGuard
+    }
+
     /// Starts the data synchronization.
     ///
-    /// - Parameter context: The SwiftData context in which to insert the data.
-    func synchronize(context: ModelContext) async {
+    /// - Parameters:
+    ///   - context: The SwiftData context in which to insert the data.
+    ///   - tenantID: The active tenant; a change from the last run wipes the
+    ///     store before any data is shown (single-tenant isolation).
+    func synchronize(context: ModelContext, tenantID: String?) async {
         state = .syncing
 
         do {
+            tenantGuard.enforce(currentTenantID: tenantID, context: context)
             // TODO: Replace with the real synchronization network call
             // (fetch remote data, then insert/update it in the `context`).
             try await performSync(context: context)

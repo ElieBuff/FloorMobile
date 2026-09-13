@@ -76,4 +76,4 @@ Design system (`Presentation/Core/DesignSystem`), `KeychainManager` (en le passa
 
 - Jamais d'identifiant, mot de passe ou token en dur ni dans les logs : l'ancienne app en avait.
 - Un seul `AuthManager` sérialise le refresh de token : l'ancienne app avait quatre chemins de refresh concurrents.
-- Chaque `@Model` porte un `tenantId` et un `VersionedSchema` : l'ancienne app mélangeait les tenants et n'avait pas de migration.
+- Isolation mono-tenant **au niveau du contexte**, pas par ligne : les `@Model` ne portent pas de `tenantId`. Le store SwiftData est vidé à la déconnexion **et** au changement de tenant à la connexion (`TenantGuard`, comparant le tenant du jeton au dernier vu). `VersionedSchema` reste requis dès la V1. L'ancienne app mélangeait les tenants et n'avait pas de migration.

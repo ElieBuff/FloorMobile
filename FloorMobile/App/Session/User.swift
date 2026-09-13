@@ -10,6 +10,8 @@ nonisolated struct User: Equatable, Sendable {
     let id: String
     let name: String
     let email: String?
+    /// Zitadel organization id — the tenant the local store belongs to.
+    let tenantID: String?
 
     init?(claims: IDTokenClaims) {
         guard let subject = claims.subject, !subject.isEmpty else {
@@ -18,5 +20,6 @@ nonisolated struct User: Equatable, Sendable {
         id = subject
         name = claims.name ?? claims.email ?? subject
         email = claims.email
+        tenantID = claims.tenantID
     }
 }
