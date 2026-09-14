@@ -1,5 +1,5 @@
 //
-//  AIActionSyncTests.swift
+//  AIActionServiceTests.swift
 //  FloorMobileTests
 //
 
@@ -9,9 +9,9 @@ import Synchronization
 import Testing
 @testable import FloorMobile
 
-@Suite("AIAction sync")
+@Suite("AIAction service")
 @MainActor
-struct AIActionSyncTests {
+struct AIActionServiceTests {
 
     @Test("Fetches the pending actions and persists them as models")
     func synchronizePersistsFetchedActions() async throws {
@@ -21,13 +21,18 @@ struct AIActionSyncTests {
             return (Self.response(request, statusCode: 200), try Fixture.data("ai_actions_page1"))
         }
         let context = try Self.inMemoryContext()
+        // A local action the server no longer returns: must be swept.
+        context.insert(AIAction(id: "stale", agentKey: "a", type: "t", title: "gone",
+                                reason: "r", statusRaw: "PENDING", createdAt: Date(timeIntervalSince1970: 0)))
+        try context.save()
 
-        try await AIActionSync.synchronize(using: client, context: context)
+        try await AIActionService.synchronizePending(using: client, context: context)
 
         // The sync hit the endpoint we expose, and the wire row became a model.
         #expect(requestedPath.withLock { $0 }?.hasSuffix("ai-action/pending") == true)
         let actions = try context.fetch(FetchDescriptor<AIAction>())
         #expect(actions.count == 1)
+        #expect(!actions.contains { $0.id == "stale" })
         let action = try #require(actions.first)
         #expect(action.id == "01M1HSBTH7TPQV8EZQFKN1ES25")
         #expect(action.agentKey == "contact-radar")
@@ -43,7 +48,7 @@ struct AIActionSyncTests {
         let context = try Self.inMemoryContext()
 
         await #expect(throws: AppError.self) {
-            try await AIActionSync.synchronize(using: client, context: context)
+            try await AIActionService.synchronizePending(using: client, context: context)
         }
 
         let actions = try context.fetch(FetchDescriptor<AIAction>())

@@ -30,8 +30,10 @@ struct AIActionDTOTests {
         #expect(action.rejectedAt == nil)
         #expect(action.rejectReason == nil)
         #expect(action.confidence == nil)
+        #expect(action.client?.id == "00303175-7029-4027-914b-15ec2545e2ae")
         #expect(action.client?.firstName == "Elie")
         #expect(action.client?.lastName == "Buff")
+        #expect(action.salesAssociate?.id == "01KTRSFERMNXK5FGSQW11M1478")
         #expect(action.salesAssociate?.firstName == "Elie")
         #expect(action.salesAssociate?.lastName == "Buff")
     }

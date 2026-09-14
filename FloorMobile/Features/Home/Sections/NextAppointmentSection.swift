@@ -18,7 +18,7 @@ struct NextAppointmentSection: View {
                 AppLog.ui.info("Home: 'View agenda' tapped in Next appointment")
             }
             EmptySectionCard(
-                icon: { Image(systemName: "calendar").foregroundStyle(Color(.textPrimary)) },
+                icon: { Image(systemName: "calendar").foregroundStyle(Color(.OnDark.textPrimary)) },
                 message: String(localized: "No appointment today"),
                 action: EmptySectionAction(label: String(localized: "View agenda")) {
                     AppLog.ui.info("Home: card 'View agenda' tapped in Next appointment")

@@ -22,8 +22,15 @@ nonisolated enum AIActionStatus: String {
 /// read by the views through `@Query`. `nonisolated` so a background
 /// `ModelActor` can import instances off the main actor.
 @Model
-nonisolated final class AIAction {
+nonisolated final class AIAction: Syncable {
     @Attribute(.unique) var id: String
+    /// Per-sync generation marker (mark-and-sweep); not from the API.
+    var syncToken: String = ""
+
+    /// Rows the latest refresh did not return (see `Syncable`).
+    static func stale(token: String) -> Predicate<AIAction> {
+        #Predicate { $0.syncToken != token }
+    }
     var agentKey: String
     /// Open server-side set (e.g. "ANNIVERSARY_TRAVEL_WISHES"): kept raw,
     /// the UI treats it as an opaque discriminator.
@@ -39,12 +46,22 @@ nonisolated final class AIAction {
     var rejectedAt: Date?
     var rejectReason: String?
     var confidence: Double?
-    // Client and sales-associate names are denormalized: there is no local
-    // Client model yet, and the card only needs a display name.
-    var clientFirstName: String?
-    var clientLastName: String?
-    var salesAssociateFirstName: String?
-    var salesAssociateLastName: String?
+    /// The client and sales associate this action concerns, as embedded
+    /// display snapshots.
+    var client: PersonSummary?
+    var salesAssociate: PersonSummary?
+    /// The uppercase tag shown on the Home card ("BACK IN STOCK", "AWAITING
+    /// YOUR REPLY"). Falls back to `type` in the view when the server
+    /// hasn't started sending it.
+    var categoryLabel: String?
+    // The product a recommendation concerns, when it concerns one (e.g. a
+    // "back in stock" tip). All optional: most agents don't attach a
+    // product, and the API doesn't send these fields yet.
+    var productName: String?
+    var productSize: String?
+    var productPrice: Decimal?
+    var productCurrencyCode: String?
+    var productImageURL: URL?
 
     init(
         id: String,
@@ -60,10 +77,14 @@ nonisolated final class AIAction {
         rejectedAt: Date? = nil,
         rejectReason: String? = nil,
         confidence: Double? = nil,
-        clientFirstName: String? = nil,
-        clientLastName: String? = nil,
-        salesAssociateFirstName: String? = nil,
-        salesAssociateLastName: String? = nil
+        client: PersonSummary? = nil,
+        salesAssociate: PersonSummary? = nil,
+        categoryLabel: String? = nil,
+        productName: String? = nil,
+        productSize: String? = nil,
+        productPrice: Decimal? = nil,
+        productCurrencyCode: String? = nil,
+        productImageURL: URL? = nil
     ) {
         self.id = id
         self.agentKey = agentKey
@@ -78,10 +99,14 @@ nonisolated final class AIAction {
         self.rejectedAt = rejectedAt
         self.rejectReason = rejectReason
         self.confidence = confidence
-        self.clientFirstName = clientFirstName
-        self.clientLastName = clientLastName
-        self.salesAssociateFirstName = salesAssociateFirstName
-        self.salesAssociateLastName = salesAssociateLastName
+        self.client = client
+        self.salesAssociate = salesAssociate
+        self.categoryLabel = categoryLabel
+        self.productName = productName
+        self.productSize = productSize
+        self.productPrice = productPrice
+        self.productCurrencyCode = productCurrencyCode
+        self.productImageURL = productImageURL
     }
 
     /// Typed status; `nil` when the server sends a value this app version
@@ -92,11 +117,28 @@ nonisolated final class AIAction {
 
     /// "Elie Buff", "Elie", "Buff", or `nil` when the API sent no name.
     var clientDisplayName: String? {
-        let name = [clientFirstName, clientLastName]
-            .compactMap { $0?.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
-            .joined(separator: " ")
-        return name.isEmpty ? nil : name
+        client?.displayName
+    }
+
+    /// "Salomé Kaliny · Gold", or just the name when there is no tier.
+    var clientMetaLine: String? {
+        guard let clientDisplayName else { return nil }
+        guard let tier = client?.tier, !tier.isEmpty else { return clientDisplayName }
+        return "\(clientDisplayName) · \(tier)"
+    }
+
+    /// "2 400 €" in the product's own currency, `nil` until both the price
+    /// and its currency are known.
+    var productPriceFormatted: String? {
+        guard let productPrice, let productCurrencyCode else { return nil }
+        return productPrice.formatted(.currency(code: productCurrencyCode))
+    }
+
+    /// "Beaded cream dress · 38 · 2 400 €", joining whichever product
+    /// details are present and omitting the rest — `nil` when none are.
+    var productMetaLine: String? {
+        let parts = [productName, productSize, productPriceFormatted].compactMap { $0 }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
     /// The date is injected — never `Date()` inside the logic — so the rule

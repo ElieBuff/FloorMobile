@@ -44,10 +44,12 @@ struct AIActionTests {
         #expect(action.id == dto.id)
         #expect(action.statusRaw == "PENDING")
         #expect(action.status == .pending)
-        #expect(action.clientFirstName == "Elie")
-        #expect(action.clientLastName == "Buff")
-        #expect(action.salesAssociateFirstName == "Elie")
-        #expect(action.salesAssociateLastName == "Buff")
+        #expect(action.client?.id == dto.client?.id)
+        #expect(action.salesAssociate?.id == dto.salesAssociate?.id)
+        #expect(action.client?.firstName == "Elie")
+        #expect(action.client?.lastName == "Buff")
+        #expect(action.salesAssociate?.firstName == "Elie")
+        #expect(action.salesAssociate?.lastName == "Buff")
         #expect(action.clientDisplayName == "Elie Buff")
     }
 
@@ -60,14 +62,13 @@ struct AIActionTests {
     @Test("Client display name handles partial and missing names")
     func clientDisplayNameFallbacks() {
         let action = makeAction()
-        action.clientFirstName = nil
-        action.clientLastName = "Buff"
+        action.client = PersonSummary(firstName: nil, lastName: "Buff")
         #expect(action.clientDisplayName == "Buff")
 
-        action.clientLastName = nil
+        action.client = PersonSummary(firstName: "  ", lastName: nil)
         #expect(action.clientDisplayName == nil)
 
-        action.clientFirstName = "  "
+        action.client = nil
         #expect(action.clientDisplayName == nil)
     }
 

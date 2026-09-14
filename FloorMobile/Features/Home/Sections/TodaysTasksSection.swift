@@ -18,7 +18,7 @@ struct TodaysTasksSection: View {
                 AppLog.ui.info("Home: 'View agenda' tapped in Today's tasks")
             }
             EmptySectionCard(
-                icon: { Image(systemName: "checklist").foregroundStyle(Color(.textPrimary)) },
+                icon: { Image(systemName: "checklist").foregroundStyle(Color(.OnDark.textPrimary)) },
                 message: String(localized: "No task today"),
                 action: EmptySectionAction(label: String(localized: "Create task"), systemImage: "plus") {
                     AppLog.ui.info("Home: 'Create task' tapped in Today's tasks")

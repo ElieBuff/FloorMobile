@@ -8,7 +8,7 @@ import Foundation
 /// Wire format of an AI action, exactly as the API serves it.
 ///
 /// A DTO is justified here (the rule is "no systematic DTOs"): the nested
-/// people objects are flattened into the local model.
+/// people and product objects are flattened into the local model.
 nonisolated struct AIActionDTO: Decodable {
     var id: String
     var agentKey: String
@@ -23,12 +23,35 @@ nonisolated struct AIActionDTO: Decodable {
     var rejectedAt: Date?
     var rejectReason: String?
     var confidence: Double?
-    var client: PersonDTO?
+    /// The uppercase tag shown on the Home card; not sent by every agent.
+    var categoryLabel: String?
+    var client: ClientDTO?
     var salesAssociate: PersonDTO?
+    /// The product a recommendation concerns, when it concerns one.
+    var product: ProductDTO?
+
+    /// `PersonDTO` plus the loyalty tier shown on the recommendation card —
+    /// richer than the shared fragment, so it gets its own type per
+    /// `PersonDTO`'s own documented convention rather than growing that one.
+    nonisolated struct ClientDTO: Decodable {
+        var id: String?
+        var firstName: String?
+        var lastName: String?
+        var tier: String?
+    }
+
+    nonisolated struct ProductDTO: Decodable {
+        var name: String?
+        var size: String?
+        var price: Decimal?
+        var currencyCode: String?
+        var imageURL: URL?
+    }
 }
 
 nonisolated extension AIAction {
-    /// Maps the wire format into the local model, flattening the nested people.
+    /// Maps the wire format into the local model, flattening the nested
+    /// people and product.
     convenience init(dto: AIActionDTO) {
         self.init(
             id: dto.id,
@@ -44,10 +67,14 @@ nonisolated extension AIAction {
             rejectedAt: dto.rejectedAt,
             rejectReason: dto.rejectReason,
             confidence: dto.confidence,
-            clientFirstName: dto.client?.firstName,
-            clientLastName: dto.client?.lastName,
-            salesAssociateFirstName: dto.salesAssociate?.firstName,
-            salesAssociateLastName: dto.salesAssociate?.lastName
+            client: dto.client.map { PersonSummary(id: $0.id, firstName: $0.firstName, lastName: $0.lastName, tier: $0.tier) },
+            salesAssociate: dto.salesAssociate.map(PersonSummary.init(dto:)),
+            categoryLabel: dto.categoryLabel,
+            productName: dto.product?.name,
+            productSize: dto.product?.size,
+            productPrice: dto.product?.price,
+            productCurrencyCode: dto.product?.currencyCode,
+            productImageURL: dto.product?.imageURL
         )
     }
 }

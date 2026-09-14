@@ -59,7 +59,7 @@ struct EmptySectionCard<Icon: View>: View {
 
             Text(message)
                 .font(.subheadline.weight(.medium))
-                .foregroundStyle(Color(.textPrimary))
+                .foregroundStyle(Color(.OnDark.textPrimary))
 
             Spacer(minLength: 12)
 
@@ -72,7 +72,7 @@ struct EmptySectionCard<Icon: View>: View {
                         Text(action.label)
                     }
                     .font(.footnote.weight(.medium))
-                    .foregroundStyle(Color(.textPrimary))
+                    .foregroundStyle(Color(.OnDark.textPrimary))
                     // The label never wraps; the message column shrinks instead.
                     .fixedSize()
                     .padding(.horizontal, 18)
@@ -80,7 +80,7 @@ struct EmptySectionCard<Icon: View>: View {
                 }
                 .buttonStyle(.plain)
                 .overlay {
-                    Capsule().stroke(Color(.controlStroke), lineWidth: 1)
+                    Capsule().stroke(Color(.OnDark.borderDefault), lineWidth: 1)
                 }
             }
         }
@@ -88,10 +88,10 @@ struct EmptySectionCard<Icon: View>: View {
         .padding(.trailing, 12)
         // Minimum, not fixed: the card must grow when Dynamic Type does.
         .frame(minHeight: 74)
-        .background(Color(.cardBackground), in: RoundedRectangle(cornerRadius: 26))
+        .background(Color(.OnDark.surfaceSubtle), in: RoundedRectangle(cornerRadius: 26))
         .overlay {
             RoundedRectangle(cornerRadius: 26)
-                .strokeBorder(Color(.controlStroke), lineWidth: 1)
+                .strokeBorder(Color(.OnDark.borderDefault), lineWidth: 1)
         }
     }
 }

@@ -8,10 +8,13 @@ import SwiftData
 import os
 
 /// Home section surfacing AI recommendations synced from the API. Shows the
-/// pending actions as a single-open accordion, or an empty card when there
-/// are none.
+/// most recent pending actions as a single-open accordion, or an empty card
+/// when there are none.
 struct AIRecommendationsSection: View {
-    @Query(sort: \AIAction.createdAt, order: .reverse) private var actions: [AIAction]
+    /// How many recommendations the Home section surfaces (see-all shows the rest).
+    private static let maxVisible = 3
+    
+    @Query(recentDescriptor) private var actions: [AIAction]
     @Environment(AppSession.self) private var session
     @Environment(\.modelContext) private var modelContext
     @State private var expansion = SingleExpansion<String>()
@@ -27,7 +30,7 @@ struct AIRecommendationsSection: View {
 
             if actions.isEmpty {
                 EmptySectionCard(
-                    icon: { Image(systemName: "sparkles").foregroundStyle(Color(.textPrimary)) },
+                    icon: { Image(systemName: "sparkles").foregroundStyle(Color(.OnDark.textPrimary)) },
                     message: String(localized: "No recommendation yet")
                 )
             } else {
@@ -35,23 +38,37 @@ struct AIRecommendationsSection: View {
                     ForEach(actions) { action in
                         AIActionRow(
                             action: action,
-                            isExpanded: expansion.isOpen(action.id)
-                        ) {
-                            withAnimation(.snappy) { expansion.toggle(action.id) }
-                        }
+                            isExpanded: expansion.isOpen(action.id),
+                            onTap: { withAnimation(.snappy) { expansion.toggle(action.id) } },
+                            onMessage: { AppLog.ui.info("Home: 'Message' tapped for AI action \(action.id, privacy: .private)") },
+                            onCall: { AppLog.ui.info("Home: 'Call' tapped for AI action \(action.id, privacy: .private)") },
+                            onCreateTask: { AppLog.ui.info("Home: 'Task' tapped for AI action \(action.id, privacy: .private)") },
+                            onDismiss: { AppLog.ui.info("Home: 'Not now' tapped for AI action \(action.id, privacy: .private)") }
+                        )
                     }
                 }
             }
         }
         .task { await loadAIActions() }
     }
+    
+    /// Newest first, capped so the store never loads more than we display.
+    private static var recentDescriptor: FetchDescriptor<AIAction> {
+        var descriptor = FetchDescriptor<AIAction>(
+            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+        )
+        descriptor.fetchLimit = maxVisible
+        return descriptor
+    }
 
     /// Syncs the pending AI actions; `@Query` refreshes the list on save.
     private func loadAIActions() async {
         await SessionSync.run(label: "AI actions", session: session, context: modelContext) {
-            try await AIActionSync.synchronize(using: session.api, context: modelContext)
+            try await AIActionService.synchronizePending(using: session.api, context: modelContext)
         }
     }
+
+    
 }
 
 #Preview("Populated") {
@@ -65,7 +82,7 @@ struct AIRecommendationsSection: View {
             id: "0\(i)", agentKey: "contact-radar", type: "ANNIVERSARY_TRAVEL_WISHES",
             title: "Recommendation \(i)", reason: "A short reason explaining why this action matters.",
             statusRaw: "PENDING", createdAt: now.addingTimeInterval(Double(-i)),
-            clientFirstName: "Elie", clientLastName: "Buff"
+            client: PersonSummary(firstName: "Elie", lastName: "Buff")
         ))
     }
     return AIRecommendationsSection()

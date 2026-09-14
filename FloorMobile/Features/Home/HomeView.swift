@@ -31,7 +31,7 @@ struct HomeView: View {
     /// (AI actions); fans out to other sections as they gain data.
     private func reloadHomePage() async {
         await SessionSync.run(label: "Home reload", session: session, context: modelContext) {
-            try await AIActionSync.synchronize(using: session.api, context: modelContext)
+            try await AIActionService.synchronizePending(using: session.api, context: modelContext)
         }
     }
 }

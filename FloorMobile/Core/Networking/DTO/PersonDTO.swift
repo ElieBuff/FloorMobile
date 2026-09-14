@@ -10,6 +10,7 @@ import Foundation
 /// exact shape; an endpoint serving a richer person object gets its own
 /// nested type instead of growing this one.
 nonisolated struct PersonDTO: Decodable {
+    var id: String?
     var firstName: String?
     var lastName: String?
 }

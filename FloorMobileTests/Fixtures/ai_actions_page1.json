@@ -1,6 +1,7 @@
 [
     {
         "id": "01M1HSBTH7TPQV8EZQFKN1ES25",
+        "tenantId": "378969283587247657",
         "agentKey": "contact-radar",
         "type": "ANNIVERSARY_TRAVEL_WISHES",
         "title": "Anniversaire de mariage & départ au Portugal",
@@ -14,10 +15,14 @@
         "rejectReason": null,
         "confidence": null,
         "client": {
+            "id": "00303175-7029-4027-914b-15ec2545e2ae",
+            "externalId": "seed-client-027671",
             "firstName": "Elie",
             "lastName": "Buff"
         },
         "salesAssociate": {
+            "id": "01KTRSFERMNXK5FGSQW11M1478",
+            "externalId": "378970372512460673",
             "firstName": "Elie",
             "lastName": "Buff"
         }

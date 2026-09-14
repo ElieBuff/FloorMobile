@@ -33,7 +33,7 @@ final class AppSession {
     }
 
     /// The configured API client, exposed so features drive their own syncs
-    /// (e.g. `AIActionSync`) with the session's authenticated client.
+    /// (e.g. `AIActionService`) with the session's authenticated client.
     let api: APIClient
 
     init(auth: AuthClient, api: APIClient) {
