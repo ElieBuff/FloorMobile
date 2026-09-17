@@ -88,6 +88,28 @@ struct AppSessionTests {
         }
     }
 
+    @Test("start() is a no-op once the session has left the loading state")
+    func startIsIdempotentAfterSignIn() async throws {
+        let claims = try Self.claims(["sub": "u-9"])
+        // restore would unauthenticate (returns nil) if start() weren't guarded.
+        let session = AppSession(
+            auth: Self.client(restore: { nil }, signIn: { claims }),
+            api: Self.stubAPIClient()
+        )
+        await session.signIn()
+        guard case .authenticated = session.state else {
+            Issue.record("Precondition: expected authenticated after signIn")
+            return
+        }
+
+        await session.start()
+
+        guard case .authenticated = session.state else {
+            Issue.record("start() overwrote an already-authenticated session")
+            return
+        }
+    }
+
     // MARK: - Helpers
 
     private static func stubAPIClient() -> APIClient {

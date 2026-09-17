@@ -45,8 +45,13 @@ struct AmbientBackground: View {
         // decorates without inflating the layout — the backdrop alone
         // (which fills the screen) dictates the size.
         fixedBackdrop
-            .overlay(alignment: .topLeading) {
-                grain
+            // TEMP: grain replaced by a soft scrim to tone down the backdrop's
+            // harsh face contours. Switch to .black or tweak the opacity to
+            // taste; restore the grain overlay below when done testing.
+            // .overlay(alignment: .topLeading) { grain }
+            .overlay {
+                Color.white.opacity(0.4)
+                    .ignoresSafeArea()
             }
             .allowsHitTesting(false)
     }
@@ -56,7 +61,7 @@ struct AmbientBackground: View {
     /// backs up any area the image would not cover.
     private var fixedBackdrop: some View {
         ZStack(alignment: .top) {
-            Color(red: 0.961, green: 0.961, blue: 0.961) // #F5F5F5
+            Color(.Base.canvas) // #F5F5F5, the flat fill under the composition
             GeometryReader { geometry in
                 let scale = geometry.size.width / Self.referenceCanvasSize.width
                 Image("AmbientBackdrop")
@@ -110,7 +115,7 @@ struct AmbientBackground: View {
             .multilineTextAlignment(.center)
     }
     .padding(24)
-    .background(.white.opacity(0.85), in: .rect(cornerRadius: 24))
+    .background(.white.opacity(0.85), in: .rect(cornerRadius: AppRadius.large))
     .padding()
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .ambientBackground()

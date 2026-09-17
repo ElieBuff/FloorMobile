@@ -51,6 +51,11 @@ nonisolated struct APIClient: Sendable {
             AppLog.network.error(
                 "Decoding \(Response.self, privacy: .public) failed: \(Self.describe(error), privacy: .public)"
             )
+            // Full, explicit decoding error (kind, coding path, debug description,
+            // underlying error) for diagnosing an API/DTO mismatch.
+            AppLog.network.debug(
+                "Decoding \(Response.self, privacy: .public) error detail: \(String(reflecting: error), privacy: .public)"
+            )
             throw AppError.decoding(underlying: error)
         } catch {
             throw AppError.decoding(underlying: error)

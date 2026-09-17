@@ -7,13 +7,40 @@
 
 import SwiftUI
 import SwiftData
+import os
 
 @main
 struct FloorMobileApp: App {
-    var sharedModelContainer: ModelContainer = {
+    let sharedModelContainer: ModelContainer
+    private let services: AppServices
+
+    /// Production wiring: environment-driven configuration, Keychain-backed
+    /// tokens, real login window.
+    @State private var session: AppSession
+
+    /// Builds the container first so `session` and `services` can share the one
+    /// instance — stored-property initializers can't reference each other.
+    init() {
+        let container = Self.makeModelContainer()
+        #if DEBUG
+        AppLog.sync.log("DB Log URL: \(container.configurations.first?.url.absoluteString ?? "unknown", privacy: .public)")
+        #endif
+        let authManager = AuthManager(
+            configuration: Self.makeConfiguration(),
+            store: KeychainTokenStore(),
+            webAuthenticator: WebAuthenticator()
+        )
+        let apiClient = Self.makeAPIClient(authManager: authManager)
+
+        sharedModelContainer = container
+        services = AppServices(container: container)
+        _session = State(initialValue: AppSession(auth: .live(authManager), api: apiClient))
+    }
+
+    /// Builds the shared SwiftData container from the versioned schema.
+    private static func makeModelContainer() -> ModelContainer {
         let schema = Schema(versionedSchema: FloorSchemaV1.self)
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
         do {
             return try ModelContainer(
                 for: schema,
@@ -23,24 +50,7 @@ struct FloorMobileApp: App {
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
-    }()
-
-    /// Production wiring: environment-driven configuration, Keychain-backed
-    /// tokens, real login window.
-    @State private var session: AppSession = {
-        let authManager = AuthManager(
-            configuration: Self.makeConfiguration(),
-            store: KeychainTokenStore(),
-            webAuthenticator: WebAuthenticator()
-        )
-        
-        let apiClient = Self.makeAPIClient(authManager: authManager)
-        
-        return AppSession(
-            auth: .live(authManager),
-            api: apiClient
-        )
-    }()
+    }
 
     /// A missing configuration must be visible: refusing to launch with a
     /// clear message beats running against the wrong environment.
@@ -87,5 +97,6 @@ struct FloorMobileApp: App {
         }
         .modelContainer(sharedModelContainer)
         .environment(session)
+        .environment(services)
     }
 }

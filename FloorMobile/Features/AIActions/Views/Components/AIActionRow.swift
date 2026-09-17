@@ -21,6 +21,20 @@ struct AIActionRow: View {
     var onCreateTask: () -> Void = {}
     var onDismiss: () -> Void = {}
 
+    // Geometry of the header block — the dot, the eyebrow and the gap down to
+    // the title. Both layouts read these, which is what pins the dot: change one
+    // here and the two states stay in step.
+
+    /// Dot to eyebrow. The eyebrow is the only thing the dot pushes right:
+    /// everything below starts at the card's own leading edge, so the two
+    /// layouts share a single left edge for all their text.
+    private static let dotSpacing: CGFloat = 8
+    private static let leadingPadding: CGFloat = 16
+    private static let topPadding: CGFloat = 14
+    /// Vertical spacing between the stacked header lines (eyebrow, title, client).
+    private static let headerLineSpacing: CGFloat = 2
+    
+    
     var body: some View {
         if isExpanded {
             openCard
@@ -29,30 +43,22 @@ struct AIActionRow: View {
         }
     }
 
+
     // MARK: - Compact ("Action row / compact" in Figma)
 
     private var compactRow: some View {
         Button(action: onTap) {
-            HStack(spacing: 10) {
-                Circle()
-                    .fill(Color(.Base.ink))
-                    .frame(width: 8, height: 8)
-                    .frame(width: 14, height: 14)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(action.categoryLabel ?? action.type)
-                        .font(.system(size: 10, weight: .medium))
-                        .tracking(0.8)
-                        .textCase(.uppercase)
-                        .foregroundStyle(Color(.OnLight.textSecondary))
+            HStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: Self.headerLineSpacing) {
+                    eyebrowLine
                     Text(action.title)
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(Color(.OnLight.textPrimary))
+                        .foregroundStyle(Color(.OnSurface.textPrimary))
                         .lineLimit(2)
                     if let clientDisplayName = action.clientDisplayName {
                         Text(clientDisplayName)
                             .font(.system(size: 11))
-                            .foregroundStyle(Color(.OnLight.textSecondary))
+                            .foregroundStyle(Color(.OnSurface.textSecondary))
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -61,11 +67,10 @@ struct AIActionRow: View {
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Color(.Base.ink))
             }
-            .padding(.leading, 16)
+            .padding(.leading, Self.leadingPadding)
             .padding(.trailing, 18)
-            .padding(.vertical, 14)
-            .background(Color(.OnDark.surfaceMedium), in: RoundedRectangle(cornerRadius: 20))
-            .shadow(color: .black.opacity(0.08), radius: 9, y: 6)
+            .padding(.vertical, Self.topPadding)
+            .cardStyle(shadow: .low)
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
@@ -78,9 +83,12 @@ struct AIActionRow: View {
     private var openCard: some View {
         VStack(alignment: .leading, spacing: 0) {
             Group {
-                statusRow
+                // Same eyebrow line, same top padding, same gap down to the
+                // title as the compact row: that is what keeps the dot — and
+                // the header with it — from shifting when the card opens.
+                eyebrowLine
                 bodyRow
-                    .padding(.top, 12)
+                    .padding(.top, Self.headerLineSpacing)
             }
             // A dedicated tap target so it doesn't compete with the quick
             // action buttons below for the same gesture.
@@ -90,28 +98,12 @@ struct AIActionRow: View {
             quickActionsRow
                 .padding(.top, 16)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 18)
-        .background(Color(.OnDark.surfaceMedium), in: RoundedRectangle(cornerRadius: 24))
-        .overlay {
-            RoundedRectangle(cornerRadius: 24)
-                .strokeBorder(Color(.Base.paper).opacity(0.9), lineWidth: 1)
-        }
-        .shadow(color: .black.opacity(0.12), radius: 13, y: 10)
+        .padding(.leading, Self.leadingPadding)
+        .padding(.trailing, 20)
+        .padding(.top, Self.topPadding)
+        .padding(.bottom, 18)
+        .agentCardStyle()
         .accessibilityElement(children: .contain)
-    }
-
-    private var statusRow: some View {
-        HStack(spacing: 8) {
-            Circle()
-                .fill(Color(.Base.ink))
-                .frame(width: 8, height: 8)
-            Text(action.categoryLabel ?? action.type)
-                .font(.system(size: 9, weight: .medium))
-                .tracking(0.72)
-                .textCase(.uppercase)
-                .foregroundStyle(Color(.OnLight.textSecondary))
-        }
     }
 
     private var bodyRow: some View {
@@ -119,32 +111,48 @@ struct AIActionRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(action.title)
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(Color(.OnLight.textPrimary))
+                    .foregroundStyle(Color(.OnSurface.textPrimary))
                 if let clientMetaLine = action.clientMetaLine {
                     Text(clientMetaLine)
                         .font(.system(size: 13))
-                        .foregroundStyle(Color(.OnLight.textSecondary))
+                        .foregroundStyle(Color(.OnSurface.textSecondary))
                 }
                 if let productMetaLine = action.productMetaLine {
                     Text(productMetaLine)
                         .font(.system(size: 11))
-                        .foregroundStyle(Color(.OnLight.textSecondary))
+                        .foregroundStyle(Color(.OnSurface.textSecondary))
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
             if let productImageURL = action.productImageURL {
-                AsyncImage(url: productImageURL) { phase in
-                    if case .success(let image) = phase {
-                        image.resizable().scaledToFill()
-                    } else {
-                        Color(.OnDark.surfaceSubtle)
-                    }
-                }
-                .frame(width: 76, height: 76)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
+                ProductThumbnail(url: productImageURL)
             }
         }
+    }
+
+    /// The agent's mark and the category eyebrow, as siblings on one line.
+    ///
+    /// The dot marks provenance, not state, so it must not move when the card
+    /// opens. Centred on the eyebrow it cannot: the eyebrow sits at a fixed
+    /// offset from the card's top edge in both layouts, while anything lower —
+    /// the title, the row's own mid-height — depends on how much text the state
+    /// holds. Plain `.center` alignment is enough precisely because the dot is
+    /// paired with the eyebrow alone.
+    private var eyebrowLine: some View {
+        HStack(spacing: Self.dotSpacing) {
+            BreathingDot(seed: action.id, isPaused: isExpanded)
+            categoryLabel
+        }
+    }
+
+    /// The category eyebrow, shared by both layouts so the two never drift apart.
+    private var categoryLabel: some View {
+        Text(action.categoryLabel ?? action.type)
+            .font(.system(size: 10, weight: .medium))
+            .tracking(0.8)
+            .textCase(.uppercase)
+            .foregroundStyle(Color(.OnSurface.textSecondary))
     }
 
     private var quickActionsRow: some View {
@@ -154,47 +162,6 @@ struct AIActionRow: View {
             QuickActionButton(systemImage: "checklist", label: String(localized: "Task"), style: .outlined, action: onCreateTask)
             QuickActionButton(systemImage: "xmark", label: String(localized: "Not now"), style: .outlined, action: onDismiss)
         }
-    }
-}
-
-/// One circular button in the open card's quick-actions row: `.filled` is
-/// the dark "primary" treatment (Message, the one action worth defaulting
-/// to), `.outlined` is the neutral white circle the other three share.
-private struct QuickActionButton: View {
-    enum Style {
-        case filled
-        case outlined
-    }
-
-    let systemImage: String
-    let label: String
-    let style: Style
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 6) {
-                Image(systemName: systemImage)
-                    .font(.system(size: 20))
-                    .foregroundStyle(iconColor)
-                    .frame(width: 50, height: 50)
-                    .background(backgroundColor, in: Circle())
-                    .shadow(color: .black.opacity(style == .filled ? 0.18 : 0), radius: 9, y: 6)
-                Text(label)
-                    .font(.system(size: 9))
-                    .foregroundStyle(Color(.Base.ink).opacity(0.85))
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(.plain)
-    }
-
-    private var backgroundColor: Color {
-        style == .filled ? Color(.Base.ink) : Color(.Base.paper)
-    }
-
-    private var iconColor: Color {
-        style == .filled ? Color(.Base.paper) : Color(.Base.ink)
     }
 }
 
@@ -240,7 +207,7 @@ extension AIAction {
             reason: "The client asked a question three days ago and has had no reply yet.",
             statusRaw: "PENDING",
             createdAt: .now,
-            client: PersonSummary(firstName: "Inès", lastName: "Haddad"),
+            client: ClientSummary(firstName: "Inès", lastName: "Haddad"),
             categoryLabel: "Awaiting your reply"
         )
     }
@@ -254,7 +221,7 @@ extension AIAction {
             reason: "The item she tried on is back in stock in her size.",
             statusRaw: "PENDING",
             createdAt: .now,
-            client: PersonSummary(firstName: "Salomé", lastName: "Kaliny", tier: "Gold"),
+            client: ClientSummary(firstName: "Salomé", lastName: "Kaliny", segment: "Gold"),
             categoryLabel: "Back in stock",
             productName: "Beaded cream dress",
             productSize: "38",

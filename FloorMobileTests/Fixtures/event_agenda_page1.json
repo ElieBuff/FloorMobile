@@ -4,7 +4,8 @@
             "id": "01M2FQ54RZ39T1TDG4E8YJWCS0",
             "tenantId": "378969283587247657",
             "status": "PLANNED",
-            "type": "APPOINTMENT",
+            "reason": "APPOINTMENT",
+            "meetingType": "IN_PERSON",
             "title": "Essayage collection automne",
             "description": "RDV essayage",
             "startDate": "2026-09-22T14:30:00.000Z",
@@ -17,7 +18,12 @@
                 "id": "001cfde7-0c26-48ae-990c-68bbd710211b",
                 "externalId": "seed-client-000289",
                 "firstName": "Raphaël",
-                "lastName": "Van den Berg"
+                "lastName": "Van den Berg",
+                "segment": "VIC",
+                "metrics": {
+                    "totalSpent12M": 0,
+                    "totalSpentLifetime": 567.71
+                }
             },
             "store": {
                 "id": "2e3a0647-09ac-4d36-bf8d-9400170f22cb",
@@ -36,7 +42,8 @@
             "id": "01M2FQ9RQ3YDYMKV8T58C5KBB1",
             "tenantId": "378969283587247657",
             "status": "PLANNED",
-            "type": "APPOINTMENT",
+            "reason": "APPOINTMENT",
+            "meetingType": "IN_PERSON",
             "title": "Essayage collection automne",
             "description": "RDV essayage",
             "startDate": "2026-09-22T14:30:00.000Z",
@@ -49,7 +56,12 @@
                 "id": "001cfde7-0c26-48ae-990c-68bbd710211b",
                 "externalId": "seed-client-000289",
                 "firstName": "Raphaël",
-                "lastName": "Van den Berg"
+                "lastName": "Van den Berg",
+                "segment": "VIC",
+                "metrics": {
+                    "totalSpent12M": 0,
+                    "totalSpentLifetime": 567.71
+                }
             },
             "store": {
                 "id": "2e3a0647-09ac-4d36-bf8d-9400170f22cb",

@@ -26,7 +26,7 @@ extension ModelContext {
     /// Inserts (upserts) a batch and saves. Upsert relies on the model's
     /// identity key being `@Attribute(.unique)`, so re-inserting a known id
     /// replaces the stored row in place instead of duplicating it.
-    func upsert<Incoming, Model: PersistentModel>(
+    nonisolated func upsert<Incoming, Model: PersistentModel>(
         _ items: [Incoming],
         make: (Incoming) -> Model
     ) throws {
@@ -37,7 +37,7 @@ extension ModelContext {
     }
 
     /// Batch-deletes every row matching `predicate`, then saves.
-    func sweep<Model: PersistentModel>(_ type: Model.Type, matching predicate: Predicate<Model>) throws {
+    nonisolated func sweep<Model: PersistentModel>(_ type: Model.Type, matching predicate: Predicate<Model>) throws {
         try delete(model: Model.self, where: predicate)
         try save()
     }
@@ -49,7 +49,8 @@ extension ModelContext {
     /// to sweep* — the token, the loop and the ordering live here.
     func refresh<Item: Decodable & Sendable, Model: PersistentModel & Syncable>(
         paginatedBy fetch: (_ cursor: String?) async throws -> CursorPage<Item>,
-        make: (Item) -> Model
+        make: (Item) -> Model,
+        isolation: isolated (any Actor)? = #isolation
     ) async throws {
         let token = UUID().uuidString
         var cursor: String?
@@ -69,11 +70,13 @@ extension ModelContext {
     /// once. Same mark-and-sweep guarantees as the paginated overload.
     func refresh<Item: Decodable & Sendable, Model: PersistentModel & Syncable>(
         from fetch: () async throws -> [Item],
-        make: (Item) -> Model
+        make: (Item) -> Model,
+        isolation: isolated (any Actor)? = #isolation
     ) async throws {
         try await refresh(
             paginatedBy: { _ in CursorPage(items: try await fetch(), hasMore: false, nextCursor: nil) },
-            make: make
+            make: make,
+            isolation: isolation
         )
     }
 }

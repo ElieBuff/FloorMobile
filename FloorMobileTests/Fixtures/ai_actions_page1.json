@@ -18,7 +18,12 @@
             "id": "00303175-7029-4027-914b-15ec2545e2ae",
             "externalId": "seed-client-027671",
             "firstName": "Elie",
-            "lastName": "Buff"
+            "lastName": "Buff",
+            "segment": "VIC",
+            "metrics": {
+                "totalSpent12M": 0,
+                "totalSpentLifetime": 567.71
+            }
         },
         "salesAssociate": {
             "id": "01KTRSFERMNXK5FGSQW11M1478",

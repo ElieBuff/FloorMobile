@@ -1,10 +1,40 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "" : {
+
+    },
+    "Add" : {
+
+    },
+    "Agenda" : {
+
+    },
+    "Agent" : {
+
+    },
     "AI recommendations" : {
 
     },
+    "Back in stock" : {
+
+    },
+    "BACK IN STOCK" : {
+
+    },
+    "Birthday" : {
+
+    },
     "Call" : {
+
+    },
+    "Card" : {
+
+    },
+    "Collection launch" : {
+
+    },
+    "Coming soon" : {
 
     },
     "Create task" : {
@@ -16,13 +46,43 @@
     "FloorMobile" : {
 
     },
+    "Follow-up" : {
+
+    },
+    "Go to today" : {
+
+    },
+    "Has events" : {
+
+    },
+    "Home" : {
+
+    },
+    "In %lld h" : {
+
+    },
+    "In %lld min" : {
+
+    },
     "Loading…" : {
 
     },
     "Message" : {
 
     },
+    "Messages" : {
+
+    },
+    "More" : {
+
+    },
     "Next appointment" : {
+
+    },
+    "Next month" : {
+
+    },
+    "Next week" : {
 
     },
     "No appointment today" : {
@@ -31,13 +91,43 @@
     "No recommendation yet" : {
 
     },
+    "No task" : {
+
+    },
     "No task today" : {
 
     },
     "Not now" : {
 
     },
+    "Other" : {
+
+    },
+    "Prepare" : {
+
+    },
+    "Previous month" : {
+
+    },
+    "Previous week" : {
+
+    },
+    "Profile" : {
+
+    },
     "Réessayer" : {
+
+    },
+    "Scan" : {
+
+    },
+    "Search" : {
+
+    },
+    "Show the month" : {
+
+    },
+    "Show the week" : {
 
     },
     "Sign in" : {
@@ -61,10 +151,16 @@
     "Task" : {
 
     },
+    "The beaded cream dress she tried in June is back in her size." : {
+
+    },
     "The server response could not be read. Please try again later." : {
 
     },
     "The server returned an error (%lld). Please try again later." : {
+
+    },
+    "Today" : {
 
     },
     "Today's tasks" : {
@@ -77,6 +173,12 @@
 
     },
     "View all" : {
+
+    },
+    "VIP event" : {
+
+    },
+    "Wishlist available" : {
 
     },
     "Your data could not be saved on this device." : {

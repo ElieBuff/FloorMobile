@@ -25,20 +25,10 @@ nonisolated struct AIActionDTO: Decodable {
     var confidence: Double?
     /// The uppercase tag shown on the Home card; not sent by every agent.
     var categoryLabel: String?
-    var client: ClientDTO?
-    var salesAssociate: PersonDTO?
+    var client: ClientSummary?
+    var salesAssociate: SalesAssociateSummary?
     /// The product a recommendation concerns, when it concerns one.
     var product: ProductDTO?
-
-    /// `PersonDTO` plus the loyalty tier shown on the recommendation card —
-    /// richer than the shared fragment, so it gets its own type per
-    /// `PersonDTO`'s own documented convention rather than growing that one.
-    nonisolated struct ClientDTO: Decodable {
-        var id: String?
-        var firstName: String?
-        var lastName: String?
-        var tier: String?
-    }
 
     nonisolated struct ProductDTO: Decodable {
         var name: String?
@@ -67,8 +57,8 @@ nonisolated extension AIAction {
             rejectedAt: dto.rejectedAt,
             rejectReason: dto.rejectReason,
             confidence: dto.confidence,
-            client: dto.client.map { PersonSummary(id: $0.id, firstName: $0.firstName, lastName: $0.lastName, tier: $0.tier) },
-            salesAssociate: dto.salesAssociate.map(PersonSummary.init(dto:)),
+            client: dto.client,
+            salesAssociate: dto.salesAssociate,
             categoryLabel: dto.categoryLabel,
             productName: dto.product?.name,
             productSize: dto.product?.size,

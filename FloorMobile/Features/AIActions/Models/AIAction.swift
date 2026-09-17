@@ -48,8 +48,8 @@ nonisolated final class AIAction: Syncable {
     var confidence: Double?
     /// The client and sales associate this action concerns, as embedded
     /// display snapshots.
-    var client: PersonSummary?
-    var salesAssociate: PersonSummary?
+    var client: ClientSummary?
+    var salesAssociate: SalesAssociateSummary?
     /// The uppercase tag shown on the Home card ("BACK IN STOCK", "AWAITING
     /// YOUR REPLY"). Falls back to `type` in the view when the server
     /// hasn't started sending it.
@@ -77,8 +77,8 @@ nonisolated final class AIAction: Syncable {
         rejectedAt: Date? = nil,
         rejectReason: String? = nil,
         confidence: Double? = nil,
-        client: PersonSummary? = nil,
-        salesAssociate: PersonSummary? = nil,
+        client: ClientSummary? = nil,
+        salesAssociate: SalesAssociateSummary? = nil,
         categoryLabel: String? = nil,
         productName: String? = nil,
         productSize: String? = nil,
@@ -120,11 +120,11 @@ nonisolated final class AIAction: Syncable {
         client?.displayName
     }
 
-    /// "Salomé Kaliny · Gold", or just the name when there is no tier.
+    /// "Salomé Kaliny · VIC", or just the name when there is no segment.
     var clientMetaLine: String? {
         guard let clientDisplayName else { return nil }
-        guard let tier = client?.tier, !tier.isEmpty else { return clientDisplayName }
-        return "\(clientDisplayName) · \(tier)"
+        guard let segment = client?.segment, !segment.isEmpty else { return clientDisplayName }
+        return "\(clientDisplayName) · \(segment)"
     }
 
     /// "2 400 €" in the product's own currency, `nil` until both the price

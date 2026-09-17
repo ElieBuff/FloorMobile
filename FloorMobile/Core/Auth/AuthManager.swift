@@ -41,9 +41,8 @@ final actor AuthManager {
 
     /// Restores a persisted session at launch; returns its claims when found.
     func restoreSession() async -> IDTokenClaims? {
-        guard let stored = await store.load() else { return nil }
-        tokens = stored
-        return try? IDTokenClaims(idToken: stored.idToken)
+        guard let active = await loadedTokens() else { return nil }
+        return try? IDTokenClaims(idToken: active.idToken)
     }
 
     /// Runs the full Authorization Code + PKCE flow.
@@ -89,13 +88,22 @@ final actor AuthManager {
 
     /// Returns a valid access token, refreshing it first when needed.
     func validToken() async throws -> String {
-        if tokens == nil {
-            tokens = await store.load()
-        }
-        if let tokens, tokens.isValid(now: now()) {
-            return tokens.accessToken
+        let current = await loadedTokens()
+        if let current, current.isValid(now: now()) {
+            return current.accessToken
         }
         return try await refreshedTokens().accessToken
+    }
+
+    /// Loads tokens from the store on first need. Re-checks after the `await`
+    /// so a value another path (e.g. a refresh) set meanwhile is never
+    /// clobbered by the stale on-disk copy.
+    private func loadedTokens() async -> TokenSet? {
+        if tokens == nil {
+            let loaded = await store.load()
+            if tokens == nil { tokens = loaded }
+        }
+        return tokens
     }
 
     /// Forces a refresh and returns the new access token. Used by `APIClient`

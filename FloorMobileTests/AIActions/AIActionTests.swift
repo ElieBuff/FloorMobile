@@ -62,10 +62,10 @@ struct AIActionTests {
     @Test("Client display name handles partial and missing names")
     func clientDisplayNameFallbacks() {
         let action = makeAction()
-        action.client = PersonSummary(firstName: nil, lastName: "Buff")
+        action.client = ClientSummary(firstName: nil, lastName: "Buff")
         #expect(action.clientDisplayName == "Buff")
 
-        action.client = PersonSummary(firstName: "  ", lastName: nil)
+        action.client = ClientSummary(firstName: "  ", lastName: nil)
         #expect(action.clientDisplayName == nil)
 
         action.client = nil

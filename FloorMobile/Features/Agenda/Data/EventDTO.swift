@@ -12,7 +12,8 @@ import Foundation
 nonisolated struct EventDTO: Decodable, Sendable {
     var id: String
     var status: String
-    var type: String
+    var reason: String?
+    var meetingType: String?
     var title: String
     var description: String?
     var startDate: Date
@@ -20,9 +21,9 @@ nonisolated struct EventDTO: Decodable, Sendable {
     var reminderDate: Date?
     var createdAt: Date
     var updatedAt: Date
-    var client: PersonDTO?
+    var client: ClientSummary?
     var store: StoreDTO?
-    var salesAssociate: PersonDTO?
+    var salesAssociate: SalesAssociateSummary?
 }
 
 nonisolated extension AgendaEvent {
@@ -32,7 +33,8 @@ nonisolated extension AgendaEvent {
         self.init(
             id: dto.id,
             statusRaw: dto.status,
-            typeRaw: dto.type,
+            reasonRaw: dto.reason ?? Reason.other.rawValue,
+            meetingTypeRaw: dto.meetingType,
             title: dto.title,
             eventDescription: dto.description,
             startDate: dto.startDate,
@@ -40,9 +42,9 @@ nonisolated extension AgendaEvent {
             reminderDate: dto.reminderDate,
             createdAt: dto.createdAt,
             updatedAt: dto.updatedAt,
-            client: dto.client.map(PersonSummary.init(dto:)),
+            client: dto.client,
             store: dto.store.map(StoreSummary.init(dto:)),
-            salesAssociate: dto.salesAssociate.map(PersonSummary.init(dto:))
+            salesAssociate: dto.salesAssociate
         )
     }
 }

@@ -12,7 +12,7 @@ nonisolated enum FloorSchemaV1: VersionedSchema {
     static var versionIdentifier: Schema.Version { Schema.Version(1, 0, 0) }
 
     static var models: [any PersistentModel.Type] {
-        [AIAction.self, AgendaEvent.self]
+        [AIAction.self, AgendaEvent.self, AgendaTask.self]
     }
 }
 

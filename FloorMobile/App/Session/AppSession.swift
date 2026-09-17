@@ -41,8 +41,11 @@ final class AppSession {
         self.api = api
     }
 
-    /// Restores a persisted session at launch.
+    /// Restores a persisted session at launch. Only acts from the initial
+    /// `loading` state, so a re-fired `.task` can't overwrite a session the
+    /// user has since established or torn down.
     func start() async {
+        guard case .loading = state else { return }
         if let claims = await auth.restore(), let user = User(claims: claims) {
             state = .authenticated(user)
         } else {

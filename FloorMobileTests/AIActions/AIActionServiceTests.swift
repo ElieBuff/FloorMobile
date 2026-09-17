@@ -20,17 +20,17 @@ struct AIActionServiceTests {
             requestedPath.withLock { $0 = request.url?.path() }
             return (Self.response(request, statusCode: 200), try Fixture.data("ai_actions_page1"))
         }
-        let context = try Self.inMemoryContext()
+        let container = try Self.inMemoryContainer()
         // A local action the server no longer returns: must be swept.
-        context.insert(AIAction(id: "stale", agentKey: "a", type: "t", title: "gone",
+        container.mainContext.insert(AIAction(id: "stale", agentKey: "a", type: "t", title: "gone",
                                 reason: "r", statusRaw: "PENDING", createdAt: Date(timeIntervalSince1970: 0)))
-        try context.save()
+        try container.mainContext.save()
 
-        try await AIActionService.synchronizePending(using: client, context: context)
+        try await AIActionService(modelContainer: container).synchronizePending(using: client)
 
         // The sync hit the endpoint we expose, and the wire row became a model.
         #expect(requestedPath.withLock { $0 }?.hasSuffix("ai-action/pending") == true)
-        let actions = try context.fetch(FetchDescriptor<AIAction>())
+        let actions = try ModelContext(container).fetch(FetchDescriptor<AIAction>())
         #expect(actions.count == 1)
         #expect(!actions.contains { $0.id == "stale" })
         let action = try #require(actions.first)
@@ -45,24 +45,23 @@ struct AIActionServiceTests {
         let client = Self.makeClient { request in
             (Self.response(request, statusCode: 500), Data())
         }
-        let context = try Self.inMemoryContext()
+        let container = try Self.inMemoryContainer()
 
         await #expect(throws: AppError.self) {
-            try await AIActionService.synchronizePending(using: client, context: context)
+            try await AIActionService(modelContainer: container).synchronizePending(using: client)
         }
 
-        let actions = try context.fetch(FetchDescriptor<AIAction>())
+        let actions = try ModelContext(container).fetch(FetchDescriptor<AIAction>())
         #expect(actions.isEmpty)
     }
 
     // MARK: - Helpers
 
-    private static func inMemoryContext() throws -> ModelContext {
-        let container = try ModelContainer(
+    private static func inMemoryContainer() throws -> ModelContainer {
+        try ModelContainer(
             for: AIAction.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
-        return ModelContext(container)
     }
 
     private nonisolated static func makeClient(

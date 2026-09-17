@@ -15,8 +15,6 @@ struct AIRecommendationsSection: View {
     private static let maxVisible = 3
     
     @Query(recentDescriptor) private var actions: [AIAction]
-    @Environment(AppSession.self) private var session
-    @Environment(\.modelContext) private var modelContext
     @State private var expansion = SingleExpansion<String>()
 
     var body: some View {
@@ -30,7 +28,7 @@ struct AIRecommendationsSection: View {
 
             if actions.isEmpty {
                 EmptySectionCard(
-                    icon: { Image(systemName: "sparkles").foregroundStyle(Color(.OnDark.textPrimary)) },
+                    icon: { Image(systemName: "sparkles").foregroundStyle(Color(.OnCanvas.textPrimary)) },
                     message: String(localized: "No recommendation yet")
                 )
             } else {
@@ -49,9 +47,8 @@ struct AIRecommendationsSection: View {
                 }
             }
         }
-        .task { await loadAIActions() }
     }
-    
+
     /// Newest first, capped so the store never loads more than we display.
     private static var recentDescriptor: FetchDescriptor<AIAction> {
         var descriptor = FetchDescriptor<AIAction>(
@@ -60,15 +57,6 @@ struct AIRecommendationsSection: View {
         descriptor.fetchLimit = maxVisible
         return descriptor
     }
-
-    /// Syncs the pending AI actions; `@Query` refreshes the list on save.
-    private func loadAIActions() async {
-        await SessionSync.run(label: "AI actions", session: session, context: modelContext) {
-            try await AIActionService.synchronizePending(using: session.api, context: modelContext)
-        }
-    }
-
-    
 }
 
 #Preview("Populated") {
@@ -82,7 +70,7 @@ struct AIRecommendationsSection: View {
             id: "0\(i)", agentKey: "contact-radar", type: "ANNIVERSARY_TRAVEL_WISHES",
             title: "Recommendation \(i)", reason: "A short reason explaining why this action matters.",
             statusRaw: "PENDING", createdAt: now.addingTimeInterval(Double(-i)),
-            client: PersonSummary(firstName: "Elie", lastName: "Buff")
+            client: ClientSummary(firstName: "Elie", lastName: "Buff")
         ))
     }
     return AIRecommendationsSection()
