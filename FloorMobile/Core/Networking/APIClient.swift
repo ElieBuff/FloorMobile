@@ -14,15 +14,20 @@ nonisolated struct APIClient: Sendable {
     private let baseURL: URL
     private let tokens: TokenProviding
     private let session: URLSession
+    /// Raised when a call fails for good on authentication. Optional so a
+    /// preview or a test can leave it out; in the app it is always there.
+    private let expiry: SessionExpiry?
 
     init(
         baseURL: URL,
         tokens: TokenProviding,
-        session: URLSession = APIClient.defaultSession()
+        session: URLSession = APIClient.defaultSession(),
+        expiry: SessionExpiry? = nil
     ) {
         self.baseURL = baseURL
         self.tokens = tokens
         self.session = session
+        self.expiry = expiry
     }
 
     /// Inert client for SwiftUI previews — never makes real network calls.
@@ -74,12 +79,24 @@ nonisolated struct APIClient: Sendable {
 
     // MARK: - Core
 
+    /// Every call passes through here, which is why the end of the session is
+    /// noticed here and nowhere else. A screen that forgets to handle it still
+    /// gets the right behaviour; there is nothing to forget.
     private func perform(_ endpoint: Endpoint) async throws -> Data {
-        AppLog.network.debug(
-            "→ \(endpoint.method.rawValue, privacy: .public) \(endpoint.path, privacy: .private)"
-        )
+        do {
+            return try await performRequest(endpoint)
+        } catch let error as AppError {
+            if case .authentication = error {
+                await MainActor.run { expiry?.hasExpired = true }
+            }
+            throw error
+        }
+    }
+
+    private func performRequest(_ endpoint: Endpoint) async throws -> Data {
         var request = try makeRequest(endpoint)
         request.setValue("Bearer \(try await tokens.validToken())", forHTTPHeaderField: "Authorization")
+        logRequest(request, endpoint)
 
         var (data, response) = try await execute(request)
 
@@ -99,6 +116,12 @@ nonisolated struct APIClient: Sendable {
         guard (200..<300).contains(status) else {
             AppLog.network.error(
                 "HTTP \(status, privacy: .public) on \(endpoint.path, privacy: .private)"
+            )
+            // A refusal nearly always explains itself in its body — and the
+            // body was being dropped along with it, which left a validation
+            // error as an unreadable "400".
+            AppLog.network.error(
+                "← \(status, privacy: .public) said \(Self.bodyText(data), privacy: .private)"
             )
             throw AppError.server(statusCode: status)
         }
@@ -182,6 +205,41 @@ nonisolated struct APIClient: Sendable {
     }
 
     // MARK: - Diagnostics
+
+    /// What the call carries on its way out: the method and path, the query as
+    /// it was actually built, and the JSON body as it will actually be sent.
+    ///
+    /// Read off the `URLRequest` rather than off the `Endpoint`, so the log
+    /// shows what goes on the wire instead of a second, possibly different,
+    /// encoding of it. The `Authorization` header is deliberately absent — a
+    /// token has no business in a log, ever.
+    ///
+    /// `.private` throughout: a path names a record, a query narrows to one,
+    /// and a body carries the advisor's own words. Attached to a debugger the
+    /// values show; in the field they are redacted.
+    private func logRequest(_ request: URLRequest, _ endpoint: Endpoint) {
+        AppLog.network.debug(
+            "→ \(endpoint.method.rawValue, privacy: .public) \(endpoint.path, privacy: .private)"
+        )
+        if let query = request.url?.query, !query.isEmpty {
+            AppLog.network.debug("  query \(query, privacy: .private)")
+        }
+        if let body = request.httpBody {
+            AppLog.network.debug("  body \(Self.bodyText(body), privacy: .private)")
+        }
+    }
+
+    /// A request or response body as text, capped so one large payload cannot
+    /// bury the rest of the log. Something that is not UTF-8 — an image, a
+    /// file — is reported by its size rather than passed off as text.
+    private static func bodyText(_ data: Data, limit: Int = 2_000) -> String {
+        guard !data.isEmpty else { return "(empty)" }
+        guard let text = String(data: data, encoding: .utf8) else {
+            return "(\(data.count) bytes, not text)"
+        }
+        guard text.count > limit else { return text }
+        return String(text.prefix(limit)) + "… (\(text.count) characters in all)"
+    }
 
     /// One-line, log-friendly summary of a decoding failure.
     private static func describe(_ error: DecodingError) -> String {

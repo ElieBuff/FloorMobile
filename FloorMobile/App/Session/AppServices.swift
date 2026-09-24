@@ -16,9 +16,11 @@ import SwiftData
 final class AppServices {
     let aiActions: AIActionService
     let agenda: AgendaService
+    let enums: EnumsService
 
     init(container: ModelContainer) {
         aiActions = AIActionService(modelContainer: container)
         agenda = AgendaService(modelContainer: container)
+        enums = EnumsService(modelContainer: container)
     }
 }

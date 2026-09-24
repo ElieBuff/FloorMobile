@@ -44,7 +44,7 @@ struct CalendarDayCell: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(date, format: .dateTime.weekday(.wide).day().month(.wide)))
-        .accessibilityValue(hasEvents ? Text("Has events") : Text(""))
+        .accessibilityValue(hasEvents ? String(localized: "Has events") : "")
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 

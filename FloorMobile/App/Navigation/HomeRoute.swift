@@ -14,5 +14,9 @@ import Foundation
 /// model mutation, and stays `Codable` for state restoration and deep links.
 nonisolated enum HomeRoute: Hashable, Codable {
     /// The agenda, opened on a given day.
+    ///
+    /// The only route so far. A task and an appointment are *not* here: they
+    /// are objects on a day rather than places of their own, so the agenda
+    /// opens them in a cover of its own and nothing pushes them.
     case agenda(date: Date)
 }

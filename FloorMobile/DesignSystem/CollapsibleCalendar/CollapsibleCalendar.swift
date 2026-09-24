@@ -35,9 +35,9 @@ struct CollapsibleCalendar: View {
     /// selection on purpose: paging with the arrows or a swipe browses the
     /// calendar without changing which day the screen below is about.
     @State private var anchor: Date
-    @State private var isExpanded = false
-    /// Set only while a vertical drag is in flight, overriding `isExpanded`.
-    @State private var dragProgress: CGFloat?
+    /// Week or month, plus wherever a finger in flight has taken it. All the
+    /// arithmetic of the two states lives in the type, not here.
+    @State private var expansion = CalendarExpansion()
     @State private var pageShift: CGFloat = 0
     @State private var dragAxis: Axis?
     @State private var pageWidth: CGFloat = 0
@@ -86,7 +86,7 @@ struct CollapsibleCalendar: View {
         }
         // A soft tick when the month/week toggles, a page turns, or a day is
         // picked — the feedback native calendars give, and this one was missing.
-        .sensoryFeedback(.selection, trigger: isExpanded)
+        .sensoryFeedback(.selection, trigger: expansion.isExpanded)
         .sensoryFeedback(.selection, trigger: pageTurns)
         .sensoryFeedback(.selection, trigger: daySelections)
     }
@@ -98,7 +98,7 @@ struct CollapsibleCalendar: View {
             arrow(
                 direction: -1,
                 systemImage: "chevron.left",
-                label: isExpanded ? String(localized: "Previous month") : String(localized: "Previous week")
+                label: expansion.isExpanded ? String(localized: "Previous month") : String(localized: "Previous week")
             )
 
             titleStrip
@@ -106,7 +106,7 @@ struct CollapsibleCalendar: View {
             arrow(
                 direction: 1,
                 systemImage: "chevron.right",
-                label: isExpanded ? String(localized: "Next month") : String(localized: "Next week")
+                label: expansion.isExpanded ? String(localized: "Next month") : String(localized: "Next week")
             )
         }
         .padding(.horizontal, CalendarMetrics.headerInset)
@@ -206,7 +206,7 @@ struct CollapsibleCalendar: View {
             }
             .offset(x: -proxy.size.width + pageShift)
         }
-        .calendarReveal(progress: progress)
+        .calendarReveal(progress: expansion.progress)
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { pageWidth = $0 }
     }
 
@@ -227,7 +227,7 @@ struct CollapsibleCalendar: View {
                     days: Array(days[(row * CalendarGrid.daysPerWeek) ..< ((row + 1) * CalendarGrid.daysPerWeek)]),
                     month: date
                 )
-                .calendarRowSettle(distance: row - anchorRow, progress: settledProgress)
+                .calendarRowSettle(distance: row - anchorRow, progress: expansion.settledProgress)
                 // The window clips what it draws, but the rows it hides stay laid
                 // out (pushed up by the offset below) and SwiftUI keeps them
                 // tappable — right under the header and the handle. Left alone, a
@@ -238,7 +238,7 @@ struct CollapsibleCalendar: View {
             }
         }
         .frame(width: width)
-        .offset(y: -CGFloat(anchorRow) * (CalendarMetrics.rowHeight + CalendarMetrics.rowSpacing) * (1 - settledProgress))
+        .offset(y: -CGFloat(anchorRow) * (CalendarMetrics.rowHeight + CalendarMetrics.rowSpacing) * (1 - expansion.settledProgress))
     }
 
     /// Whether `row` overlaps the revealed rows window, read in the same geometry
@@ -247,9 +247,9 @@ struct CollapsibleCalendar: View {
     /// falling outside it are hidden by the clip — and must not be tappable.
     private func isRowRevealed(_ row: Int, anchorRow: Int) -> Bool {
         let step = CalendarMetrics.rowHeight + CalendarMetrics.rowSpacing
-        let y = CGFloat(row) * step - CGFloat(anchorRow) * step * (1 - settledProgress)
+        let y = CGFloat(row) * step - CGFloat(anchorRow) * step * (1 - expansion.settledProgress)
         let windowHeight = CalendarMetrics.collapsedRowsHeight
-            + CalendarMetrics.expandDistance * settledProgress
+            + CalendarMetrics.expandDistance * expansion.settledProgress
         return y + CalendarMetrics.rowHeight > 0 && y < windowHeight
     }
 
@@ -280,10 +280,10 @@ struct CollapsibleCalendar: View {
             .frame(maxWidth: .infinity, alignment: .center)
             .frame(height: CalendarMetrics.handleHeight, alignment: .bottom)
             .contentShape(.rect)
-            .onTapGesture { setExpanded(!isExpanded) }
+            .onTapGesture { setExpanded(!expansion.isExpanded) }
             .accessibilityElement()
             .accessibilityAddTraits(.isButton)
-            .accessibilityLabel(isExpanded ? String(localized: "Show the week") : String(localized: "Show the month"))
+            .accessibilityLabel(expansion.isExpanded ? String(localized: "Show the week") : String(localized: "Show the month"))
             // Today lives on the handle row, at the trailing edge, out of the
             // header so it never crowds the arrows. Overlaid rather than laid
             // out: showing or hiding it moves neither the centred handle nor the
@@ -300,37 +300,11 @@ struct CollapsibleCalendar: View {
 
     // MARK: - State
 
-    /// 0 for the week, 1 for the month, anything between while a finger is on
-    /// the card — and slightly outside both while one pulls past a limit.
-    private var progress: CGFloat {
-        dragProgress ?? (isExpanded ? 1 : 0)
-    }
-
-    /// The same, held inside the two real states.
-    ///
-    /// Only the card's height follows the overshoot; the grid keeps its place,
-    /// so pulling past the month opens empty card below the last week instead of
-    /// dragging the weeks out of their rows. That is what over-scrolling looks
-    /// like everywhere else: the container gives, the content stays put.
-    private var settledProgress: CGFloat {
-        min(max(progress, 0), 1)
-    }
-
-    /// Lets the drag travel past the two ends, against resistance.
-    private func withGive(_ raw: CGFloat) -> CGFloat {
-        if raw > 1 {
-            return 1 + RubberBand.resist(raw - 1, give: CalendarMetrics.overExpand)
-        } else if raw < 0 {
-            return -RubberBand.resist(-raw, give: CalendarMetrics.overCollapse)
-        }
-        return raw
-    }
-
     /// The page one step away, in whichever unit the current state pages by.
     /// Month pages are anchored on the 1st so that repeated paging can't drift
     /// (the 31st plus a month is the 28th, and never finds its way back).
     private func neighbour(_ direction: Int) -> Date {
-        isExpanded
+        expansion.isExpanded
             ? grid.date(byAddingMonths: direction, to: grid.startOfMonth(containing: anchor))
             : grid.date(byAddingWeeks: direction, to: anchor)
     }
@@ -343,10 +317,10 @@ struct CollapsibleCalendar: View {
         // Picking a day out of the month grid is a way of going there, so the
         // card gets out of the way — but not when the tap only confirms the day
         // already selected, which would close the month for nothing.
-        if isExpanded && !wasSelected {
+        if expansion.isExpanded && !wasSelected {
             withAnimation(expandAnimation()) {
                 anchor = day
-                isExpanded = false
+                expansion.settle(toExpanded: false)
             }
         } else {
             anchor = day
@@ -381,7 +355,7 @@ struct CollapsibleCalendar: View {
     /// Whether two dates fall in the same shown period — month when expanded,
     /// week when collapsed.
     private func isSamePeriod(_ a: Date, as b: Date) -> Bool {
-        isExpanded
+        expansion.isExpanded
             ? grid.isDate(a, inSameMonthAs: b)
             : grid.isSameDay(grid.startOfWeek(containing: a), grid.startOfWeek(containing: b))
     }
@@ -408,24 +382,13 @@ struct CollapsibleCalendar: View {
         reduceMotion ? .easeInOut(duration: 0.2) : .smooth(duration: 0.32)
     }
 
-    /// Carries the finger's speed into the spring.
-    ///
-    /// Without it the card opens at one fixed pace whatever the gesture, which
-    /// is the clearest tell that a transition is scripted rather than physical:
-    /// a hard flick and a slow pull end in exactly the same time. Handing the
-    /// spring the velocity the finger left off at makes the card continue the
-    /// movement instead of starting a new one.
+    /// Settles the card into one of its two states, carrying the finger's speed
+    /// into the spring so a released gesture continues its movement instead of
+    /// starting a new one. The handover itself is `CalendarExpansion`'s job.
     private func setExpanded(_ expanded: Bool, velocity: CGFloat = 0) {
-        let target: CGFloat = expanded ? 1 : 0
-        let remaining = abs(target - progress)
-        // Released past a limit, `remaining` is tiny and the division blows up,
-        // so the handover is capped: a spring given an absurd initial velocity
-        // fires the card across the screen before coming back.
-        let handover = remaining > 0.001 ? Double(velocity / remaining) : 0
-        let initialVelocity = min(max(handover, -20), 20)
-        withAnimation(expandAnimation(velocity: initialVelocity)) {
-            isExpanded = expanded
-            dragProgress = nil
+        let handover = expansion.handoverVelocity(toExpanded: expanded, velocity: velocity)
+        withAnimation(expandAnimation(velocity: handover)) {
+            expansion.settle(toExpanded: expanded)
         }
     }
 
@@ -438,10 +401,10 @@ struct CollapsibleCalendar: View {
             anchor = neighbour(direction)
             return
         }
-        // One turn at a time. Tapping an arrow twice quickly used to start a
-        // second slide while the first turn's completion was still pending; that
-        // completion then landed mid-slide and snapped everything back to centre,
-        // so the same tap sometimes slid and sometimes just swapped the numbers.
+        // One turn at a time. A second slide started while the first turn's
+        // completion is still pending leaves that completion to land mid-slide
+        // and snap everything back to centre — the same tap would sometimes
+        // slide and sometimes just swap the numbers.
         guard !isTurningPage else { return }
         isTurningPage = true
         pageTurns += 1
@@ -482,8 +445,7 @@ struct CollapsibleCalendar: View {
                 case .horizontal:
                     pageShift = value.translation.width
                 case .vertical:
-                    let base: CGFloat = isExpanded ? 1 : 0
-                    dragProgress = withGive(base + value.translation.height / CalendarMetrics.expandDistance)
+                    expansion.drag(by: value.translation.height)
                 case nil:
                     break
                 }
@@ -503,13 +465,10 @@ struct CollapsibleCalendar: View {
                         withAnimation(pageAnimation) { pageShift = 0 }
                     }
                 case .vertical:
-                    // Where the card would be a moment from now if the finger
-                    // kept its speed — so a quick flick commits long before the
-                    // halfway mark, the way every native sheet does, instead of
-                    // snapping back because it happened to stop at 40%.
+                    // The gesture's speed converted into progress per second;
+                    // where that lands the card is `CalendarExpansion`'s call.
                     let velocity = value.velocity.height / CalendarMetrics.expandDistance
-                    let projected = (dragProgress ?? progress) + velocity * CalendarMetrics.flickLookahead
-                    setExpanded(projected > 0.5, velocity: velocity)
+                    setExpanded(expansion.opensOnRelease(velocity: velocity), velocity: velocity)
                 case nil:
                     break
                 }

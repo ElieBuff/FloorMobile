@@ -18,10 +18,10 @@ import SwiftUI
 /// pins the backdrop, hides the scrollable's own background and feeds the
 /// live scroll offset.
 ///
-/// Transcribing the composition natively (blurred shapes, blend modes,
-/// image-fill crops) proved unfaithful to the mockup, so the exported image
-/// is the source of truth. Re-export the Figma frame (grain hidden, PNG 2x)
-/// if the design changes.
+/// The exported image is the source of truth, not a native transcription:
+/// the composition's blurred shapes, blend modes and image-fill crops do not
+/// survive being rebuilt in SwiftUI closely enough to match the mockup.
+/// Re-export the Figma frame (grain hidden, PNG 2x) if the design changes.
 struct AmbientBackground: View {
     /// How far the content above has scrolled; the grain moves against it.
     var scrollOffset: CGFloat = 0
@@ -45,14 +45,7 @@ struct AmbientBackground: View {
         // decorates without inflating the layout — the backdrop alone
         // (which fills the screen) dictates the size.
         fixedBackdrop
-            // TEMP: grain replaced by a soft scrim to tone down the backdrop's
-            // harsh face contours. Switch to .black or tweak the opacity to
-            // taste; restore the grain overlay below when done testing.
-            // .overlay(alignment: .topLeading) { grain }
-            .overlay {
-                Color.white.opacity(0.4)
-                    .ignoresSafeArea()
-            }
+            .overlay(alignment: .topLeading) { grain }
             .allowsHitTesting(false)
     }
 

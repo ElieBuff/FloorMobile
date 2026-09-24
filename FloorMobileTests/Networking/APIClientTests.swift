@@ -149,9 +149,69 @@ struct APIClientTests {
         #expect(callCount.withLock { $0 } == 2)
     }
 
+    // MARK: - Session expiry
+
+    /// The policy no screen has to remember: the gateway every call goes
+    /// through is what notices, so a caller that handles nothing still ends up
+    /// back at login.
+    @Test("A terminal 401 raises the session-expiry signal")
+    @MainActor
+    func terminal401RaisesExpiry() async {
+        let expiry = SessionExpiry()
+        let client = Self.makeClient(expiry: expiry) { request in
+            (Self.response(request, statusCode: 401), Data())
+        }
+
+        await #expect(throws: AppError.self) {
+            try await client.send(Endpoint(path: "clients"))
+        }
+
+        #expect(expiry.hasExpired)
+    }
+
+    @Test("A refresh token the server has killed raises it too")
+    @MainActor
+    func deadRefreshTokenRaisesExpiry() async {
+        let expiry = SessionExpiry()
+        let client = APIClient(
+            baseURL: URL(string: "https://api.example.com")!,
+            // The refresh itself is what fails here, before any request leaves.
+            tokens: TokenProviding(
+                validToken: { throw AppError.authentication(.sessionExpired) },
+                refreshedToken: { throw AppError.authentication(.sessionExpired) }
+            ),
+            session: MockURLProtocol.session { request in
+                (Self.response(request, statusCode: 200), Data())
+            },
+            expiry: expiry
+        )
+
+        await #expect(throws: AppError.self) {
+            try await client.send(Endpoint(path: "clients"))
+        }
+
+        #expect(expiry.hasExpired)
+    }
+
+    @Test("An ordinary failure leaves the session alone")
+    @MainActor
+    func serverErrorDoesNotRaiseExpiry() async {
+        let expiry = SessionExpiry()
+        let client = Self.makeClient(expiry: expiry) { request in
+            (Self.response(request, statusCode: 500), Data())
+        }
+
+        await #expect(throws: AppError.self) {
+            try await client.send(Endpoint(path: "clients"))
+        }
+
+        #expect(!expiry.hasExpired)
+    }
+
     // MARK: - Helpers
 
     private nonisolated static func makeClient(
+        expiry: SessionExpiry? = nil,
         handler: @escaping MockURLProtocol.Handler
     ) -> APIClient {
         APIClient(
@@ -160,7 +220,8 @@ struct APIClientTests {
                 validToken: { "valid-token" },
                 refreshedToken: { "refreshed-token" }
             ),
-            session: MockURLProtocol.session(handler: handler)
+            session: MockURLProtocol.session(handler: handler),
+            expiry: expiry
         )
     }
 

@@ -102,7 +102,7 @@ struct AIActionRow: View {
         .padding(.trailing, 20)
         .padding(.top, Self.topPadding)
         .padding(.bottom, 18)
-        .agentCardStyle()
+        .featuredCardStyle()
         .accessibilityElement(children: .contain)
     }
 

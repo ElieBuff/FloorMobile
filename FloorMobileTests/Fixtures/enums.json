@@ -1,0 +1,37 @@
+{
+    "task": {
+        "reason": [
+            "BIRTHDAY",
+            "BACK_IN_STOCK",
+            "COLLECTION_LAUNCH",
+            "VIP_EVENT",
+            "FOLLOW_UP",
+            "WISHLIST_AVAILABLE"
+        ],
+        "status": [
+            "TO_DO",
+            "COMPLETED",
+            "CANCELED"
+        ]
+    },
+    "event": {
+        "reason": [
+            "BIRTHDAY",
+            "BACK_IN_STOCK",
+            "COLLECTION_LAUNCH",
+            "VIP_EVENT",
+            "FOLLOW_UP",
+            "WISHLIST_AVAILABLE"
+        ],
+        "meetingType": [
+            "IN_PERSON",
+            "VIDEO_CALL"
+        ],
+        "status": [
+            "PLANNED",
+            "CONFIRMED",
+            "COMPLETED",
+            "CANCELLED"
+        ]
+    }
+}

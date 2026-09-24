@@ -3,8 +3,8 @@
         {
             "id": "01M2FVMQ0HZN3Y1JMCMYD4PS3M",
             "tenantId": "378969283587247657",
-            "status": "TODO",
-            "reason": "CALL",
+            "status": "TO_DO",
+            "reason": "FOLLOW_UP",
             "title": "Rappeler Mme Dupont",
             "description": "Relance suite essayage",
             "startDate": "2026-09-20T10:00:00.000Z",

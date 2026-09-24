@@ -12,6 +12,10 @@ struct ProductThumbnail: View {
     let url: URL?
     var size: CGFloat = 76
     var cornerRadius: CGFloat = AppRadius.medium
+    /// What VoiceOver announces. `nil` — the default — hides the image, which is
+    /// right wherever the text beside it already names the product; a thumbnail
+    /// standing on its own passes a label so it is not skipped.
+    var label: String? = nil
 
     var body: some View {
         AsyncImage(url: url) { phase in
@@ -23,6 +27,8 @@ struct ProductThumbnail: View {
         }
         .frame(width: size, height: size)
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        .accessibilityLabel(label ?? "")
+        .accessibilityHidden(label == nil)
     }
 }
 

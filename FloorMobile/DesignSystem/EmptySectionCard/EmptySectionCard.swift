@@ -19,7 +19,7 @@ struct EmptySectionAction {
 /// trailing action button.
 ///
 /// Some empty states just inform ("No appointment today"), others offer one
-/// specific action ("Create task"): pass an `EmptySectionAction` to show the
+/// specific action ("New Task"): pass an `EmptySectionAction` to show the
 /// button, or leave it `nil` to omit it.
 ///
 /// Text parameters are plain `String`s: localization is the call site's
@@ -39,7 +39,7 @@ struct EmptySectionAction {
 /// EmptySectionCard(
 ///     icon: { Image(systemName: "checklist") },
 ///     message: String(localized: "No task today"),
-///     action: EmptySectionAction(label: String(localized: "Create task"), systemImage: "plus") {
+///     action: EmptySectionAction(label: String(localized: "New Task"), systemImage: "plus") {
 ///         createTask()
 ///     }
 /// )
@@ -84,7 +84,7 @@ struct EmptySectionCard<Icon: View>: View {
                 }
             }
         }
-        .padding(.leading, 18)
+        .padding(.leading, AppSpacing.cardInset)
         .padding(.trailing, 12)
         // Minimum, not fixed: the card must grow when Dynamic Type does.
         .frame(minHeight: 74)
@@ -108,7 +108,7 @@ struct EmptySectionCard<Icon: View>: View {
         EmptySectionCard(
             icon: { Image(systemName: "checklist").foregroundStyle(.white.opacity(0.9)) },
             message: "No task today",
-            action: EmptySectionAction(label: "Create task", systemImage: "plus") {}
+            action: EmptySectionAction(label: "New Task", systemImage: "plus") {}
         )
     }
     .padding()

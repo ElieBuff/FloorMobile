@@ -4,6 +4,31 @@
     "" : {
 
     },
+    "%@ before" : {
+
+    },
+    "%lld task completed" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld task completed"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld tasks completed"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "Add" : {
 
     },
@@ -16,10 +41,22 @@
     "AI recommendations" : {
 
     },
-    "Back in stock" : {
+    "Appointment not booked" : {
 
     },
-    "BACK IN STOCK" : {
+    "Appointment not found" : {
+
+    },
+    "Appointment not saved" : {
+
+    },
+    "Appointments" : {
+
+    },
+    "Back" : {
+
+    },
+    "Back in stock" : {
 
     },
     "Birthday" : {
@@ -28,7 +65,31 @@
     "Call" : {
 
     },
+    "Canceled" : {
+
+    },
+    "Cancelled" : {
+
+    },
     "Card" : {
+
+    },
+    "Choose a client" : {
+
+    },
+    "Choose a reason" : {
+
+    },
+    "Client" : {
+
+    },
+    "Client search arrives with the Clients tab." : {
+
+    },
+    "Close" : {
+
+    },
+    "Collapsed" : {
 
     },
     "Collection launch" : {
@@ -37,10 +98,43 @@
     "Coming soon" : {
 
     },
-    "Create task" : {
+    "Completed" : {
+
+    },
+    "Created" : {
+
+    },
+    "Dictate" : {
+
+    },
+    "Discard" : {
+
+    },
+    "Done" : {
+
+    },
+    "Due date" : {
+
+    },
+    "Duration" : {
+
+    },
+    "Edit" : {
+
+    },
+    "Edit Event" : {
+
+    },
+    "Edit Task" : {
+
+    },
+    "Event" : {
 
     },
     "Expand recommendation" : {
+
+    },
+    "Expanded" : {
 
     },
     "FloorMobile" : {
@@ -64,6 +158,21 @@
     "In %lld min" : {
 
     },
+    "In store" : {
+
+    },
+    "It may have been cancelled or removed on another device." : {
+
+    },
+    "It may have been completed or removed on another device." : {
+
+    },
+    "Keep editing" : {
+
+    },
+    "Leave without saving?" : {
+
+    },
     "Loading…" : {
 
     },
@@ -76,6 +185,12 @@
     "More" : {
 
     },
+    "New Event" : {
+
+    },
+    "New Task" : {
+
+    },
     "Next appointment" : {
 
     },
@@ -85,7 +200,13 @@
     "Next week" : {
 
     },
+    "No appointment" : {
+
+    },
     "No appointment today" : {
+
+    },
+    "No clients yet" : {
 
     },
     "No recommendation yet" : {
@@ -97,7 +218,19 @@
     "No task today" : {
 
     },
+    "None" : {
+
+    },
     "Not now" : {
+
+    },
+    "Note" : {
+
+    },
+    "Notes" : {
+
+    },
+    "Now, %@" : {
 
     },
     "Other" : {
@@ -115,7 +248,19 @@
     "Profile" : {
 
     },
+    "Reason" : {
+
+    },
     "Réessayer" : {
+
+    },
+    "Reminder" : {
+
+    },
+    "Save" : {
+
+    },
+    "Saving" : {
 
     },
     "Scan" : {
@@ -145,13 +290,31 @@
     "Something went wrong. Please try again." : {
 
     },
+    "Start" : {
+
+    },
+    "Status" : {
+
+    },
+    "Status not changed" : {
+
+    },
     "Synchronizing data…" : {
 
     },
     "Task" : {
 
     },
-    "The beaded cream dress she tried in June is back in her size." : {
+    "Task not created" : {
+
+    },
+    "Task not found" : {
+
+    },
+    "Task not saved" : {
+
+    },
+    "Tasks" : {
 
     },
     "The server response could not be read. Please try again later." : {
@@ -160,13 +323,28 @@
     "The server returned an error (%lld). Please try again later." : {
 
     },
+    "Title" : {
+
+    },
+    "To do" : {
+
+    },
     "Today" : {
 
     },
     "Today's tasks" : {
 
     },
+    "Try again" : {
+
+    },
+    "Type" : {
+
+    },
     "Unable to reach the server. Check your connection and try again." : {
+
+    },
+    "Video call" : {
 
     },
     "View agenda" : {
@@ -176,6 +354,9 @@
 
     },
     "VIP event" : {
+
+    },
+    "What you typed will not be kept." : {
 
     },
     "Wishlist available" : {

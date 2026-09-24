@@ -11,7 +11,9 @@ import CoreGraphics
 /// The week and the month are the same grid at two heights, so both read these
 /// values: a row is 40pt whether one of them shows or six do, which is what lets
 /// the card interpolate between the two states instead of swapping layouts.
-enum CalendarMetrics {
+/// `nonisolated` like `CalendarGrid`: constants with no isolation of their own,
+/// which `CalendarExpansion` reads outside the main actor.
+nonisolated enum CalendarMetrics {
     /// One week: the day pill plus its activity dot.
     static let rowHeight: CGFloat = 40
     static let rowSpacing: CGFloat = 6

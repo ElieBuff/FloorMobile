@@ -11,8 +11,8 @@ import SwiftUI
 /// border, a shadow) instead of re-spelling the whole background.
 ///
 /// Apply with `.cardStyle(...)`. Defaults give a plain, borderless, shadowless
-/// card on the standard surface. The agent card adds its light sweep on top via
-/// `.agentCardStyle(...)`.
+/// card on the standard surface. A card meant to be looked at first takes the
+/// `.featuredCardStyle(...)` preset below.
 struct CardStyle: ViewModifier {
     var surface: Color = Color(.OnCanvas.surface)
     var radius: CGFloat = AppRadius.large
@@ -56,18 +56,36 @@ extension View {
             shadow: shadow
         ))
     }
+
+    /// The card a screen wants read first: the standard chrome with the bright
+    /// rim and the lifted shadow, plus the slow sweep of light crossing it.
+    ///
+    /// A named set of arguments rather than a modifier of its own — everything
+    /// it does is `cardStyle` plus `specularSweep`, so a preset keeps featured
+    /// cards in step with plain ones by construction.
+    ///
+    /// - Parameters:
+    ///   - radius: the card's radius, shared by the chrome and the sweep.
+    ///   - sweep: `false` for a resting card that wants the look without the
+    ///     animated light.
+    func featuredCardStyle(radius: CGFloat = AppRadius.large, sweep: Bool = true) -> some View {
+        cardStyle(radius: radius, border: .bright, shadow: .high)
+            .specularSweep(cornerRadius: radius, isEnabled: sweep)
+    }
 }
 
 // MARK: - Previews
 
-#Preview("Plain / bordered / shadowed") {
+#Preview("Plain / bordered / shadowed / featured") {
     VStack(spacing: 24) {
         cardSample.cardStyle()
         cardSample.cardStyle(border: .neutral)
         cardSample.cardStyle(shadow: .high)
+        cardSample.featuredCardStyle()
     }
     .padding(40)
-    .background(Color.black)
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .ambientBackground()
 }
 
 private var cardSample: some View {
