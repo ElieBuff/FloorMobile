@@ -12,8 +12,17 @@ App iOS native **SwiftUI** de clienteling retail (clients, produits, agenda, mes
 Suivre les recommandations Apple ([Managing model data](https://developer.apple.com/documentation/SwiftUI/Managing-model-data-in-your-app), WWDC 2023 "Discover Observation").
 
 - **Pas de ViewModel par écran.** L'état d'écran vit en `@State` dans la vue. La logique métier vit dans les modèles.
-- **Organisation par feature** : `Features/<Feature>/` contient ses vues, ses modèles et son Service. Pas de sous-dossiers View/ViewModel/Store/DTO.
-- **Socle partagé** dans `Core/` : Networking, Auth, Persistence, Realtime, Sync. Design system dans `DesignSystem/`.
+- **Organisation par feature** : `Features/<Feature>/` contient tout ce qui parle le vocabulaire de la feature, en **trois dossiers et pas un de plus** — `Data/` (endpoint, service, DTO : le fil), `Models/` (ce que la donnée *est*, et toute la logique testable sans vue) et `Views/`. Seule exception, deux entités distinctes dans une même feature : voir plus bas. Pas de ViewModels, pas de dossiers par couche à la racine du projet.
+- **Deux sous-dossiers de `Models/`**, à créer dès que le dossier dépasse la demi-douzaine de fichiers :
+  - `Models/Enums/` — les ensembles ouverts du serveur (`Reason`, `MeetingType`, `EventStatus`) et les clés `FieldOption.Key` qui les nomment. Ils sont là parce que l'API les impose, pas parce que l'app les a choisis. Même nom que `Core/Enums/`, qui porte la machinerie partagée : un concept, un mot — celui de l'endpoint `GET enums`.
+  - `Models/Drafts/` — ce que l'utilisateur est en train de composer (`EventDraft`, `TaskDraft`) : des value types portant leurs règles de validation, testables sans vue. **Dans** `Models/` et non à côté, parce que « Model » en Model-View veut dire « tout ce qui n'est pas une vue », pas « entité persistée ».
+- Une feature qui n'a encore qu'un écran garde quand même son `Views/` (`Features/Home/Views/HomeView.swift`) : le dossier attend la suite, et une feature se lit toujours de la même manière.
+- **Une feature qui porte deux entités distinctes les isole chacune dans son sous-dossier**, lui-même en trois dossiers, et ce qui sert les deux reste à la racine de la feature. `Features/Agenda/` en est le seul cas : `Events/{Data,Models,Views}`, `Tasks/{Data,Models,Views}`, et à la racine les huit fichiers réellement communs — `AgendaEndpoint`, `AgendaService`, `Reason`, `FieldOptionKey+Agenda`, `AgendaView`, `ReasonIcon`, les deux pickers. Les tests suivent (`FloorMobileTests/Agenda/{Events,Tasks}/`).
+  - Le seuil n'est pas le nombre de fichiers mais le **vocabulaire** : une tâche et un rendez-vous n'ont ni le même statut, ni le même brouillon, ni la même rangée, ni la même route — 24 fichiers sur 33 ne parlaient qu'à l'un des deux, et `Views/Components/` mélangeait `EventRow` et `TaskRow` sans qu'on sache de quel objet on parlait.
+  - Ce n'est **pas** une porte ouverte à un dossier par écran ou par cas d'usage, et ce ne sont pas deux features : `AgendaView` affiche les deux, `AgendaService` synchronise les deux. Deux features sœurs obligeraient l'une à importer les vues de l'autre.
+- **Socle partagé** dans `Core/` : Networking (dont `Networking/DTO/` pour les fragments wire réutilisés par plusieurs endpoints, ex. `PersonDTO`), Auth, Persistence (schéma versionné `FloorSchemaV1` + plan de migration), Enums (`FieldOption` + `Data/` pour `GET enums`), Realtime, Sync.
+- **Design system** dans `DesignSystem/`, **un dossier par composant nommé d'après lui** (`AppHeader/`, `FloorAlert/`, `CollapsibleCalendar/`…), y compris les pièces qui ne servent qu'à lui : `CalendarReveal` et `CalendarRowSettle` vivent dans `CollapsibleCalendar/`. Deux dossiers de famille seulement — `Tokens/` et `Forms/`.
+- **`DesignSystem/Motion/`** accueille le mouvement **qui ne sait pas quel composant l'appelle** (`BreathingDot`, `SpecularSweep`). Si le nom du type contient celui d'un composant, il reste avec le composant. Passé la demi-douzaine de fichiers, le dossier sert de débarras et il faut le rouvrir.
 - **Interdits, même si l'ancien code en avait :** UseCases, Repository protocole + impl, DataSources génériques, DTOs systématiques, containers de DI, singletons `.shared`.
 
 ## Flux de données : quel outil choisir
@@ -30,7 +39,7 @@ Suivre les recommandations Apple ([Managing model data](https://developer.apple.
 Règles :
 - Un `@Observable` partagé est injecté à la racine via `.environment(...)` et lu via `@Environment(Type.self)`. Pas de `EnvironmentKey` avec une `defaultValue` qui construit un objet : une valeur manquante doit se voir, pas être remplacée en silence.
 - SwiftData est **local-first** : la vue lit via `@Query`, un Service synchronise l'API en arrière-plan via un `ModelActor`, qui appelle `save()`.
-- **Chaque `@Model` porte un `tenantId`** et le schéma est déclaré dans un `VersionedSchema` dès la première version. Une déconnexion vide le store.
+- **Isolation mono-tenant au niveau du contexte, pas par ligne** : les `@Model` ne portent pas de `tenantId`. Le store est vidé à la déconnexion **et** au changement de tenant à la connexion (`TenantGuard`). Le schéma est déclaré dans un `VersionedSchema` dès la première version.
 - Un calcul métier est une propriété calculée du modèle. On ne stocke un résultat que si un ralentissement mesuré le justifie.
 - **DTO seulement si l'API est tordue.** Sinon décoder directement dans le `@Model` ou un struct `Codable`.
 

@@ -134,6 +134,100 @@ struct AuthManagerTests {
         #expect(await store.stored == nil)
     }
 
+    @Test("A refresh with no tokens loaded fails as an expired session")
+    func refreshWithoutTokensIsExpired() async {
+        let manager = makeManager(stub: StubWebAuthenticator(), store: InMemoryTokenStore()) { request in
+            (Self.ok(request), Data())
+        }
+
+        await #expect(throws: AppError.self) {
+            _ = try await manager.refreshedAccessToken()
+        }
+    }
+
+    @Test("A refresh response missing the refresh token surfaces a decoding error")
+    func refreshWithoutRefreshTokenFailsDecoding() async throws {
+        let store = InMemoryTokenStore()
+        try await store.save(TokenSet(
+            accessToken: "expired-token", refreshToken: "rt", idToken: "id", expiresAt: now
+        ))
+        let discoveryData = try Fixture.data("openid_configuration")
+        let manager = makeManager(stub: StubWebAuthenticator(), store: store) { request in
+            if Self.isDiscovery(request) {
+                return (Self.ok(request), discoveryData)
+            }
+            let json = #"{"access_token":"at","id_token":"id","expires_in":3600,"token_type":"Bearer"}"#
+            return (Self.ok(request), Data(json.utf8))
+        }
+
+        await #expect(throws: AppError.self) {
+            _ = try await manager.validToken()
+        }
+    }
+
+    // MARK: - Sign-in nonce
+
+    @Test("A sign-in whose ID token nonce does not match is rejected")
+    func mismatchedNonceIsRejected() async throws {
+        let stub = StubWebAuthenticator()
+        let store = InMemoryTokenStore()
+        let discoveryData = try Fixture.data("openid_configuration")
+        let manager = makeManager(stub: stub, store: store) { request in
+            if Self.isDiscovery(request) {
+                return (Self.ok(request), discoveryData)
+            }
+            // The ID token carries a nonce that is not the one we sent.
+            return (Self.ok(request), Self.tokenJSON(nonce: "not-the-sent-nonce"))
+        }
+
+        await #expect(throws: AppError.self) {
+            _ = try await manager.signIn()
+        }
+        #expect(await store.stored == nil)
+    }
+
+    // MARK: - restoreSession
+
+    @Test("Restoring a session with a malformed ID token yields no claims but keeps the token")
+    func restoreWithMalformedIDTokenYieldsNilClaims() async throws {
+        let store = InMemoryTokenStore()
+        try await store.save(TokenSet(
+            accessToken: "at", refreshToken: "rt", idToken: "not-a-jwt",
+            expiresAt: now.addingTimeInterval(3_600)
+        ))
+        let manager = makeManager(stub: StubWebAuthenticator(), store: store) { request in
+            (Self.ok(request), Data())
+        }
+
+        let claims = await manager.restoreSession()
+        #expect(claims == nil)
+        // The token is still usable: served without touching the network.
+        #expect(try await manager.validToken() == "at")
+    }
+
+    @Test("Once loaded, tokens are not reloaded from the store (no clobber)")
+    func loadedTokensAreNotReloaded() async throws {
+        let store = InMemoryTokenStore()
+        try await store.save(TokenSet(
+            accessToken: "first", refreshToken: "rt", idToken: "id",
+            expiresAt: now.addingTimeInterval(3_600)
+        ))
+        let manager = makeManager(stub: StubWebAuthenticator(), store: store) { request in
+            (Self.ok(request), Data())
+        }
+
+        #expect(try await manager.validToken() == "first")
+
+        // The store changes underneath (stale/concurrent write scenario).
+        try await store.save(TokenSet(
+            accessToken: "second", refreshToken: "rt", idToken: "id",
+            expiresAt: now.addingTimeInterval(3_600)
+        ))
+
+        // The in-memory token wins; the store's newer value is not reloaded.
+        #expect(try await manager.validToken() == "first")
+    }
+
     // MARK: - Helpers
 
     private func makeManager(

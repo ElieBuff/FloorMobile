@@ -10,15 +10,19 @@ import Testing
 @Suite("AuthConfiguration")
 struct AuthConfigurationTests {
 
-    private static let validInfo: [String: Any] = [
-        "AuthIssuer": "https://dev-q7qkap.eu1.zitadel.cloud",
-        "AuthClientID": "389695826299033234",
-        "AuthProjectID": "378848396062002729",
-    ]
+    // Computed, not `static let`: a shared [String: Any] is not Sendable,
+    // and each test should get its own copy anyway.
+    private var validInfo: [String: Any] {
+        [
+            "AuthIssuer": "https://dev-q7qkap.eu1.zitadel.cloud",
+            "AuthClientID": "389695826299033234",
+            "AuthProjectID": "378848396062002729",
+        ]
+    }
 
     @Test("Builds from a complete Info.plist dictionary")
     func buildsFromFullInfo() throws {
-        let config = try AuthConfiguration(info: Self.validInfo)
+        let config = try AuthConfiguration(info: validInfo)
 
         #expect(config.issuer.absoluteString == "https://dev-q7qkap.eu1.zitadel.cloud")
         #expect(config.clientID == "389695826299033234")
@@ -28,7 +32,7 @@ struct AuthConfigurationTests {
 
     @Test("A missing key is rejected", arguments: ["AuthIssuer", "AuthClientID", "AuthProjectID"])
     func missingKeyIsRejected(key: String) {
-        var info = Self.validInfo
+        var info = validInfo
         info.removeValue(forKey: key)
 
         #expect(throws: AppError.self) {
@@ -38,7 +42,7 @@ struct AuthConfigurationTests {
 
     @Test("An empty value — the unassigned-xcconfig case — is rejected")
     func emptyValueIsRejected() {
-        var info = Self.validInfo
+        var info = validInfo
         info["AuthIssuer"] = ""
 
         #expect(throws: AppError.self) {
@@ -48,7 +52,7 @@ struct AuthConfigurationTests {
 
     @Test("A non-HTTPS issuer is rejected")
     func nonHTTPSIssuerIsRejected() {
-        var info = Self.validInfo
+        var info = validInfo
         info["AuthIssuer"] = "http://insecure.example.com"
 
         #expect(throws: AppError.self) {

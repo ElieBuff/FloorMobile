@@ -30,7 +30,7 @@ struct APIClientTests {
             return (Self.response(request, statusCode: 200), Data())
         }
 
-        try await client.send(Endpoint(method: .get, path: "clients"))
+        try await client.send(Endpoint(path: "clients"))
 
         #expect(captured.withLock { $0 } == "Bearer valid-token")
     }
@@ -44,7 +44,6 @@ struct APIClientTests {
         }
 
         try await client.send(Endpoint(
-            method: .get,
             path: "clients",
             query: [URLQueryItem(name: "search", value: "martin")]
         ))
@@ -63,8 +62,8 @@ struct APIClientTests {
         }
 
         try await client.send(Endpoint(
-            method: .post,
             path: "clients",
+            method: .post,
             body: Client(id: "c-1", name: "Marie")
         ))
 
@@ -84,7 +83,7 @@ struct APIClientTests {
             (Self.response(request, statusCode: 200), Data(json.utf8))
         }
 
-        let stamps: [Stamped] = try await client.send(Endpoint(method: .get, path: "stamps"))
+        let stamps: [Stamped] = try await client.send(Endpoint(path: "stamps"))
 
         #expect(stamps.count == 2)
         #expect(abs(stamps[0].createdAt.timeIntervalSince(stamps[1].createdAt) - 0.123) < 0.001)
@@ -97,7 +96,7 @@ struct APIClientTests {
         }
 
         await #expect(throws: AppError.self) {
-            let _: Client = try await client.send(Endpoint(method: .get, path: "clients/1"))
+            let _: Client = try await client.send(Endpoint(path: "clients/1"))
         }
     }
 
@@ -108,7 +107,7 @@ struct APIClientTests {
         }
 
         await #expect(throws: AppError.self) {
-            try await client.send(Endpoint(method: .delete, path: "clients/1"))
+            try await client.send(Endpoint(path: "clients/1", method: .delete))
         }
     }
 
@@ -129,7 +128,7 @@ struct APIClientTests {
             return (Self.response(request, statusCode: 200), Data(#"{"id":"c-1","name":"Marie"}"#.utf8))
         }
 
-        let result: Client = try await client.send(Endpoint(method: .get, path: "clients/1"))
+        let result: Client = try await client.send(Endpoint(path: "clients/1"))
 
         #expect(result.name == "Marie")
         #expect(calls.withLock { $0 } == ["Bearer valid-token", "Bearer refreshed-token"])
@@ -144,15 +143,75 @@ struct APIClientTests {
         }
 
         await #expect(throws: AppError.self) {
-            try await client.send(Endpoint(method: .get, path: "clients"))
+            try await client.send(Endpoint(path: "clients"))
         }
         // Exactly two attempts: the original call and one retry, never a third.
         #expect(callCount.withLock { $0 } == 2)
     }
 
+    // MARK: - Session expiry
+
+    /// The policy no screen has to remember: the gateway every call goes
+    /// through is what notices, so a caller that handles nothing still ends up
+    /// back at login.
+    @Test("A terminal 401 raises the session-expiry signal")
+    @MainActor
+    func terminal401RaisesExpiry() async {
+        let expiry = SessionExpiry()
+        let client = Self.makeClient(expiry: expiry) { request in
+            (Self.response(request, statusCode: 401), Data())
+        }
+
+        await #expect(throws: AppError.self) {
+            try await client.send(Endpoint(path: "clients"))
+        }
+
+        #expect(expiry.hasExpired)
+    }
+
+    @Test("A refresh token the server has killed raises it too")
+    @MainActor
+    func deadRefreshTokenRaisesExpiry() async {
+        let expiry = SessionExpiry()
+        let client = APIClient(
+            baseURL: URL(string: "https://api.example.com")!,
+            // The refresh itself is what fails here, before any request leaves.
+            tokens: TokenProviding(
+                validToken: { throw AppError.authentication(.sessionExpired) },
+                refreshedToken: { throw AppError.authentication(.sessionExpired) }
+            ),
+            session: MockURLProtocol.session { request in
+                (Self.response(request, statusCode: 200), Data())
+            },
+            expiry: expiry
+        )
+
+        await #expect(throws: AppError.self) {
+            try await client.send(Endpoint(path: "clients"))
+        }
+
+        #expect(expiry.hasExpired)
+    }
+
+    @Test("An ordinary failure leaves the session alone")
+    @MainActor
+    func serverErrorDoesNotRaiseExpiry() async {
+        let expiry = SessionExpiry()
+        let client = Self.makeClient(expiry: expiry) { request in
+            (Self.response(request, statusCode: 500), Data())
+        }
+
+        await #expect(throws: AppError.self) {
+            try await client.send(Endpoint(path: "clients"))
+        }
+
+        #expect(!expiry.hasExpired)
+    }
+
     // MARK: - Helpers
 
     private nonisolated static func makeClient(
+        expiry: SessionExpiry? = nil,
         handler: @escaping MockURLProtocol.Handler
     ) -> APIClient {
         APIClient(
@@ -161,7 +220,8 @@ struct APIClientTests {
                 validToken: { "valid-token" },
                 refreshedToken: { "refreshed-token" }
             ),
-            session: MockURLProtocol.session(handler: handler)
+            session: MockURLProtocol.session(handler: handler),
+            expiry: expiry
         )
     }
 

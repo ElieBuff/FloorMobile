@@ -2,16 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>AuthIssuer</key>
-	<string>$(AUTH_ISSUER)</string>
+	<key>APIBaseURL</key>
+	<string>$(API_BASE_URL)</string>
 	<key>AuthClientID</key>
 	<string>$(AUTH_CLIENT_ID)</string>
+	<key>AuthIssuer</key>
+	<string>$(AUTH_ISSUER)</string>
 	<key>AuthProjectID</key>
 	<string>$(AUTH_PROJECT_ID)</string>
-	<key>CFBundleDisplayName</key>
-	<string>$(APP_DISPLAY_NAME)</string>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

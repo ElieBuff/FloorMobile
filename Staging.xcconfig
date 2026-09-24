@@ -6,5 +6,9 @@ AUTH_ISSUER = https:/$()/dev-q7qkap.eu1.zitadel.cloud
 AUTH_CLIENT_ID = 389695826299033234
 AUTH_PROJECT_ID = 378848396062002729
 
+// TODO: point to the real staging API once it exists; Dev placeholder.
+API_BASE_URL = https:/$()/bff.staging.floorapp.ai/api/secure/
+
 APP_DISPLAY_NAME = Floor Staging
 PRODUCT_BUNDLE_IDENTIFIER = ai.floorapp.floormobile.staging
+

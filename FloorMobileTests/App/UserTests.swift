@@ -10,7 +10,7 @@ import Testing
 @Suite("User")
 struct UserTests {
 
-    @Test("Maps every claim, tenant included")
+    @Test("Maps id, name, email, and tenant from claims")
     func fullMapping() throws {
         let user = try #require(User(claims: Self.claims([
             "sub": "u-1",
@@ -23,6 +23,12 @@ struct UserTests {
         #expect(user.name == "Marie Martin")
         #expect(user.email == "marie@example.com")
         #expect(user.tenantID == "org-42")
+    }
+
+    @Test("A missing tenant claim yields a nil tenant")
+    func missingTenant() throws {
+        let user = try #require(User(claims: Self.claims(["sub": "u-1"])))
+        #expect(user.tenantID == nil)
     }
 
     @Test("Display name falls back to email, then to the subject")

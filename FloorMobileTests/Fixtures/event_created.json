@@ -1,0 +1,38 @@
+{
+    "id": "01M344H8YBXQ7VQ6ZJ0P4KTR2C",
+    "tenantId": "378969283587247657",
+    "status": "PLANNED",
+    "reason": "BACK_IN_STOCK",
+    "meetingType": "IN_PERSON",
+    "title": "Essayage collection automne",
+    "description": "RDV essayage",
+    "startDate": "2026-09-17T20:30:00.000Z",
+    "duration": 45,
+    "reminderDate": "2026-09-17T20:00:00.000Z",
+    "externalId": null,
+    "createdAt": "2026-09-22T08:42:30.861Z",
+    "updatedAt": "2026-09-22T08:42:30.861Z",
+    "client": {
+        "id": "001cfde7-0c26-48ae-990c-68bbd710211b",
+        "externalId": "seed-client-000289",
+        "firstName": "Raphaël",
+        "lastName": "Van den Berg",
+        "segment": "VIC",
+        "metrics": {
+            "totalSpent12M": 0,
+            "totalSpentLifetime": 567.71
+        }
+    },
+    "store": {
+        "id": "09270e8c-d9ff-4c29-ba93-330212bda2ef",
+        "externalId": "90917634296",
+        "storeCode": "90917634296",
+        "name": "Shop location"
+    },
+    "salesAssociate": {
+        "id": "01KTRSFERMNXK5FGSQW11M1478",
+        "externalId": "378970372512460673",
+        "firstName": "Elie",
+        "lastName": "Buff"
+    }
+}

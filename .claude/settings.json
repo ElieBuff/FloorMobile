@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__xcode-tools__XcodeRead",
+      "mcp__xcode-tools__XcodeWrite",
+      "mcp__xcode-tools__XcodeRM",
+      "mcp__xcode-tools__XcodeMV",
+      "mcp__xcode-tools__XcodeMakeDir",
+      "mcp__xcode-tools__XcodeUpdate",
+      "mcp__xcode-tools__BuildProject",
+      "mcp__xcode-tools__RunAllTests",
+      "mcp__xcode-tools__RunSomeTests",
+      "mcp__xcode-tools__RunCodeSnippet",
+      "mcp__xcode-tools__RenderPreview",
+      "mcp__xcode-tools__XcodeRefreshCodeIssuesInFile",
+      "mcp__xcode-tools__GetBuildLog",
+      "mcp__xcode-tools__DocumentationSearch",
+      "mcp__xcode-tools__XcodeLS",
+      "mcp__xcode-tools__XcodeGlob",
+      "mcp__xcode-tools__XcodeGrep",
+      "mcp__xcode-tools__GetTestList",
+      "mcp__xcode-tools__XcodeListNavigatorIssues",
+      "Bash(xcodebuild -list *)"
+    ],
+    "deny": []
+  }
+}

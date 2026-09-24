@@ -1,0 +1,41 @@
+{
+    "items": [
+        {
+            "id": "01M2FVMQ0HZN3Y1JMCMYD4PS3M",
+            "tenantId": "378969283587247657",
+            "status": "TO_DO",
+            "reason": "FOLLOW_UP",
+            "title": "Rappeler Mme Dupont",
+            "description": "Relance suite essayage",
+            "startDate": "2026-09-20T10:00:00.000Z",
+            "reminderDate": "2026-09-19T09:00:00.000Z",
+            "createdAt": "2026-09-14T11:43:05.743Z",
+            "updatedAt": "2026-09-14T11:43:05.743Z",
+            "client": {
+                "id": "001cfde7-0c26-48ae-990c-68bbd710211b",
+                "externalId": "seed-client-000289",
+                "firstName": "Raphaël",
+                "lastName": "Van den Berg",
+                "segment": "VIC",
+                "metrics": {
+                    "totalSpent12M": 0,
+                    "totalSpentLifetime": 567.71
+                }
+            },
+            "store": {
+                "id": "2e3a0647-09ac-4d36-bf8d-9400170f22cb",
+                "externalId": "90917667064",
+                "storeCode": "90917667064",
+                "name": "My Custom Location"
+            },
+            "salesAssociate": {
+                "id": "01KTRSFERMNXK5FGSQW11M1478",
+                "externalId": "378970372512460673",
+                "firstName": "Elie",
+                "lastName": "Buff"
+            }
+        }
+    ],
+    "hasMore": false,
+    "nextCursor": null
+}

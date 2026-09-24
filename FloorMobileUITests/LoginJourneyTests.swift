@@ -53,9 +53,9 @@ final class LoginJourneyTests: XCTestCase {
             notNow.tap()
         }
 
-        // Callback, token exchange, sync — then the main screen.
-        let mainScreen = app.buttons["Edit"]
-        XCTAssertTrue(mainScreen.waitForExistence(timeout: 60), "App should reach the main screen after login")
+        // Callback, token exchange, sync — then the Home screen.
+        let mainScreen = app.staticTexts["AI recommendations"]
+        XCTAssertTrue(mainScreen.waitForExistence(timeout: 60), "App should reach the Home screen after login")
     }
 
     /// Submits the current Zitadel form.

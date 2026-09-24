@@ -10,7 +10,7 @@ Les échanges se font en français ; code, commentaires et noms en anglais.
 
 ## Stack
 
-- iOS 26.5 min, Xcode 26, `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`, `SWIFT_APPROACHABLE_CONCURRENCY = YES`. Le language mode est encore Swift 5 : passer en Swift 6 avant d'écrire le socle.
+- iOS 26.5 min, Xcode 26, `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`, `SWIFT_APPROACHABLE_CONCURRENCY = YES`. Language mode **Swift 6** (réglage au niveau projet, sans override par target).
 - Bundle : `ai.floorapp.floormobile` (+ suffixes `.dev`/`.staging` par environnement, via les xcconfig ; targets de test en `ai.floorapp.floormobile.tests`/`.uitests`).
 - Dépendances SPM : autorisées quand elles apportent une vraie valeur ajoutée, à évaluer au cas par cas. Prévue : socket.io-client-swift, derrière `RealtimeService`.
 - Auth : Zitadel OIDC natif, PKCE. Client ID et URLs dans le skill `floor-dev`.
@@ -76,4 +76,4 @@ Design system (`Presentation/Core/DesignSystem`), `KeychainManager` (en le passa
 
 - Jamais d'identifiant, mot de passe ou token en dur ni dans les logs : l'ancienne app en avait.
 - Un seul `AuthManager` sérialise le refresh de token : l'ancienne app avait quatre chemins de refresh concurrents.
-- Chaque `@Model` porte un `tenantId` et un `VersionedSchema` : l'ancienne app mélangeait les tenants et n'avait pas de migration.
+- Isolation mono-tenant **au niveau du contexte**, pas par ligne : les `@Model` ne portent pas de `tenantId`. Le store SwiftData est vidé à la déconnexion **et** au changement de tenant à la connexion (`TenantGuard`, comparant le tenant du jeton au dernier vu). `VersionedSchema` reste requis dès la V1. L'ancienne app mélangeait les tenants et n'avait pas de migration.
