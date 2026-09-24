@@ -124,6 +124,16 @@ final class TaskActions {
         let api = session.api
         let agenda = services.agenda
 
+        // Weakly: `self` holds the alert, which holds this closure — a strong
+        // `self` here would be a cycle. Built outside the `Task` below, whose
+        // body captures `self` strongly.
+        let retry: () -> Void = { [weak self] in
+            self?.move(
+                id, to: status, stored: stored,
+                session: session, services: services, onChange: onChange
+            )
+        }
+
         scheduled = Task {
             do {
                 try await Task.sleep(for: grace)
@@ -144,15 +154,7 @@ final class TaskActions {
                     kind: .error,
                     title: String(localized: "Status not changed"),
                     message: error.localizedDescription,
-                    // Weakly: the alert is held by `self`, so a retry closure
-                    // that held `self` back would be a cycle — and this object
-                    // lives exactly as long as the control that owns it.
-                    primary: AlertAction(label: String(localized: "Try again")) { [weak self] in
-                        self?.move(
-                            id, to: status, stored: stored,
-                            session: session, services: services, onChange: onChange
-                        )
-                    },
+                    primary: AlertAction(label: String(localized: "Try again"), handler: retry),
                     secondary: AlertAction(label: String(localized: "Close"), emphasis: .quiet)
                 )
             }

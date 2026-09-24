@@ -57,7 +57,7 @@ struct TaskStatusSection: View {
             if actions.pendingStatus == newValue {
                 actions.settle()
             } else {
-                withAnimation(Self.slide) { actions.settle() }
+                _ = withAnimation(Self.slide) { actions.settle() }
             }
         }
         .floorAlert($actions.alert)
