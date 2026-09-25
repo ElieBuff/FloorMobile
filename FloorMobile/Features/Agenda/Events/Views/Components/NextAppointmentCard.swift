@@ -34,7 +34,7 @@ struct NextAppointmentCard: View {
     private var when: some View {
         VStack(alignment: .leading, spacing: 5) {
             Text(event.startDate, format: .dateTime.hour().minute())
-                .font(.system(size: 18, weight: .semibold))
+                .font(.title3.weight(.semibold))
                 .foregroundStyle(Color(.OnCanvas.textPrimary))
 
             if let countdownLabel = event.countdownLabel(from: now) {
@@ -43,9 +43,7 @@ struct NextAppointmentCard: View {
                         .fill(Color(.Accent.countdown))
                         .frame(width: 6, height: 6)
                     Text(countdownLabel)
-                        .font(.system(size: 10, weight: .medium))
-                        .tracking(0.8)
-                        .textCase(.uppercase)
+                        .eyebrow()
                         .foregroundStyle(Color(.Accent.countdown))
                 }
             }
@@ -63,18 +61,18 @@ struct NextAppointmentCard: View {
         VStack(alignment: .leading, spacing: 3) {
             if let clientDisplayName = event.clientDisplayName {
                 Text(clientDisplayName)
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.subheadline.weight(.medium))
                     .foregroundStyle(Color(.OnCanvas.textPrimary))
                     .lineLimit(1)
             } else {
                 Text(event.title)
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.subheadline.weight(.medium))
                     .foregroundStyle(Color(.OnCanvas.textPrimary))
                     .lineLimit(1)
             }
             if let meetingSummary = event.meetingSummary {
                 Text(meetingSummary)
-                    .font(.system(size: 11))
+                    .font(.caption2)
                     .foregroundStyle(Color(.OnCanvas.textTertiary))
                     .lineLimit(1)
             }
@@ -85,7 +83,7 @@ struct NextAppointmentCard: View {
     private var prepareButton: some View {
         Button(action: onPrepare) {
             Text("Prepare")
-                .font(.system(size: 13, weight: .medium))
+                .font(.footnote.weight(.medium))
                 .foregroundStyle(Color(.Base.ink))
                 .padding(.horizontal, 18)
                 .padding(.vertical, 13)

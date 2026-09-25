@@ -156,7 +156,7 @@ struct DayTasksSection: View {
                     .frame(width: 18, height: 18)
 
                 Text("\(done.count) task completed")
-                    .font(.system(size: 12.5))
+                    .font(.caption)
                     // Not the mockup's 50% ink: at 12.5pt that measures under
                     // 4.5:1 on the card, and this line is the only thing that
                     // says the group is there.
@@ -165,7 +165,7 @@ struct DayTasksSection: View {
                 Spacer(minLength: 8)
 
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.caption.weight(.semibold))
                     .foregroundStyle(Color(.OnSurface.textTertiary))
                     .rotationEffect(.degrees(showsCompleted ? 180 : 0))
             }

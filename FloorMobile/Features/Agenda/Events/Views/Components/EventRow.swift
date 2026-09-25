@@ -24,7 +24,7 @@ struct EventRow: View {
         Button(action: onTap) {
             HStack(alignment: .top, spacing: 10) {
                 Text(event.startDate, format: .dateTime.hour().minute())
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.caption2.weight(.medium))
                     .foregroundStyle(Color(.OnSurface.textTertiary))
                     .frame(width: 40, alignment: .leading)
                     .padding(.top, 14)
@@ -65,34 +65,27 @@ struct EventRow: View {
     }
 
     private var card: some View {
-        HStack(spacing: 0) {
-            // The reason's colour, as drawn in Figma: a short tick at the top of
-            // the leading edge, mostly cut away by the corner radius.
-            Rectangle()
-                .fill(event.reason.fillColor)
-                .frame(width: 4, height: 10)
-                .opacity(standing.isDimmed ? 0.28 : 1)
-
-            inner
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(surface)
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        // No colour on the leading edge any more: the reason is on the mark, and
+        // saying it twice was saying it once too often.
+        inner
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(surface)
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     private var inner: some View {
         HStack(spacing: 12) {
-            avatar
+            mark
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(event.clientDisplayName ?? event.title)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.footnote.weight(.medium))
                     .foregroundStyle(standing.isDimmed ? Color(.OnSurface.textTertiary) : Color(.OnSurface.textPrimary))
                     .lineLimit(1)
 
                 if let subtitle {
                     Text(subtitle)
-                        .font(.system(size: 12))
+                        .font(.caption)
                         .foregroundStyle(standing.isDimmed ? Color(.OnSurface.textTertiary) : Color(.OnSurface.textSecondary))
                         .lineLimit(1)
                 }
@@ -101,7 +94,7 @@ struct EventRow: View {
             Spacer(minLength: 8)
 
             Text(trailingLabel)
-                .font(.system(size: 11))
+                .font(.caption2)
                 .foregroundStyle(Color(.OnSurface.textTertiary))
                 .fixedSize()
         }
@@ -110,15 +103,16 @@ struct EventRow: View {
         .padding(.vertical, 14)
     }
 
-    private var avatar: some View {
-        Circle()
-            .fill(Color(.OnSurface.surfaceFaint))
-            .frame(width: 36, height: 36)
-            .overlay {
-                Text((event.clientDisplayName ?? event.title).initials)
-                    .font(.system(size: 12.5, weight: .medium))
-                    .foregroundStyle(standing.isDimmed ? Color(.OnSurface.textTertiary) : Color(.OnSurface.textSecondary))
-            }
+    /// The same `ReasonIcon` a task row leads with, so a day reads as one list
+    /// rather than two. It also fills the line an avatar could not: `client` is
+    /// optional, and an appointment without one had nothing but an empty disc to
+    /// show.
+    ///
+    /// 0.28 when the day has left it behind — the figure the leading edge used
+    /// to carry, moved onto the object that took its place.
+    private var mark: some View {
+        ReasonIcon(reason: event.reason)
+            .opacity(standing.isDimmed ? 0.28 : 1)
     }
 
     private var surface: Color {
@@ -152,7 +146,9 @@ private func previewEvent(
     id: String,
     status: String,
     reason: String,
-    name: String,
+    /// `nil` for an appointment nobody is named on — the case the mark exists
+    /// for.
+    name: String?,
     title: String,
     hour: Int,
     duration: Int
@@ -162,9 +158,13 @@ private func previewEvent(
         title: title,
         startDate: Calendar.current.date(bySettingHour: hour, minute: 0, second: 0, of: .now) ?? .now,
         duration: duration, createdAt: .now, updatedAt: .now,
-        client: ClientSummary(firstName: String(name.split(separator: " ").first ?? ""),
-                              lastName: String(name.split(separator: " ").last ?? ""),
-                              segment: "Gold")
+        client: name.map {
+            ClientSummary(
+                firstName: String($0.split(separator: " ").first ?? ""),
+                lastName: String($0.split(separator: " ").last ?? ""),
+                segment: "Gold"
+            )
+        }
     )
 }
 
@@ -206,6 +206,25 @@ private func previewEvent(
         EventRow(
             event: previewEvent(id: "3", status: "CONFIRMED", reason: "FOLLOW_UP",
                                 name: "Salomé Kaliny", title: "Essayage", hour: 14, duration: 60),
+            standing: .upcoming
+        )
+    }
+    .padding(16)
+    .background(Color(.Base.canvas))
+}
+
+#Preview("With a client, and without") {
+    VStack(alignment: .leading, spacing: 10) {
+        EventRow(
+            event: previewEvent(id: "1", status: "CONFIRMED", reason: "FOLLOW_UP",
+                                name: "Salomé Kaliny", title: "Essayage", hour: 14, duration: 60),
+            standing: .upcoming
+        )
+        // No client, so the title takes the first line and the mark is the only
+        // thing that says what this is. An avatar had nothing to put here.
+        EventRow(
+            event: previewEvent(id: "2", status: "PLANNED", reason: "COLLECTION_LAUNCH",
+                                name: nil, title: "Essayage collection automne", hour: 16, duration: 45),
             standing: .upcoming
         )
     }

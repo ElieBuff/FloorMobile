@@ -74,7 +74,7 @@ struct AppHeaderButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: systemImage)
-                .font(.system(size: 17, weight: .medium))
+                .font(.body.weight(.medium))
         }
         .tint(Color(.Base.ink))
         .accessibilityLabel(label)
@@ -93,7 +93,7 @@ struct AppAvatar: View {
             .frame(width: 44, height: 44)
             .overlay {
                 Text(initials)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.subheadline.weight(.semibold))
                     .foregroundStyle(Color(.Base.ink))
             }
             .accessibilityLabel(String(localized: "Profile"))

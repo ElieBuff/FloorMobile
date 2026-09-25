@@ -285,6 +285,51 @@ struct DayTimelineTests {
         )
     }
 
+    // MARK: - Next appointment
+
+    @Test("The next appointment is the soonest one still ahead today")
+    func nextAppointmentIsTheSoonestAhead() throws {
+        let events = [
+            Self.event("late", at: try Self.moment(18)),
+            Self.event("past", at: try Self.moment(9)),
+            Self.event("soon", at: try Self.moment(14)),
+        ]
+
+        let next = DayTimeline.nextAppointment(in: events, at: try Self.moment(11, 20), calendar: Self.calendar)
+
+        #expect(next?.id == "soon")
+    }
+
+    @Test("An appointment starting this very minute is still the next one")
+    func startingNowCountsAsNext() throws {
+        let event = Self.event("1", at: try Self.moment(14))
+        let next = DayTimeline.nextAppointment(in: [event], at: try Self.moment(14), calendar: Self.calendar)
+        #expect(next?.id == "1")
+    }
+
+    @Test("An appointment that has started is no longer the next one")
+    func startedIsNotNext() throws {
+        let event = Self.event("1", at: try Self.moment(14))
+        let next = DayTimeline.nextAppointment(in: [event], at: try Self.moment(14, 1), calendar: Self.calendar)
+        #expect(next == nil)
+    }
+
+    /// The query feeding this is wider than a day; tomorrow must not leak into
+    /// today's card, nor today's into tomorrow's once midnight has passed.
+    @Test("Only the day `now` falls in is considered")
+    func otherDaysAreIgnored() throws {
+        let tomorrow = Self.event("tomorrow", at: try Self.moment(9, day: 8))
+        let today = Self.event("today", at: try Self.moment(23, 30, day: 7))
+
+        #expect(
+            DayTimeline.nextAppointment(in: [tomorrow], at: try Self.moment(20, day: 7), calendar: Self.calendar) == nil
+        )
+        #expect(
+            DayTimeline.nextAppointment(in: [today, tomorrow], at: try Self.moment(0, 5, day: 8), calendar: Self.calendar)?.id
+                == "tomorrow"
+        )
+    }
+
     @Test("Two standalone rules are equal, so a quiet minute animates nothing")
     func standaloneRulesAreAlwaysEqual() {
         // The `.now` row holds no date on purpose: were it to carry one, the

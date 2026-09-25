@@ -129,11 +129,11 @@ struct BreathCadence {
             HStack(spacing: 12) {
                 BreathingDot(seed: seed)
                 Text(seed)
-                    .font(.system(size: 12, design: .monospaced))
+                    .font(.caption.monospaced())
                     .foregroundStyle(.secondary)
                 Spacer()
                 Text(String(format: "%.1f s", BreathCadence(seed: seed).period))
-                    .font(.system(size: 12, design: .monospaced))
+                    .font(.caption.monospaced())
                     .foregroundStyle(.secondary)
             }
         }

@@ -119,8 +119,13 @@ struct CollapsibleCalendar: View {
     private var todayButton: some View {
         Button(action: goToToday) {
             Text(String(localized: "Today"))
-                .font(.system(size: 11, weight: .semibold))
+                .font(.caption2.weight(.semibold))
                 .foregroundStyle(Color(.OnSurface.textPrimary))
+                // The word is a few points tall on an 8pt row; the target is
+                // the strip the handle owns — see `handleHitHeight`.
+                .frame(minWidth: CalendarMetrics.hitTarget, minHeight: CalendarMetrics.handleHitHeight)
+                .padding(.top, -(CalendarMetrics.sectionSpacing - CalendarMetrics.rowSpacing))
+                .padding(.bottom, -CalendarMetrics.cardPaddingVertical)
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)
@@ -132,9 +137,16 @@ struct CollapsibleCalendar: View {
             page(by: direction)
         } label: {
             Image(systemName: systemImage)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.caption2.weight(.semibold))
                 .foregroundStyle(Color(.OnSurface.textSecondary))
-                .frame(width: CalendarMetrics.arrowSize, height: CalendarMetrics.arrowSize)
+                // A 16pt glyph in a 19pt header, with a 44pt target: the frame
+                // grows, the negative padding hands the difference back, and
+                // the header stays exactly as drawn. The overflow lands on the
+                // card's padding and the title strip, neither of which answers
+                // a tap.
+                .frame(width: CalendarMetrics.hitTarget, height: CalendarMetrics.hitTarget)
+                .padding(.horizontal, -(CalendarMetrics.hitTarget - CalendarMetrics.arrowSize) / 2)
+                .padding(.vertical, -(CalendarMetrics.hitTarget - CalendarMetrics.headerHeight) / 2)
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)
@@ -279,6 +291,11 @@ struct CollapsibleCalendar: View {
             .frame(width: CalendarMetrics.handleWidth, height: CalendarMetrics.handleThickness)
             .frame(maxWidth: .infinity, alignment: .center)
             .frame(height: CalendarMetrics.handleHeight, alignment: .bottom)
+            // The strip the handle owns, not a 44pt square: the rows above
+            // and the card's edge below are spoken for — see `handleHitHeight`.
+            .frame(height: CalendarMetrics.handleHitHeight)
+            .padding(.top, -(CalendarMetrics.sectionSpacing - CalendarMetrics.rowSpacing))
+            .padding(.bottom, -CalendarMetrics.cardPaddingVertical)
             .contentShape(.rect)
             .onTapGesture { setExpanded(!expansion.isExpanded) }
             .accessibilityElement()
@@ -490,7 +507,7 @@ struct CollapsibleCalendar: View {
     return VStack {
         CollapsibleCalendar(selection: $selection, daysWithEvents: eventDays)
         Text(selection, format: .dateTime.weekday(.wide).day().month(.wide))
-            .font(.system(size: 13))
+            .font(.footnote)
             .foregroundStyle(Color(.OnCanvas.textSecondary))
             .padding(.top, 24)
         Spacer()

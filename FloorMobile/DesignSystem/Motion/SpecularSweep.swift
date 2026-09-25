@@ -121,11 +121,10 @@ extension View {
 #Preview("Sweep on a white card") {
     VStack(alignment: .leading, spacing: 8) {
         Text("BACK IN STOCK")
-            .font(.system(size: 10, weight: .medium))
-            .tracking(0.8)
+            .eyebrow()
             .foregroundStyle(.secondary)
         Text("The beaded cream dress she tried in June is back in her size.")
-            .font(.system(size: 16, weight: .medium))
+            .font(.callout.weight(.medium))
     }
     .padding(20)
     .frame(width: 320, alignment: .leading)

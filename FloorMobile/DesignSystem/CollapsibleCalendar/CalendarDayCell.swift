@@ -40,6 +40,11 @@ struct CalendarDayCell: View {
                     .opacity(hasEvents ? 1 : 0)
             }
             .frame(maxWidth: .infinity)
+            // The row plus the gap under it, given back with the negative
+            // padding so the grid keeps its 40pt rows: the finger gets 46pt,
+            // the eye sees nothing move.
+            .frame(height: CalendarMetrics.dayCellHitHeight, alignment: .top)
+            .padding(.bottom, -CalendarMetrics.rowSpacing)
             .contentShape(.rect)
         }
         .buttonStyle(.plain)

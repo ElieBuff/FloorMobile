@@ -24,13 +24,13 @@ struct QuickActionButton: View {
         Button(action: action) {
             VStack(spacing: 6) {
                 Image(systemName: systemImage)
-                    .font(.system(size: 20))
+                    .font(.title3)
                     .foregroundStyle(iconColor)
                     .frame(width: 50, height: 50)
                     .background(backgroundColor, in: Circle())
                     .shadow(style == .filled ? .control : .none)
                 Text(label)
-                    .font(.system(size: 9))
+                    .font(.caption2)
                     .foregroundStyle(Color(.Base.ink).opacity(0.85))
             }
             .frame(maxWidth: .infinity)

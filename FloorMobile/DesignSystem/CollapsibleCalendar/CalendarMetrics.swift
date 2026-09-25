@@ -30,6 +30,26 @@ nonisolated enum CalendarMetrics {
     static let headerInset: CGFloat = 6
     static let arrowSize: CGFloat = 16
 
+    /// Apple's minimum hit target. The header, the handle and the arrows are
+    /// all drawn smaller than this, so each one takes a `hitTarget` frame and
+    /// gives the difference back with a negative padding: the layout keeps the
+    /// Figma geometry, only the invisible rectangle that answers the finger
+    /// grows. The same trick the system's own small toolbar glyphs use.
+    static let hitTarget: CGFloat = 44
+
+    /// What the handle and the "Today" button can answer to: the whitespace
+    /// around the handle — the section gap above it minus the strip the last
+    /// row of days claims for itself, the handle, and the card's bottom
+    /// padding. Short of `hitTarget`, and knowingly: the rows above are the
+    /// most-used control on the card, and below the card's edge the agenda's
+    /// scroll view takes every touch. Tapping the handle is the third way to
+    /// open the month, after the drag anywhere on the card and VoiceOver.
+    static let handleHitHeight = sectionSpacing - rowSpacing + handleHeight + cardPaddingVertical
+
+    /// A day cell answers over its own row plus the gap beneath it, which
+    /// belongs to nobody else: 46pt tall instead of 40.
+    static let dayCellHitHeight = rowHeight + rowSpacing
+
     static let handleHeight: CGFloat = 8
     static let handleWidth: CGFloat = 36
     static let handleThickness: CGFloat = 4

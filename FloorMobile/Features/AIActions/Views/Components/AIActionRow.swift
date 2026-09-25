@@ -52,19 +52,19 @@ struct AIActionRow: View {
                 VStack(alignment: .leading, spacing: Self.headerLineSpacing) {
                     eyebrowLine
                     Text(action.title)
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.footnote.weight(.medium))
                         .foregroundStyle(Color(.OnSurface.textPrimary))
                         .lineLimit(2)
                     if let clientDisplayName = action.clientDisplayName {
                         Text(clientDisplayName)
-                            .font(.system(size: 11))
+                            .font(.caption2)
                             .foregroundStyle(Color(.OnSurface.textSecondary))
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.footnote.weight(.semibold))
                     .foregroundStyle(Color(.Base.ink))
             }
             .padding(.leading, Self.leadingPadding)
@@ -110,16 +110,16 @@ struct AIActionRow: View {
         HStack(alignment: .top, spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(action.title)
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.callout.weight(.medium))
                     .foregroundStyle(Color(.OnSurface.textPrimary))
                 if let clientMetaLine = action.clientMetaLine {
                     Text(clientMetaLine)
-                        .font(.system(size: 13))
+                        .font(.footnote)
                         .foregroundStyle(Color(.OnSurface.textSecondary))
                 }
                 if let productMetaLine = action.productMetaLine {
                     Text(productMetaLine)
-                        .font(.system(size: 11))
+                        .font(.caption2)
                         .foregroundStyle(Color(.OnSurface.textSecondary))
                 }
             }
@@ -149,9 +149,7 @@ struct AIActionRow: View {
     /// The category eyebrow, shared by both layouts so the two never drift apart.
     private var categoryLabel: some View {
         Text(action.categoryLabel ?? action.type)
-            .font(.system(size: 10, weight: .medium))
-            .tracking(0.8)
-            .textCase(.uppercase)
+            .eyebrow()
             .foregroundStyle(Color(.OnSurface.textSecondary))
     }
 

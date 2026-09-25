@@ -57,7 +57,7 @@ struct AlertCard: View {
     /// you are looking at".
     private var badge: some View {
         Image(systemName: alert.kind.symbolName)
-            .font(.system(size: 22))
+            .font(.title2)
             .foregroundStyle(alert.kind.fill)
             .frame(width: 48, height: 48)
             .background(alert.kind.tint, in: RoundedRectangle(cornerRadius: AppRadius.small, style: .continuous))

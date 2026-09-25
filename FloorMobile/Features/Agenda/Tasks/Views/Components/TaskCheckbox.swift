@@ -55,7 +55,7 @@ struct TaskCheckbox: View {
     private var mark: some View {
         if shown == .completed {
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 22))
+                .font(.title2)
                 // The same grey the rest of the row takes when it is done: the
                 // mark settles with it rather than standing out of it.
                 .foregroundStyle(Color(.OnSurface.textTertiary))

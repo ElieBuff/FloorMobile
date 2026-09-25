@@ -73,7 +73,7 @@ struct TaskStatusSection: View {
         } label: {
             VStack(spacing: 6) {
                 Image(systemName: candidate.symbolName)
-                    .font(.system(size: 18))
+                    .font(.title3)
                 Text(candidate.displayLabel)
                     .font(.footnote.weight(.medium))
                     .lineLimit(1)

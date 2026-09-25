@@ -36,7 +36,7 @@ struct NowMarker: View {
     var body: some View {
         HStack(spacing: 0) {
             Text(date, format: .dateTime.hour().minute())
-                .font(.system(size: 11, weight: .semibold))
+                .font(.caption2.weight(.semibold))
                 .foregroundStyle(Color(.Accent.now))
                 .padding(.horizontal, 9)
                 .padding(.vertical, 3)

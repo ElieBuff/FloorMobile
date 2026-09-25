@@ -90,7 +90,7 @@ extension View {
 
 private var cardSample: some View {
     Text("Card")
-        .font(.system(size: 16, weight: .medium))
+        .font(.callout.weight(.medium))
         .foregroundStyle(Color(.OnSurface.textPrimary))
         .frame(width: 300, height: 80, alignment: .leading)
         .padding(.horizontal, 20)

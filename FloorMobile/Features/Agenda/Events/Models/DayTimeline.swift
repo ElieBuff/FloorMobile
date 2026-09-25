@@ -157,4 +157,26 @@ nonisolated enum DayTimeline {
         withRule.insert(.now, at: next)
         return withRule
     }
+
+    /// The soonest appointment still ahead on the day `now` falls in, or `nil`
+    /// when the day has none left — what Home's "next appointment" card shows.
+    ///
+    /// Judged on the clock at every call, not on the moment the screen was
+    /// built: a `@Query` predicate that captured `now` once kept naming an
+    /// appointment long after it had started, and never noticed midnight.
+    /// The events may span several days — the same-day check is done here,
+    /// so the caller's query only has to be wide enough.
+    ///
+    /// Start included: an appointment starting this very minute is the next
+    /// one, not a past one — the same boundary `items(events:now:day:)` uses
+    /// to place the rule.
+    static func nextAppointment(
+        in events: [AgendaEvent],
+        at now: Date,
+        calendar: Calendar = .current
+    ) -> AgendaEvent? {
+        events
+            .filter { $0.startDate >= now && calendar.isDate($0.startDate, inSameDayAs: now) }
+            .min { $0.startDate < $1.startDate }
+    }
 }

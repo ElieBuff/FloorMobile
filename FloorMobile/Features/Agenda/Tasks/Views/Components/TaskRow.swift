@@ -89,20 +89,18 @@ struct TaskRow: View {
     private var text: some View {
         VStack(alignment: .leading, spacing: 3) {
             Text(task.reason.displayLabel)
-                .font(.system(size: 10, weight: .bold))
-                .tracking(1.2)
-                .textCase(.uppercase)
+                .eyebrow(weight: .bold, tracking: 1.2)
                 // Grey rather than the reason's colour at low opacity: a tinted
                 // label faded enough to read as "done" no longer passes
                 // contrast, and this line is 10pt.
                 .foregroundStyle(isDone ? Color(.OnSurface.textTertiary) : task.reason.fillColor)
             Text(task.title)
-                .font(.system(size: 15))
+                .font(.subheadline)
                 .foregroundStyle(isDone ? Color(.OnSurface.textTertiary) : Color(.OnSurface.textPrimary))
                 .lineLimit(1)
             if let clientDisplayName = task.clientDisplayName {
                 Text(clientDisplayName)
-                    .font(.system(size: 12.5))
+                    .font(.caption)
                     .foregroundStyle(isDone ? Color(.OnSurface.textTertiary) : Color(.OnSurface.textSecondary))
                     .lineLimit(1)
             }

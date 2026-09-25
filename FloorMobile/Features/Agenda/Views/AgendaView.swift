@@ -106,7 +106,7 @@ struct AgendaView: View {
                     }
                 } label: {
                     Image(systemName: "plus")
-                        .font(.system(size: 17, weight: .medium))
+                        .font(.body.weight(.medium))
                 }
                 .accessibilityLabel(String(localized: "Add"))
             }
