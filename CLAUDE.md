@@ -8,9 +8,13 @@ Les échanges se font en français ; code, commentaires et noms en anglais.
 
 **Pour tout code Swift/SwiftUI, suivre le skill [`floor-dev`](.claude/skills/floor-dev/SKILL.md)** : architecture Apple Model-View (`@Observable` + SwiftData, par feature, sans ViewModel), configuration Zitadel, conventions. **Pour les tests, le skill [`swiftui-testing`](.claude/skills/swiftui-testing/SKILL.md).** Le plan détaillé de la réécriture est dans [ARCHITECTURE-CIBLE.md](ARCHITECTURE-CIBLE.md).
 
+**En mode plan, avant de présenter un plan : appliquer le skill [`plan-review`](.claude/skills/plan-review/SKILL.md)** — relecture par l'agent `plan-critic` (`.claude/agents/plan-critic.md`), 3 tours au plus — sauf si l'utilisateur a dit « sans relecture ».
+
+**Après l'approbation d'un plan : appliquer le skill [`qa-review`](.claude/skills/qa-review/SKILL.md)** — photo de l'arbre avant la première édition, puis QA du code par l'agent `qa-reviewer` (`.claude/agents/qa-reviewer.md`) à la fin, simple ou renforcé (workflow `qa-deep`) selon la ligne « QA proposé » du plan, 3 tours au plus — sauf si l'utilisateur a dit « sans QA ». Le QA lance lui-même le build et les tests unitaires, jamais les tests UI. Les deux relecteurs partagent leurs règles : [`.claude/review/house-rules.md`](.claude/review/house-rules.md).
+
 ## Stack
 
-- iOS 26.5 min, Xcode 26, `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`, `SWIFT_APPROACHABLE_CONCURRENCY = YES`. Language mode **Swift 6** (réglage au niveau projet, sans override par target).
+- iOS 26.5 min, Xcode 27 (simulateurs sous iOS 27, aucun runtime 26.x installé), `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`, `SWIFT_APPROACHABLE_CONCURRENCY = YES`. Language mode **Swift 6** (réglage au niveau projet, sans override par target).
 - Bundle : `ai.floorapp.floormobile` (+ suffixes `.dev`/`.staging` par environnement, via les xcconfig ; targets de test en `ai.floorapp.floormobile.tests`/`.uitests`).
 - Dépendances SPM : autorisées quand elles apportent une vraie valeur ajoutée, à évaluer au cas par cas. Prévue : socket.io-client-swift, derrière `RealtimeService`.
 - Auth : Zitadel OIDC natif, PKCE. Client ID et URLs dans le skill `floor-dev`.
