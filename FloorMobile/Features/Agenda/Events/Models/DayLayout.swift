@@ -1,39 +1,22 @@
 //
-//  DayTimeline.swift
+//  DayLayout.swift
 //  FloorMobile
 //
 
 import Foundation
 
-/// Turns one day's events into the ordered list the agenda draws: the rows, each
-/// with the state it should be painted in, and the current-time rule put where
-/// it belongs.
+/// Lays one day's events out as the ordered list the agenda draws: the rows,
+/// each with the standing it should be painted in, and the current-time rule
+/// put where it belongs.
 ///
-/// All of those answers depend on the same thing — what time it is — so they are
-/// produced together. Computed separately in the view, they could disagree: the
-/// rule sliding past an appointment that has not yet greyed out.
+/// No rule of its own about what an appointment *is* — that lives on
+/// `AgendaEvent` (`standing(at:)`, `progress(at:)`). This only decides the
+/// order and where the rule goes, from the same `now` for every row, so the
+/// rule can never slide past an appointment that has not yet greyed out.
 ///
 /// It takes `now` instead of calling `Date()`, which is what makes it testable
 /// at any instant, including the exact second an appointment ends.
-nonisolated enum DayTimeline {
-
-    /// How a row should read — the server's status crossed with the clock.
-    ///
-    /// Deliberately not the same thing as `EventStatus`: that one is what the
-    /// server asserts, this one is what the advisor sees. A `.planned` booking
-    /// becomes `.done` on screen when its slot elapses, without its stored
-    /// status moving at all.
-    enum Standing: Equatable, Sendable {
-        /// Still to come, or under way. Shows its duration.
-        case upcoming
-        case done
-        case cancelled
-
-        /// Whether the row recedes into the background. Not a statement about
-        /// time: an appointment cancelled for next week dims too. Done and
-        /// cancelled look alike; they only differ in the word the card shows.
-        var isDimmed: Bool { self != .upcoming }
-    }
+nonisolated enum DayLayout {
 
     /// Where the current-time rule crosses an appointment's row: the time it
     /// reads, and how far down the row it sits.
@@ -52,7 +35,7 @@ nonisolated enum DayTimeline {
     enum Item: Identifiable, Equatable {
         /// An appointment. `rule` is set on the one `now` falls inside, and on
         /// nothing else.
-        case event(AgendaEvent, standing: Standing, rule: NowRule?)
+        case event(AgendaEvent, standing: AgendaEvent.Standing, rule: NowRule?)
         /// The rule on its own line, for the moments no appointment is under
         /// way. It holds no date: carrying one would make the list compare
         /// unequal on every tick and animate a move that never happened — the
@@ -81,35 +64,6 @@ nonisolated enum DayTimeline {
         }
     }
 
-    /// The server's word first, the clock second.
-    ///
-    /// Cancelled is not finished — the two recede alike but must not read alike.
-    /// Completed is finished even if the slot has not elapsed, because the
-    /// advisor closed it out early. For everything the server still calls open,
-    /// only the clock can tell, since a booking is never moved on its own as the
-    /// day goes by.
-    ///
-    /// On the clock, an event turns past when it **ends**, not when it starts:
-    /// the appointment you are currently in would otherwise dim at exactly the
-    /// moment it matters most.
-    static func standing(of event: AgendaEvent, at now: Date) -> Standing {
-        switch event.status {
-        case .cancelled: .cancelled
-        case .completed: .done
-        case .planned, .confirmed, .other: event.endDate <= now ? .done : .upcoming
-        }
-    }
-
-    /// The rule for an appointment under way, positioned by how much of it has
-    /// elapsed. `nil` for a slot with no length at all — there is no inside to
-    /// be in.
-    static func nowRule(for event: AgendaEvent, at now: Date) -> NowRule? {
-        let length = event.endDate.timeIntervalSince(event.startDate)
-        guard length > 0 else { return nil }
-        let elapsed = now.timeIntervalSince(event.startDate)
-        return NowRule(date: now, progress: min(max(elapsed / length, 0), 1))
-    }
-
     /// The day's events in order, with the current-time rule placed — across
     /// the appointment under way, or on a line of its own between two of them.
     ///
@@ -129,7 +83,7 @@ nonisolated enum DayTimeline {
         let isToday = calendar.isDate(day, inSameDayAs: now)
         // The appointment `now` falls inside — the earliest one when two
         // overlap, since the rule has one position and the day reads top-down.
-        // Start included, end excluded: the same boundary `standing(of:at:)`
+        // Start included, end excluded: the same boundary `standing(at:)`
         // uses, so a slot is over for both at the same instant.
         let underway = isToday
             ? sorted.firstIndex { $0.startDate <= now && now < $0.endDate }
@@ -138,8 +92,10 @@ nonisolated enum DayTimeline {
         let rows = sorted.enumerated().map { index, event in
             Item.event(
                 event,
-                standing: standing(of: event, at: now),
-                rule: index == underway ? nowRule(for: event, at: now) : nil
+                standing: event.standing(at: now),
+                rule: index == underway
+                    ? event.progress(at: now).map { NowRule(date: now, progress: $0) }
+                    : nil
             )
         }
 
@@ -156,27 +112,5 @@ nonisolated enum DayTimeline {
         var withRule = rows
         withRule.insert(.now, at: next)
         return withRule
-    }
-
-    /// The soonest appointment still ahead on the day `now` falls in, or `nil`
-    /// when the day has none left — what Home's "next appointment" card shows.
-    ///
-    /// Judged on the clock at every call, not on the moment the screen was
-    /// built: a `@Query` predicate that captured `now` once kept naming an
-    /// appointment long after it had started, and never noticed midnight.
-    /// The events may span several days — the same-day check is done here,
-    /// so the caller's query only has to be wide enough.
-    ///
-    /// Start included: an appointment starting this very minute is the next
-    /// one, not a past one — the same boundary `items(events:now:day:)` uses
-    /// to place the rule.
-    static func nextAppointment(
-        in events: [AgendaEvent],
-        at now: Date,
-        calendar: Calendar = .current
-    ) -> AgendaEvent? {
-        events
-            .filter { $0.startDate >= now && calendar.isDate($0.startDate, inSameDayAs: now) }
-            .min { $0.startDate < $1.startDate }
     }
 }

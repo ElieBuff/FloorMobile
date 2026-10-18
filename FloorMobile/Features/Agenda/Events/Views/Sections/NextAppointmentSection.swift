@@ -19,7 +19,7 @@ import os
 /// so that predicate was built once per session and never again.
 ///
 /// The query is therefore only a coarse window — everything from the start of
-/// the day the screen was built — and `DayTimeline.nextAppointment` picks the
+/// the day the screen was built — and `AgendaEvent.next(in:at:)` picks the
 /// right one inside it, checking the day against `now` itself so midnight is
 /// handled too.
 struct NextAppointmentSection: View {
@@ -41,7 +41,7 @@ struct NextAppointmentSection: View {
             }
 
             TimelineView(.everyMinute) { context in
-                if let event = DayTimeline.nextAppointment(in: events, at: context.date) {
+                if let event = AgendaEvent.next(in: events, at: context.date) {
                     NextAppointmentCard(event: event, onPrepare: {
                         AppLog.ui.info("Home: 'Prepare' tapped in Next appointment")
                     }, now: context.date)

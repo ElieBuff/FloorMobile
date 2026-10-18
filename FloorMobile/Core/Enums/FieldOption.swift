@@ -48,13 +48,13 @@ nonisolated final class FieldOption {
         self.value = value
         self.rank = rank
     }
-
-    static func identifier(entityName: String, field: String, value: String) -> String {
-        "\(entityName).\(field)|\(value)"
-    }
 }
 
 nonisolated extension FieldOption {
+    static func identifier(entityName: String, field: String, value: String) -> String {
+        "\(entityName).\(field)|\(value)"
+    }
+
     /// Names an (entity, field) pair of the server's vocabulary. Declared
     /// here, but the constants belong to whoever reads them: each feature adds
     /// its own in an extension, so `Core` never learns feature names.

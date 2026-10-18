@@ -26,11 +26,6 @@ nonisolated final class AIAction: Syncable {
     @Attribute(.unique) var id: String
     /// Per-sync generation marker (mark-and-sweep); not from the API.
     var syncToken: String = ""
-
-    /// Rows the latest refresh did not return (see `Syncable`).
-    static func stale(token: String) -> Predicate<AIAction> {
-        #Predicate { $0.syncToken != token }
-    }
     var agentKey: String
     /// Open server-side set (e.g. "ANNIVERSARY_TRAVEL_WISHES"): kept raw,
     /// the UI treats it as an opaque discriminator.
@@ -108,12 +103,26 @@ nonisolated final class AIAction: Syncable {
         self.productCurrencyCode = productCurrencyCode
         self.productImageURL = productImageURL
     }
+}
+
+nonisolated extension AIAction {
+
+    // MARK: - Sync
+
+    /// Rows the latest refresh did not return (see `Syncable`).
+    static func stale(token: String) -> Predicate<AIAction> {
+        #Predicate { $0.syncToken != token }
+    }
+
+    // MARK: - Typed views
 
     /// Typed status; `nil` when the server sends a value this app version
     /// does not know.
     var status: AIActionStatus? {
         AIActionStatus(rawValue: statusRaw)
     }
+
+    // MARK: - Display
 
     /// "Elie Buff", "Elie", "Buff", or `nil` when the API sent no name.
     var clientDisplayName: String? {
@@ -140,6 +149,8 @@ nonisolated final class AIAction: Syncable {
         let parts = [productName, productSize, productPriceFormatted].compactMap { $0 }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
+
+    // MARK: - Time
 
     /// The date is injected — never `Date()` inside the logic — so the rule
     /// is testable at any point in time.

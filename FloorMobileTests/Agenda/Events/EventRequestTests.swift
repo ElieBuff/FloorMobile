@@ -20,7 +20,7 @@ struct EventRequestTests {
 
     /// The JSON as the API will actually receive it — the same encoder
     /// `APIClient` uses, so a key dropped here is a key dropped on the wire.
-    private static func encoded(_ request: EventRequest) throws -> [String: Any] {
+    private static func encoded(_ request: EventWire.Request) throws -> [String: Any] {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         let object = try JSONSerialization.jsonObject(with: try encoder.encode(request))
@@ -42,7 +42,7 @@ struct EventRequestTests {
     @Test("The form's fields land on the server's own names")
     func draftMapsOntoTheWireFields() throws {
         let start = try Self.moment(20, 30)
-        let request = EventRequest(draft: try Self.draft())
+        let request = EventWire.Request(draft: try Self.draft())
 
         #expect(request.title == "Essayage collection automne")
         #expect(request.reason == "BACK_IN_STOCK")
@@ -64,7 +64,7 @@ struct EventRequestTests {
         var draft = try Self.draft()
         draft.meetingType = .videoCall
 
-        let json = try Self.encoded(EventRequest(draft: draft))
+        let json = try Self.encoded(EventWire.Request(draft: draft))
 
         #expect(json["meetingType"] as? String == "VIDEO_CALL")
         #expect(json["type"] == nil)
@@ -76,7 +76,7 @@ struct EventRequestTests {
         draft.reminderOffset = 30
 
         let expected = try Self.moment(20, 0)
-        #expect(EventRequest(draft: draft).reminderDate == expected)
+        #expect(EventWire.Request(draft: draft).reminderDate == expected)
     }
 
     @Test("No reminder, no key at all")
@@ -85,7 +85,7 @@ struct EventRequestTests {
         draft.reminderOffset = nil
         draft.note = "  "
 
-        let json = try Self.encoded(EventRequest(draft: draft))
+        let json = try Self.encoded(EventWire.Request(draft: draft))
 
         #expect(json["reminderDate"] == nil)
         #expect(json["description"] == nil)
@@ -101,7 +101,7 @@ struct EventRequestTests {
         ))
         draft.title = "Essayage — reporté"
 
-        #expect(EventRequest(draft: draft).status == "CANCELLED")
+        #expect(EventWire.Request(draft: draft).status == "CANCELLED")
     }
 
     /// A reason `Reason` does not know lands on `.other`, which encodes as
@@ -116,18 +116,33 @@ struct EventRequestTests {
         #expect(draft.reason == .other)
         draft.duration = 60
 
-        #expect(EventRequest(draft: draft).reason == "STORE_ANNIVERSARY")
+        #expect(EventWire.Request(draft: draft).reason == "STORE_ANNIVERSARY")
 
         // But a reason actually picked in the form wins over the stored one.
         draft.reason = .birthday
-        #expect(EventRequest(draft: draft).reason == "BIRTHDAY")
+        #expect(EventWire.Request(draft: draft).reason == "BIRTHDAY")
     }
 
     // MARK: - Encoded shape
 
+    @Test("Editing an appointment that has no reason sends no reason key")
+    func absentReasonStaysAbsentOnEdit() throws {
+        var draft = EventDraft(event: AgendaEvent(
+            id: "e1", statusRaw: "PLANNED", reasonRaw: nil,
+            title: "Essayage", startDate: try Self.moment(20, 30), duration: 45,
+            createdAt: .now, updatedAt: .now
+        ))
+        draft.duration = 60
+
+        let json = try Self.encoded(EventWire.Request(draft: draft))
+
+        // Not "OTHER": the server has no such reason and rejects the request.
+        #expect(json["reason"] == nil)
+    }
+
     @Test("The title is sent trimmed — what was judged is what is saved")
     func titleIsSentTrimmed() throws {
-        let request = EventRequest(draft: try Self.draft(title: "  Essayage  "))
+        let request = EventWire.Request(draft: try Self.draft(title: "  Essayage  "))
 
         #expect(request.title == "Essayage")
     }
@@ -138,7 +153,7 @@ struct EventRequestTests {
         var draft = try Self.draft()
         draft.clientName = "Raphaël Van den Berg"
 
-        let json = try Self.encoded(EventRequest(draft: draft))
+        let json = try Self.encoded(EventWire.Request(draft: draft))
 
         #expect(json["clientId"] == nil)
         #expect(json["clientName"] == nil)
@@ -150,7 +165,7 @@ struct EventRequestTests {
 
     @Test("Dates go out as ISO 8601")
     func datesAreISO8601() throws {
-        let json = try Self.encoded(EventRequest(draft: try Self.draft()))
+        let json = try Self.encoded(EventWire.Request(draft: try Self.draft()))
 
         // Europe/Paris in September is UTC+2.
         #expect(json["startDate"] as? String == "2026-09-17T18:30:00Z")

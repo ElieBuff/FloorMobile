@@ -20,7 +20,7 @@ struct TaskRequestTests {
 
     /// The JSON as the API will actually receive it — the same encoder
     /// `APIClient` uses, so a key dropped here is a key dropped on the wire.
-    private static func encoded(_ request: TaskRequest) throws -> [String: Any] {
+    private static func encoded(_ request: TaskWire.Request) throws -> [String: Any] {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         let object = try JSONSerialization.jsonObject(with: try encoder.encode(request))
@@ -37,7 +37,7 @@ struct TaskRequestTests {
         draft.reason = .birthday
         draft.note = "Relance suite essayage"
 
-        let request = TaskRequest(draft: draft)
+        let request = TaskWire.Request(draft: draft)
 
         #expect(request.title == "Rappeler Mme Dupont")
         #expect(request.reason == "BIRTHDAY")
@@ -56,7 +56,7 @@ struct TaskRequestTests {
         ))
         draft.title = "Ring back this afternoon"
 
-        let request = TaskRequest(draft: draft)
+        let request = TaskWire.Request(draft: draft)
 
         #expect(request.status == "COMPLETED")
         #expect(request.reminderDate == reminder)
@@ -72,7 +72,7 @@ struct TaskRequestTests {
         ))
         draft.title = "Ring back this afternoon"
 
-        let request = TaskRequest(draft: draft)
+        let request = TaskWire.Request(draft: draft)
 
         #expect(request.reason == "CALL")
     }
@@ -82,10 +82,24 @@ struct TaskRequestTests {
         var draft = TaskDraft(day: try Self.moment(10))
         draft.title = "  Rappeler Mme Dupont  "
 
-        #expect(TaskRequest(draft: draft).title == "Rappeler Mme Dupont")
+        #expect(TaskWire.Request(draft: draft).title == "Rappeler Mme Dupont")
     }
 
     // MARK: - Encoded shape
+
+    @Test("Editing a task that has no reason sends no reason key")
+    func absentReasonStaysAbsentOnEdit() throws {
+        var draft = TaskDraft(task: AgendaTask(
+            id: "t1", statusRaw: "TO_DO", reasonRaw: nil, title: "Ring back",
+            startDate: try Self.moment(10), createdAt: .now, updatedAt: .now
+        ))
+        draft.title = "Ring back this afternoon"
+
+        let json = try Self.encoded(TaskWire.Request(draft: draft))
+
+        // Not "OTHER": the server has no such reason and rejects the request.
+        #expect(json["reason"] == nil)
+    }
 
     @Test("An empty note drops the key rather than sending an empty string")
     func blankNoteIsAbsentFromTheJSON() throws {
@@ -93,7 +107,7 @@ struct TaskRequestTests {
         draft.title = "Rappeler Mme Dupont"
         draft.note = "   \n "
 
-        let json = try Self.encoded(TaskRequest(draft: draft))
+        let json = try Self.encoded(TaskWire.Request(draft: draft))
 
         #expect(json["description"] == nil)
         #expect(json["reminderDate"] == nil)
@@ -107,7 +121,7 @@ struct TaskRequestTests {
         draft.title = "Rappeler Mme Dupont"
         draft.clientName = "Raphaël Van den Berg"
 
-        let json = try Self.encoded(TaskRequest(draft: draft))
+        let json = try Self.encoded(TaskWire.Request(draft: draft))
 
         #expect(json["clientId"] == nil)
         #expect(json["clientName"] == nil)
@@ -119,7 +133,7 @@ struct TaskRequestTests {
 
         // And it does appear once someone picks one.
         draft.reason = .followUp
-        #expect(try Self.encoded(TaskRequest(draft: draft))["reason"] as? String == "FOLLOW_UP")
+        #expect(try Self.encoded(TaskWire.Request(draft: draft))["reason"] as? String == "FOLLOW_UP")
     }
 
     @Test("Dates go out as ISO 8601")
@@ -128,7 +142,7 @@ struct TaskRequestTests {
         draft.title = "Rappeler Mme Dupont"
         draft.reminderDate = try Self.moment(9)
 
-        let json = try Self.encoded(TaskRequest(draft: draft))
+        let json = try Self.encoded(TaskWire.Request(draft: draft))
 
         // Europe/Paris in September is UTC+2.
         #expect(json["startDate"] as? String == "2026-09-17T08:00:00Z")

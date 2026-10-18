@@ -32,7 +32,8 @@ import SwiftUI
 /// `ToolbarSpacer(.fixed)` between them (or `.sharedBackgroundVisibility(.hidden)`
 /// on each).
 private struct AppHeaderModifier<Trailing: ToolbarContent>: ViewModifier {
-    let trailing: Trailing
+    /// The screen's own buttons; `nil` for a screen that has none.
+    let trailing: Trailing?
 
     func body(content: Content) -> some View {
         content
@@ -61,6 +62,13 @@ extension View {
     ) -> some View {
         modifier(AppHeaderModifier(trailing: trailing()))
     }
+
+    /// Installs the app header with the avatar alone, for a screen with no
+    /// buttons of its own. (An empty `appHeader { }` does not compile: a
+    /// toolbar builder cannot be empty.)
+    func appHeader() -> some View {
+        modifier(AppHeaderModifier<ToolbarItem<Void, EmptyView>>(trailing: nil))
+    }
 }
 
 /// One round icon button in the header's trailing area (Scan, Add, …). The
@@ -81,27 +89,19 @@ struct AppHeaderButton: View {
     }
 }
 
-/// The signed-in user's avatar: a 44pt circle showing their initials, since
-/// `User` carries no photo yet. Reads the session from the environment so the
-/// header needs no parameters for it.
+/// The signed-in user's avatar, an `InitialsAvatar` of their name. Reads the
+/// session from the environment so the header needs no parameters for it.
 struct AppAvatar: View {
     @Environment(AppSession.self) private var session
 
     var body: some View {
-        Circle()
-            .fill(Color(.OnCanvas.surface))
-            .frame(width: 44, height: 44)
-            .overlay {
-                Text(initials)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color(.Base.ink))
-            }
-            .accessibilityLabel(String(localized: "Profile"))
+        // Alone in the bar, with no name beside it: it needs a label.
+        InitialsAvatar(name: name, accessibilityLabel: String(localized: "Profile"))
     }
 
-    private var initials: String {
+    private var name: String {
         if case .authenticated(let user) = session.state {
-            return user.name.initials
+            return user.name
         }
         return ""
     }

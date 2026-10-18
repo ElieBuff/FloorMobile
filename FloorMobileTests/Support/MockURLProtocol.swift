@@ -15,15 +15,23 @@ import Synchronization
 /// caused cross-suite interference when suites overlapped on CI.
 final class MockURLProtocol: URLProtocol {
     typealias Handler = @Sendable (URLRequest) throws -> (HTTPURLResponse, Data)
+    /// A handler that also sees the request's task: what a call hands
+    /// `URLSession` besides its request, such as a task delegate.
+    typealias TaskHandler = @Sendable (URLRequest, URLSessionTask?) throws -> (HTTPURLResponse, Data)
 
-    private static let handlers = Mutex<[String: Handler]>([:])
+    private static let handlers = Mutex<[String: TaskHandler]>([:])
     private static let headerField = "X-Mock-Session"
 
     /// A session whose requests are all served by the given handler,
     /// isolated from every other mock session.
     nonisolated static func session(handler: @escaping Handler) -> URLSession {
+        session(taskHandler: { request, _ in try handler(request) })
+    }
+
+    /// The same, for a handler that also reads the request's task.
+    nonisolated static func session(taskHandler: @escaping TaskHandler) -> URLSession {
         let key = UUID().uuidString
-        handlers.withLock { $0[key] = handler }
+        handlers.withLock { $0[key] = taskHandler }
 
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [MockURLProtocol.self]
@@ -42,7 +50,7 @@ final class MockURLProtocol: URLProtocol {
             return
         }
         do {
-            let (response, data) = try handler(request)
+            let (response, data) = try handler(request, task)
             client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
             client?.urlProtocol(self, didLoad: data)
             client?.urlProtocolDidFinishLoading(self)

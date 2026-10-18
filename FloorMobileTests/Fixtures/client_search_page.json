@@ -1,0 +1,28 @@
+{
+    "items": [
+        {
+            "id": "01JBRAND0000000000000000A1",
+            "externalId": "seed-client-300001",
+            "firstName": "Nina",
+            "lastName": "Larsen",
+            "segment": "VIC",
+            "storeCode": "90917667064",
+            "store": { "name": "Regent Street" },
+            "SAExternalId": "378970372512460673",
+            "SA": { "firstName": "Elie", "lastName": "Buff" }
+        },
+        {
+            "id": "01JBRAND0000000000000000A2",
+            "externalId": "seed-client-300002",
+            "firstName": null,
+            "lastName": null,
+            "segment": null,
+            "storeCode": null,
+            "store": null,
+            "SAExternalId": null,
+            "SA": null
+        }
+    ],
+    "hasMore": true,
+    "nextCursor": "search-cursor-2"
+}

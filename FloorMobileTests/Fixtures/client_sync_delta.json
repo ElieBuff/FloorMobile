@@ -1,0 +1,34 @@
+{
+    "storeCode": "90917634296",
+    "items": [
+        {
+            "id": "0002b7b6-5167-4e0a-88c9-74d7bb83abbd",
+            "externalId": "seed-client-206362",
+            "firstName": "Alice",
+            "lastName": "Martinez-Durand",
+            "primaryEmail": "seed.client.206362@example.test",
+            "primaryPhone": null,
+            "segment": "Loyal",
+            "storeCode": "90917634296",
+            "optinEmail": true,
+            "optinPhone": true,
+            "optinIM": false,
+            "SAExternalId": "378970372512460673",
+            "SA": { "firstName": "Elie", "lastName": "Buff" },
+            "lastTransactionAt": "2026-10-10T16:00:00.000Z",
+            "totalSpent12M": 2100,
+            "totalSpentLifetime": 5230,
+            "numTransactions12M": 4,
+            "firstTransactionAt": "2023-02-11T10:00:00.000Z",
+            "preferredChannel": "EMAIL",
+            "lastInteractionAt": "2026-10-10T16:05:00.000Z",
+            "rfmRecency12M": 5,
+            "rfmFrequency12M": 3,
+            "rfmMonetary12M": 4,
+            "searchWords": ["206362", "alice", "client", "durand", "martinez", "martinezdurand", "seed", "seedclient206362"],
+            "searchPhones": []
+        }
+    ],
+    "hasMore": false,
+    "nextCursor": "cursor-pass-2"
+}

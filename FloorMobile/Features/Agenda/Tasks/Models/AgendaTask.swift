@@ -17,15 +17,11 @@ nonisolated final class AgendaTask: Syncable {
     @Attribute(.unique) var id: String
     /// Per-sync generation marker (mark-and-sweep); not from the API.
     var syncToken: String = ""
-
-    /// Rows the latest refresh did not return (see `Syncable`).
-    static func stale(token: String) -> Predicate<AgendaTask> {
-        #Predicate { $0.syncToken != token }
-    }
-
     /// Raw server values (open sets, e.g. "TO_DO" / "BIRTHDAY"): kept raw.
     var statusRaw: String
-    var reasonRaw: String
+    /// `nil` when the server sent no reason — never a stand-in value, since
+    /// whatever is stored here is what an edit sends back.
+    var reasonRaw: String?
     var title: String
     var taskDescription: String?
     var startDate: Date
@@ -42,7 +38,7 @@ nonisolated final class AgendaTask: Syncable {
     init(
         id: String,
         statusRaw: String,
-        reasonRaw: String,
+        reasonRaw: String? = nil,
         title: String,
         taskDescription: String? = nil,
         startDate: Date,
@@ -66,17 +62,35 @@ nonisolated final class AgendaTask: Syncable {
         self.store = store
         self.salesAssociate = salesAssociate
     }
+}
 
-    /// Typed view of `reasonRaw`; unknown server values map to `.other`.
-    var reason: Reason { Reason(raw: reasonRaw) }
+nonisolated extension AgendaTask {
+
+    // MARK: - Sync
+
+    /// Rows the latest refresh did not return (see `Syncable`).
+    static func stale(token: String) -> Predicate<AgendaTask> {
+        #Predicate { $0.syncToken != token }
+    }
+
+    // MARK: - Typed views
+
+    /// Typed view of `reasonRaw`, for display: no reason and a reason this
+    /// app does not know both read as `.other`. Not for writing back — a draft
+    /// reads `reasonRaw`, which keeps the two apart.
+    var reason: Reason { reasonRaw.map(Reason.init(raw:)) ?? .other }
 
     /// Typed view of `statusRaw`; unknown server values map to `.other`.
     var status: TaskStatus { TaskStatus(raw: statusRaw) }
+
+    // MARK: - Display
 
     /// "Elie Buff", "Elie", "Buff", or `nil` when the API sent no name.
     var clientDisplayName: String? {
         client?.displayName
     }
+
+    // MARK: - Time
 
     /// The day this task is filed under, at midnight — what the calendar dots.
     var agendaDay: Date {

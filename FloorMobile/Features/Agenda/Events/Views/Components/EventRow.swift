@@ -10,14 +10,14 @@ import SwiftUI
 ///
 /// The row does no time arithmetic. It is handed a `Standing` and paints it —
 /// which keeps its previews trivial and, more importantly, makes it impossible
-/// for two rows on screen to disagree about what time it is. `DayTimeline`
+/// for two rows on screen to disagree about what time it is. `DayLayout`
 /// decides; this draws.
 struct EventRow: View {
     let event: AgendaEvent
-    let standing: DayTimeline.Standing
+    let standing: AgendaEvent.Standing
     /// Where the current-time rule crosses this row, or `nil` — which is every
-    /// row but the appointment under way. `DayTimeline` decides; this draws.
-    var rule: DayTimeline.NowRule?
+    /// row but the appointment under way. `DayLayout` decides; this draws.
+    var rule: DayLayout.NowRule?
     var onTap: () -> Void = {}
 
     var body: some View {
@@ -179,7 +179,7 @@ private func previewEvent(
             event: previewEvent(id: "1", status: "PLANNED", reason: "BACK_IN_STOCK",
                                 name: "Inès Haddad", title: "Essayage", hour: 12, duration: 60),
             standing: .upcoming,
-            rule: DayTimeline.NowRule(date: now, progress: 5.0 / 60.0)
+            rule: DayLayout.NowRule(date: now, progress: 5.0 / 60.0)
         )
         EventRow(
             event: previewEvent(id: "2", status: "PLANNED", reason: "FOLLOW_UP",

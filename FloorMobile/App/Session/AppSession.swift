@@ -27,7 +27,7 @@ final class AppSession {
     private let auth: AuthClient
 
     /// The active tenant (Zitadel org) when authenticated, else `nil`.
-    /// Drives `TenantGuard`: a change wipes the local store.
+    /// Drives `LocalStore.enforceTenant`: a change wipes the local store.
     var currentTenantID: String? {
         if case .authenticated(let user) = state { user.tenantID } else { nil }
     }

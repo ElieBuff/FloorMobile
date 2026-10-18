@@ -17,7 +17,7 @@ import SwiftData
 ///
 /// The row paints; it does not write. The tick is a `TaskCheckbox`, which owns
 /// its own request — the same division of labour as `EventRow`, where
-/// `DayTimeline` decides and the row draws.
+/// `DayLayout` decides and the row draws.
 ///
 /// ## Two targets, not one
 ///

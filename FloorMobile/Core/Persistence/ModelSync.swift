@@ -36,6 +36,23 @@ extension ModelContext {
         try save()
     }
 
+    /// Stores one row the server just handed back — the answer to a write, not
+    /// a page of a refresh.
+    ///
+    /// Stamped with a token of its own. A refresh finishing in the same breath
+    /// could still sweep it — it bears no token that refresh minted — but the
+    /// server now has the row, so the next refresh brings it back.
+    nonisolated func store<Item, Model: PersistentModel & Syncable>(
+        _ item: Item,
+        as make: (Item) -> Model
+    ) throws {
+        try upsert([item]) { incoming in
+            let model = make(incoming)
+            model.syncToken = UUID().uuidString
+            return model
+        }
+    }
+
     /// Batch-deletes every row matching `predicate`, then saves.
     nonisolated func sweep<Model: PersistentModel>(_ type: Model.Type, matching predicate: Predicate<Model>) throws {
         try delete(model: Model.self, where: predicate)

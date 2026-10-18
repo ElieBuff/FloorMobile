@@ -7,7 +7,7 @@ import Foundation
 
 /// An appointment being composed or edited, before anything is sent anywhere.
 /// The event counterpart of `TaskDraft`, and there for the same reasons: it is
-/// what `EventComposerView` gathers, what `EventRequest` is built from, and it
+/// what `EventComposerView` gathers, what `EventWire.Request` is built from, and it
 /// carries the server-owned fields the form does not show (`id`, `status`, an
 /// unknown `reason`) so a save cannot erase them.
 ///
@@ -79,7 +79,8 @@ nonisolated struct EventDraft: Equatable, Sendable {
     init(event: AgendaEvent) {
         self.id = event.id
         self.title = event.title
-        self.reason = event.reason
+        // From the raw value — see `TaskDraft.init(task:)`.
+        self.reason = event.reasonRaw.map(Reason.init(raw:))
         // Unset stays unset: opening a form must not invent a type the
         // appointment never had, since saving would then write it in.
         self.meetingType = event.meetingType
@@ -107,7 +108,7 @@ nonisolated struct EventDraft: Equatable, Sendable {
     /// that value goes back untouched rather than being flattened to "OTHER".
     var reasonRaw: String? {
         guard let reason else { return serverReasonRaw }
-        return reason == .other ? (serverReasonRaw ?? Reason.other.rawValue) : reason.rawValue
+        return reason == .other ? serverReasonRaw : reason.rawValue
     }
 
     /// The title as it will be sent — see `TaskDraft.trimmedTitle`.

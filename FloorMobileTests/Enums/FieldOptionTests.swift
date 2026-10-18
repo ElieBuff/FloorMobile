@@ -14,9 +14,9 @@ struct FieldOptionTests {
 
     @Test("The payload flattens into one row per value, keeping the server's order")
     func flattensPayload() throws {
-        let payload = try JSONDecoder().decode(EnumsPayload.self, from: Fixture.data("enums"))
+        let payload = try JSONDecoder().decode(EnumsWire.Response.self, from: Fixture.data("enums"))
 
-        let rows = FieldOptionDTO.rows(from: payload)
+        let rows = EnumsWire.rows(from: payload)
 
         // One row per value, nothing lost and nothing invented.
         let valueCount = try Fixture.enumsValueCount()
@@ -40,9 +40,9 @@ struct FieldOptionTests {
     @Test("An entity or field the app knows nothing about still lands in the store")
     func carriesUnknownFields() throws {
         let json = Data(#"{"client": {"segment": ["VIC", "GOLD"]}}"#.utf8)
-        let payload = try JSONDecoder().decode(EnumsPayload.self, from: json)
+        let payload = try JSONDecoder().decode(EnumsWire.Response.self, from: json)
 
-        let rows = FieldOptionDTO.rows(from: payload)
+        let rows = EnumsWire.rows(from: payload)
 
         #expect(rows.map(\.value) == ["VIC", "GOLD"])
         #expect(rows.allSatisfy { $0.entityName == "client" && $0.field == "segment" })
@@ -69,10 +69,10 @@ struct FieldOptionTests {
 
     @Test("A field's stored values become the enum a picker offers, in the server's order")
     func resolvesToLocalEnum() throws {
-        let payload = try JSONDecoder().decode(EnumsPayload.self, from: Fixture.data("enums"))
-        let options = FieldOptionDTO.rows(from: payload)
+        let payload = try JSONDecoder().decode(EnumsWire.Response.self, from: Fixture.data("enums"))
+        let options = EnumsWire.rows(from: payload)
             .filter { $0.entityName == "event" && $0.field == "meetingType" }
-            .map(FieldOption.init(dto:))
+            .map(FieldOption.init(wire:))
 
         #expect(options.resolved(fallback: MeetingType.selectable) == [.inPerson, .videoCall])
     }

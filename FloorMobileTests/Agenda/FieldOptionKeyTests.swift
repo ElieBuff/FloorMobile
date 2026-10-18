@@ -27,8 +27,8 @@ struct FieldOptionKeyTests {
         ("eventMeetingType", .eventMeetingType),
     ]
 
-    private static func payload() throws -> EnumsPayload {
-        try JSONDecoder().decode(EnumsPayload.self, from: Fixture.data("enums"))
+    private static func payload() throws -> EnumsWire.Response {
+        try JSONDecoder().decode(EnumsWire.Response.self, from: Fixture.data("enums"))
     }
 
     @Test("Every declared key names a field the server actually publishes")
@@ -69,9 +69,9 @@ struct FieldOptionKeyTests {
         let payload = try Self.payload()
 
         func options(_ key: FieldOption.Key) -> [FieldOption] {
-            FieldOptionDTO.rows(from: payload)
+            EnumsWire.rows(from: payload)
                 .filter { $0.entityName == key.entityName && $0.field == key.field }
-                .map(FieldOption.init(dto:))
+                .map(FieldOption.init(wire:))
         }
 
         // `resolved` drops what it cannot name and falls back when it can name

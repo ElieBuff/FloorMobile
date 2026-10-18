@@ -9,7 +9,7 @@ import Foundation
 ///
 /// It gathers what `TaskComposerView` is collecting: the fields write into it,
 /// the checkmark in the sheet's toolbar reads `isValid` off it, and the request
-/// is built from it (`TaskRequest`).
+/// is built from it (`TaskWire.Request`).
 ///
 /// Besides the fields the form shows, it carries what the server owns and the
 /// form does not offer to edit — `id`, `status`, `reminderDate`. A save sends
@@ -57,7 +57,10 @@ nonisolated struct TaskDraft: Equatable, Sendable {
     init(task: AgendaTask) {
         self.id = task.id
         self.title = task.title
-        self.reason = task.reason
+        // From the raw value, not `task.reason`: that one reads `.other` for a
+        // task with no reason at all, and the field would open on an answer
+        // nobody gave.
+        self.reason = task.reasonRaw.map(Reason.init(raw:))
         self.clientName = task.clientDisplayName ?? ""
         self.dueDate = task.startDate
         self.note = task.taskDescription ?? ""
@@ -74,7 +77,7 @@ nonisolated struct TaskDraft: Equatable, Sendable {
     /// that value goes back untouched rather than being flattened to "OTHER".
     var reasonRaw: String? {
         guard let reason else { return serverReasonRaw }
-        return reason == .other ? (serverReasonRaw ?? Reason.other.rawValue) : reason.rawValue
+        return reason == .other ? serverReasonRaw : reason.rawValue
     }
 
     /// The title as it will be sent. `isValid` judges the trimmed form, so what

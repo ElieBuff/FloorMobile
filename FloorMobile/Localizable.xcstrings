@@ -41,6 +41,9 @@
     "AI recommendations" : {
 
     },
+    "All Brand" : {
+
+    },
     "Appointment not booked" : {
 
     },
@@ -84,6 +87,9 @@
 
     },
     "Client search arrives with the Clients tab." : {
+
+    },
+    "Clients" : {
 
     },
     "Close" : {
@@ -179,10 +185,13 @@
     "Message" : {
 
     },
-    "Messages" : {
+    "More" : {
 
     },
-    "More" : {
+    "My Clients" : {
+
+    },
+    "Name, email or phone" : {
 
     },
     "New Event" : {
@@ -233,6 +242,9 @@
     "Now, %@" : {
 
     },
+    "Online search isn't responding. Showing results from this device." : {
+
+    },
     "Other" : {
 
     },
@@ -267,6 +279,12 @@
 
     },
     "Search" : {
+
+    },
+    "Search failed" : {
+
+    },
+    "Search the whole brand" : {
 
     },
     "Show the month" : {
@@ -341,7 +359,13 @@
     "Type" : {
 
     },
+    "Type at least 3 characters of a name, an email or a phone number." : {
+
+    },
     "Unable to reach the server. Check your connection and try again." : {
+
+    },
+    "Unnamed client" : {
 
     },
     "Video call" : {
@@ -369,6 +393,9 @@
 
     },
     "Your session has expired. Please sign in again." : {
+
+    },
+    "Your store's clients appear here once they are synchronized." : {
 
     }
   },

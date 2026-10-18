@@ -1,5 +1,5 @@
 //
-//  DayTimelineTests.swift
+//  DayLayoutTests.swift
 //  FloorMobileTests
 //
 
@@ -7,8 +7,8 @@ import Foundation
 import Testing
 @testable import FloorMobile
 
-@Suite("DayTimeline")
-struct DayTimelineTests {
+@Suite("DayLayout")
+struct DayLayoutTests {
 
     /// A fixed calendar and a fixed day: the whole point of passing `now` in is
     /// that these tests read the same at 3am as at noon.
@@ -37,61 +37,18 @@ struct DayTimelineTests {
         )
     }
 
-    private func items(_ events: [AgendaEvent], now: Date, day: Date) -> [DayTimeline.Item] {
-        DayTimeline.items(events: events, now: now, day: day, calendar: Self.calendar)
+    private func items(_ events: [AgendaEvent], now: Date, day: Date) -> [DayLayout.Item] {
+        DayLayout.items(events: events, now: now, day: day, calendar: Self.calendar)
     }
 
-    private static func rule(of item: DayTimeline.Item) -> DayTimeline.NowRule? {
+    private static func rule(of item: DayLayout.Item) -> DayLayout.NowRule? {
         guard case .event(_, _, let rule) = item else { return nil }
         return rule
     }
 
     /// Every rule the list carries — there is never more than one.
-    private static func rules(of items: [DayTimeline.Item]) -> [DayTimeline.NowRule] {
+    private static func rules(of items: [DayLayout.Item]) -> [DayLayout.NowRule] {
         items.compactMap(rule(of:))
-    }
-
-    // MARK: - Standing
-
-    @Test("A cancelled appointment stays cancelled, whatever the hour")
-    func cancelledIgnoresTheClock() throws {
-        let past = Self.event("1", at: try Self.moment(9), status: "CANCELLED")
-        let future = Self.event("2", at: try Self.moment(18), status: "CANCELLED")
-        let now = try Self.moment(11, 20)
-
-        #expect(DayTimeline.standing(of: past, at: now) == .cancelled)
-        #expect(DayTimeline.standing(of: future, at: now) == .cancelled)
-    }
-
-    @Test("An appointment closed out early reads as done before its slot ends")
-    func completedBeatsTheClock() throws {
-        let event = Self.event("1", at: try Self.moment(14), duration: 60, status: "COMPLETED")
-        #expect(DayTimeline.standing(of: event, at: try Self.moment(14, 10)) == .done)
-    }
-
-    @Test("For anything the server still calls open, the clock decides", arguments: ["PLANNED", "CONFIRMED", "WHO_KNOWS"])
-    func openStatusesAreJudgedOnTime(status: String) throws {
-        let event = Self.event("1", at: try Self.moment(9, 30), duration: 30, status: status)
-
-        #expect(DayTimeline.standing(of: event, at: try Self.moment(9, 0)) == .upcoming)
-        #expect(DayTimeline.standing(of: event, at: try Self.moment(11, 0)) == .done)
-    }
-
-    @Test("The appointment you are sitting in is not greyed out")
-    func inProgressStaysUpcoming() throws {
-        let event = Self.event("1", at: try Self.moment(14), duration: 60)
-        // Started half an hour ago, ends in half an hour.
-        #expect(DayTimeline.standing(of: event, at: try Self.moment(14, 30)) == .upcoming)
-    }
-
-    @Test("The boundary is the end instant itself")
-    func pastBeginsAtTheEndInstant() throws {
-        let event = Self.event("1", at: try Self.moment(14), duration: 60)
-        let endsAt = try Self.moment(15)
-
-        #expect(DayTimeline.standing(of: event, at: endsAt.addingTimeInterval(-1)) == .upcoming)
-        #expect(DayTimeline.standing(of: event, at: endsAt) == .done)
-        #expect(DayTimeline.standing(of: event, at: endsAt.addingTimeInterval(1)) == .done)
     }
 
     // MARK: - Ordering and the rule between rows
@@ -145,7 +102,7 @@ struct DayTimelineTests {
         #expect(result[0] == .event(
             events[0],
             standing: .upcoming,
-            rule: DayTimeline.NowRule(date: now, progress: 5.0 / 60.0)
+            rule: DayLayout.NowRule(date: now, progress: 5.0 / 60.0)
         ))
     }
 
@@ -173,7 +130,7 @@ struct DayTimelineTests {
         #expect(Self.rule(of: result[0])?.progress == 0)
     }
 
-    /// The end instant is the same boundary `standing(of:at:)` uses, so the row
+    /// The end instant is the same boundary `standing(at:)` uses, so the row
     /// greys out and gives up the rule in the same breath.
     @Test("On the ending second, the row is done and the rule steps out of it")
     func ruleLeavesTheRowWhenItEnds() throws {
@@ -256,8 +213,8 @@ struct DayTimelineTests {
     @Test("Two instances of the same stored row are the same item")
     func comparedByIdNotByObject() throws {
         let start = try Self.moment(14)
-        let one = DayTimeline.Item.event(Self.event("42", at: start), standing: .upcoming, rule: nil)
-        let other = DayTimeline.Item.event(Self.event("42", at: start), standing: .upcoming, rule: nil)
+        let one = DayLayout.Item.event(Self.event("42", at: start), standing: .upcoming, rule: nil)
+        let other = DayLayout.Item.event(Self.event("42", at: start), standing: .upcoming, rule: nil)
 
         #expect(one == other)
     }
@@ -266,7 +223,7 @@ struct DayTimelineTests {
     func standingBreaksEquality() throws {
         let event = Self.event("42", at: try Self.moment(14))
         #expect(
-            DayTimeline.Item.event(event, standing: .upcoming, rule: nil)
+            DayLayout.Item.event(event, standing: .upcoming, rule: nil)
                 != .event(event, standing: .done, rule: nil)
         )
     }
@@ -280,53 +237,8 @@ struct DayTimelineTests {
         let later = try Self.moment(14, 6)
 
         #expect(
-            DayTimeline.Item.event(event, standing: .upcoming, rule: DayTimeline.NowRule(date: at, progress: 5.0 / 60))
-                != .event(event, standing: .upcoming, rule: DayTimeline.NowRule(date: later, progress: 6.0 / 60))
-        )
-    }
-
-    // MARK: - Next appointment
-
-    @Test("The next appointment is the soonest one still ahead today")
-    func nextAppointmentIsTheSoonestAhead() throws {
-        let events = [
-            Self.event("late", at: try Self.moment(18)),
-            Self.event("past", at: try Self.moment(9)),
-            Self.event("soon", at: try Self.moment(14)),
-        ]
-
-        let next = DayTimeline.nextAppointment(in: events, at: try Self.moment(11, 20), calendar: Self.calendar)
-
-        #expect(next?.id == "soon")
-    }
-
-    @Test("An appointment starting this very minute is still the next one")
-    func startingNowCountsAsNext() throws {
-        let event = Self.event("1", at: try Self.moment(14))
-        let next = DayTimeline.nextAppointment(in: [event], at: try Self.moment(14), calendar: Self.calendar)
-        #expect(next?.id == "1")
-    }
-
-    @Test("An appointment that has started is no longer the next one")
-    func startedIsNotNext() throws {
-        let event = Self.event("1", at: try Self.moment(14))
-        let next = DayTimeline.nextAppointment(in: [event], at: try Self.moment(14, 1), calendar: Self.calendar)
-        #expect(next == nil)
-    }
-
-    /// The query feeding this is wider than a day; tomorrow must not leak into
-    /// today's card, nor today's into tomorrow's once midnight has passed.
-    @Test("Only the day `now` falls in is considered")
-    func otherDaysAreIgnored() throws {
-        let tomorrow = Self.event("tomorrow", at: try Self.moment(9, day: 8))
-        let today = Self.event("today", at: try Self.moment(23, 30, day: 7))
-
-        #expect(
-            DayTimeline.nextAppointment(in: [tomorrow], at: try Self.moment(20, day: 7), calendar: Self.calendar) == nil
-        )
-        #expect(
-            DayTimeline.nextAppointment(in: [today, tomorrow], at: try Self.moment(0, 5, day: 8), calendar: Self.calendar)?.id
-                == "tomorrow"
+            DayLayout.Item.event(event, standing: .upcoming, rule: DayLayout.NowRule(date: at, progress: 5.0 / 60))
+                != .event(event, standing: .upcoming, rule: DayLayout.NowRule(date: later, progress: 6.0 / 60))
         )
     }
 
@@ -336,6 +248,6 @@ struct DayTimelineTests {
         // list would compare unequal on every tick and the section would
         // animate a move that never happened. The rule *on* a row is the
         // opposite case — it does move, see `aMovedRuleBreaksEquality`.
-        #expect(DayTimeline.Item.now == DayTimeline.Item.now)
+        #expect(DayLayout.Item.now == DayLayout.Item.now)
     }
 }

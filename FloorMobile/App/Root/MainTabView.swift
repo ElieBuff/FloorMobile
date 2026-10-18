@@ -42,12 +42,12 @@ struct MainTabView: View {
                 label(String(localized: "Home"), systemImage: "house", tab: .home)
             }
 
-            Tab(value: .messages) {
+            Tab(value: .clients) {
                 NavigationStack {
-                    MessagesView()
+                    ClientsView()
                 }
             } label: {
-                label(String(localized: "Messages"), systemImage: "message", tab: .messages)
+                label(String(localized: "Clients"), systemImage: "person.2", tab: .clients)
             }
 
             Tab(value: .more) {
@@ -111,7 +111,7 @@ struct MainTabView: View {
 /// The app's top-level tabs, including the search tab.
 enum AppTab: Hashable {
     case home
-    case messages
+    case clients
     case more
     case agent
     case search
@@ -119,6 +119,6 @@ enum AppTab: Hashable {
 
 #Preview {
     MainTabView()
-        .modelContainer(for: AIAction.self, inMemory: true)
+        .modelContainer(for: [AIAction.self, Client.self], inMemory: true)
         .environment(AppSession(auth: .preview, api: .preview))
 }

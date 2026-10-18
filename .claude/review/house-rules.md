@@ -123,10 +123,12 @@ such cost. In both cases, the evidence is the existing code or the `floor-dev` r
   `../FloorPlatform/floor/packages/types/src/schemas/`. A wire type is checked against those, not against the route.
   Fixtures are copied from real responses, never invented. A change that needs the server to change says so and
   names the change.
-- **Client search.** The store view searches locally (`Client.matching`, a `localizedStandardContains` predicate,
-  `fetchLimit` grown by pages); the brand view asks the server. A change to search stays aligned with the server's
-  rules (`floor_search_fold`, the shared vectors in
-  `../FloorPlatform/floor/packages/domain/test/client-search.vectors.json`), never invents its own.
+- **Client search.** The server searches, typos and all. "My Clients" asks `client/search?scope=mine` from
+  `Endpoint.clientSearchMinimumLength` characters, interactive (`Endpoint.interactive`), and searches the device's copy
+  below that and when the server does not answer (`Client.matching`, a plain `localizedStandardContains` predicate,
+  `fetchLimit` grown by pages); "All Brand" asks `client/search`. Both server lists go through `PagedSearchList`. The
+  device does not reimplement the server's rules: a future search on the device follows them (`floor_search_fold`, the
+  shared vectors in `../FloorPlatform/floor/packages/domain/test/client-search.vectors.json`), never invents its own.
 - **SPM dependencies** only with a real added value over the native APIs.
 - **Swift files live in `FloorMobile/`**, never at the root of the repository.
 

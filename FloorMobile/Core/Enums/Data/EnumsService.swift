@@ -33,8 +33,8 @@ actor EnumsService {
     /// save would see an empty list. Per-object deletes are held until the
     /// save, so readers go straight from the old values to the new ones.
     func synchronize(using client: APIClient) async throws {
-        let payload: EnumsPayload = try await client.send(.enums())
-        let rows = FieldOptionDTO.rows(from: payload)
+        let payload: EnumsWire.Response = try await client.send(.enums())
+        let rows = EnumsWire.rows(from: payload)
 
         let stored = try modelContext.fetch(
             FetchDescriptor<FieldOption>(sortBy: [SortDescriptor(\.id, order: .forward)])
@@ -55,7 +55,7 @@ actor EnumsService {
             modelContext.delete(option)
         }
         for row in rows {
-            modelContext.insert(FieldOption(dto: row))
+            modelContext.insert(FieldOption(wire: row))
         }
         try modelContext.save()
     }
@@ -69,7 +69,7 @@ actor EnumsService {
     ///
     /// Both sides are put in `id` order to compare like with like — `rows` is
     /// flattened in (entity, field) order, which is not the same thing.
-    private static func differs(stored: [FieldOption], from rows: [FieldOptionDTO]) -> Bool {
+    private static func differs(stored: [FieldOption], from rows: [EnumsWire.Row]) -> Bool {
         guard stored.count == rows.count else { return true }
         let incoming = rows
             .map {

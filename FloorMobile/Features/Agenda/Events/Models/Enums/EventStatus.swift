@@ -12,7 +12,7 @@ import Foundation
 /// Note what is *not* here: no "in progress", no "past". The server never moves
 /// a booking on its own as the day goes by — `PLANNED` stays `PLANNED` long
 /// after the slot has elapsed. Whether an event has run its course is a
-/// question for the clock, answered in `DayTimeline`.
+/// question for the clock, answered by `AgendaEvent.standing(at:)`.
 nonisolated enum EventStatus: String, CaseIterable, Sendable {
     case planned = "PLANNED"
     case confirmed = "CONFIRMED"

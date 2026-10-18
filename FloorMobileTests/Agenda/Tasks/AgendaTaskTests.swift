@@ -13,13 +13,13 @@ struct AgendaTaskTests {
     @Test("Decodes a page and flattens people and store into the model")
     func mapsFromDTO() throws {
         let page = try APIClient.makeDecoder()
-            .decode(CursorPage<TaskDTO>.self, from: Fixture.data("task_agenda_page1"))
+            .decode(CursorPage<TaskWire.Response>.self, from: Fixture.data("task_agenda_page1"))
 
         #expect(!page.hasMore)
         #expect(page.nextCursor == nil)
 
-        let dto = try #require(page.items.first)
-        let task = AgendaTask(dto: dto)
+        let wire = try #require(page.items.first)
+        let task = AgendaTask(wire: wire)
 
         #expect(task.id == "01M2FVMQ0HZN3Y1JMCMYD4PS3M")
         #expect(task.statusRaw == "TO_DO")
@@ -32,7 +32,9 @@ struct AgendaTaskTests {
         #expect(task.salesAssociate?.id == "01KTRSFERMNXK5FGSQW11M1478")
     }
 
-    @Test("A null server reason decodes and maps to .other")
+    /// Stored as absent, not as "OTHER": the stored value is what an edit
+    /// sends back, and the server has no such reason.
+    @Test("A null server reason is stored as absent, and reads as .other")
     func nullReasonMapsToOther() throws {
         let json = Data("""
         {
@@ -46,10 +48,10 @@ struct AgendaTaskTests {
         }
         """.utf8)
 
-        let dto = try APIClient.makeDecoder().decode(TaskDTO.self, from: json)
-        let task = AgendaTask(dto: dto)
+        let wire = try APIClient.makeDecoder().decode(TaskWire.Response.self, from: json)
+        let task = AgendaTask(wire: wire)
 
-        #expect(task.reasonRaw == Reason.other.rawValue)
+        #expect(task.reasonRaw == nil)
         #expect(task.reason == .other)
     }
 

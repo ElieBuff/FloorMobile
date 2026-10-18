@@ -6,7 +6,8 @@
 import Foundation
 
 /// A client embedded in a `@Model` for display: a value snapshot stored as a
-/// SwiftData composite attribute, decoded straight from the wire. Richer than
+/// SwiftData composite attribute (hence `Codable` — for the store, not the
+/// network: it comes off the wire as a `ClientSummaryWire`). Richer than
 /// `SalesAssociateSummary` (loyalty segment, external id, spend metrics). Its
 /// members can't be used in a `@Query` predicate — hoist a field to the model's
 /// top level to filter or sort on it.
@@ -25,11 +26,7 @@ nonisolated struct ClientSummary: Codable, Sendable, Equatable {
 
     /// "Raphaël Van den Berg", "Raphaël", "Van den Berg", or `nil`.
     var displayName: String? {
-        let name = [firstName, lastName]
-            .compactMap { $0?.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
-            .joined(separator: " ")
-        return name.isEmpty ? nil : name
+        PersonName.display(first: firstName, last: lastName)
     }
 
     init(
@@ -46,5 +43,18 @@ nonisolated struct ClientSummary: Codable, Sendable, Equatable {
         self.lastName = lastName
         self.segment = segment
         self.metrics = metrics
+    }
+
+    init(wire: ClientSummaryWire) {
+        self.init(
+            id: wire.id,
+            externalId: wire.externalId,
+            firstName: wire.firstName,
+            lastName: wire.lastName,
+            segment: wire.segment,
+            metrics: wire.metrics.map {
+                Metrics(totalSpent12M: $0.totalSpent12M, totalSpentLifetime: $0.totalSpentLifetime)
+            }
+        )
     }
 }

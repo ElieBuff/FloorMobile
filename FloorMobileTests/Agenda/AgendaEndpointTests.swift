@@ -10,8 +10,8 @@ import Testing
 @Suite("Agenda endpoints")
 struct AgendaEndpointTests {
 
-    private static func request() -> TaskRequest {
-        TaskRequest(draft: TaskDraft(day: Date(timeIntervalSince1970: 0)))
+    private static func request() -> TaskWire.Request {
+        TaskWire.Request(draft: TaskDraft(day: Date(timeIntervalSince1970: 0)))
     }
 
     @Test("Creating a task: a POST on the collection, with a body")
@@ -59,7 +59,7 @@ struct AgendaEndpointTests {
 
     @Test("Booking an appointment: a POST on the collection, with a body")
     func createEventEndpoint() {
-        let endpoint = Endpoint.createEvent(EventRequest(draft: EventDraft(day: Date(timeIntervalSince1970: 0))))
+        let endpoint = Endpoint.createEvent(EventWire.Request(draft: EventDraft(day: Date(timeIntervalSince1970: 0))))
 
         #expect(endpoint.path == "event")
         #expect(endpoint.method == .post)
@@ -71,7 +71,7 @@ struct AgendaEndpointTests {
     func updateEventEndpoint() {
         let endpoint = Endpoint.updateEvent(
             id: "01M344H8YBXQ7VQ6ZJ0P4KTR2C",
-            body: EventRequest(draft: EventDraft(day: Date(timeIntervalSince1970: 0)))
+            body: EventWire.Request(draft: EventDraft(day: Date(timeIntervalSince1970: 0)))
         )
 
         #expect(endpoint.path == "event/01M344H8YBXQ7VQ6ZJ0P4KTR2C")
@@ -82,9 +82,9 @@ struct AgendaEndpointTests {
 
     @Test("Reading stays a GET, and the cursor travels as a query item")
     func agendaReadsAreUnchanged() {
-        #expect(Endpoint.tasks().method == .get)
-        #expect(Endpoint.tasks().path == "task/agenda")
-        #expect(Endpoint.tasks(after: "cursor-2").query == [URLQueryItem(name: "after", value: "cursor-2")])
+        #expect(Endpoint.taskAgenda().method == .get)
+        #expect(Endpoint.taskAgenda().path == "task/agenda")
+        #expect(Endpoint.taskAgenda(after: "cursor-2").query == [URLQueryItem(name: "after", value: "cursor-2")])
         #expect(Endpoint.eventAgenda().path == "event/agenda")
     }
 }

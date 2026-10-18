@@ -50,9 +50,9 @@ struct RootView: View {
 
     /// Row by row, not `deleteAllData()`: the container reset would invalidate
     /// the long-lived contexts the services hold, and a re-login without an app
-    /// restart writes through those very contexts (see `TenantGuard.erase`).
+    /// restart writes through those very contexts (see `LocalStore.erase`).
     private func endSession() async {
-        try? TenantGuard.erase(in: modelContext)
+        try? LocalStore.live.erase(in: modelContext)
         await session.signOut()
         expiry.hasExpired = false
     }
@@ -90,7 +90,7 @@ struct RootView: View {
 
 #Preview {
     let container = try! ModelContainer(
-        for: AIAction.self, AgendaEvent.self, AgendaTask.self, FieldOption.self,
+        for: AIAction.self, AgendaEvent.self, AgendaTask.self, Client.self, FieldOption.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
     return RootView()

@@ -208,19 +208,71 @@ struct APIClientTests {
         #expect(!expiry.hasExpired)
     }
 
+    // MARK: - Interactive calls
+
+    @Test("An interactive call gives up on a silent server after 3 s; an ordinary call keeps the session's timeout")
+    func interactiveCallTimesOutFast() async throws {
+        let timeouts = Mutex<[TimeInterval?]>([])
+        let client = Self.makeClient(session: MockURLProtocol.session(taskHandler: { request, task in
+            // The request as APIClient built it, before URLSession adds its headers.
+            timeouts.withLock { $0.append(task?.originalRequest?.timeoutInterval) }
+            return (Self.response(request, statusCode: 200), Data())
+        }))
+
+        try await client.send(Endpoint(path: "client/search", interactive: true))
+        try await client.send(Endpoint(path: "client/search"))
+
+        // An ordinary request is left as built (URLRequest's default): the session's own timeout applies.
+        let untouched = URLRequest(url: URL(string: "https://api.example.com")!).timeoutInterval
+        #expect(timeouts.withLock { $0 } == [3, untouched])
+    }
+
+    @Test("The offline canceller cancels a task waiting for a connection")
+    func offlineCancellerCancelsTheTask() {
+        let session = URLSession(configuration: .ephemeral)
+        defer { session.invalidateAndCancel() }
+        // Created, never resumed: nothing leaves; the canceller is called as URLSession would.
+        let task = session.dataTask(with: URL(string: "https://api.example.com/client/search")!)
+
+        APIClient.OfflineCanceller().urlSession(session, taskIsWaitingForConnectivity: task)
+
+        let state = task.state
+        #expect(state == .canceling || state == .completed)
+    }
+
+    @Test("An interactive call hands URLSession the offline canceller, an ordinary call nothing, and both decode alike")
+    func interactiveCallHandsTheCanceller() async throws {
+        let handed = Mutex<[String]>([])
+        let client = Self.makeClient(session: MockURLProtocol.session(taskHandler: { request, task in
+            let delegate = task?.delegate.map { String(describing: type(of: $0)) } ?? "none"
+            handed.withLock { $0.append(delegate) }
+            return (Self.response(request, statusCode: 200), Data(#"{"id":"c-1","name":"Marie"}"#.utf8))
+        }))
+
+        let interactive: Client = try await client.send(Endpoint(path: "client/search", interactive: true))
+        let ordinary: Client = try await client.send(Endpoint(path: "clients/1"))
+
+        #expect(handed.withLock { $0 } == ["OfflineCanceller", "none"])
+        #expect(interactive == ordinary)
+    }
+
     // MARK: - Helpers
 
     private nonisolated static func makeClient(
         expiry: SessionExpiry? = nil,
         handler: @escaping MockURLProtocol.Handler
     ) -> APIClient {
+        makeClient(expiry: expiry, session: MockURLProtocol.session(handler: handler))
+    }
+
+    private nonisolated static func makeClient(expiry: SessionExpiry? = nil, session: URLSession) -> APIClient {
         APIClient(
             baseURL: URL(string: "https://api.example.com")!,
             tokens: TokenProviding(
                 validToken: { "valid-token" },
                 refreshedToken: { "refreshed-token" }
             ),
-            session: MockURLProtocol.session(handler: handler),
+            session: session,
             expiry: expiry
         )
     }

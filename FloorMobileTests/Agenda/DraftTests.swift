@@ -169,6 +169,24 @@ struct DraftTests {
         #expect(event.reasonRaw == "FOLLOW_UP")
     }
 
+    @Test("A row with no reason opens unanswered, on both forms")
+    func absentReasonOpensUnanswered() throws {
+        let task = TaskDraft(task: AgendaTask(
+            id: "t1", statusRaw: "TO_DO", reasonRaw: nil, title: "Ring back",
+            startDate: try Self.moment(9), createdAt: .now, updatedAt: .now
+        ))
+        // The row reads "Other"; the form must not — nobody gave that answer.
+        #expect(task.reason == nil)
+        #expect(task.reasonRaw == nil)
+
+        let event = EventDraft(event: AgendaEvent(
+            id: "e1", statusRaw: "PLANNED", reasonRaw: nil, title: "Fitting",
+            startDate: try Self.moment(9), duration: 30, createdAt: .now, updatedAt: .now
+        ))
+        #expect(event.reason == nil)
+        #expect(event.reasonRaw == nil)
+    }
+
     @Test("A new draft sends no reason until one is picked")
     func newDraftSendsThePickedReason() throws {
         var task = TaskDraft(day: try Self.moment(9))

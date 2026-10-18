@@ -12,41 +12,36 @@ import Testing
 @MainActor
 struct SyncManagerTests {
 
-    /// In-memory marker standing in for the stored tenant. `@unchecked
-    /// Sendable` is safe here: the suite is MainActor-confined.
-    private final class Marker: @unchecked Sendable {
-        var value: String?
-        init(_ value: String?) { self.value = value }
-    }
-
-    @Test("A successful startup sync stores the vocabulary and opens the app")
+    @Test("A successful startup sync stores the vocabulary and the clients, and opens the app")
     func finishesAndPersists() async throws {
         let container = try Self.inMemoryContainer()
-        let manager = SyncManager(tenantGuard: Self.guard(Marker("org-1")))
+        let manager = SyncManager(localStore: Self.store(tenant: .inMemory("org-1")))
 
         await manager.synchronize(
             context: container.mainContext,
             tenantID: "org-1",
             services: AppServices(container: container),
-            api: Self.client(statusCode: 200, body: try Fixture.data("enums"))
+            api: Self.serving()
         )
 
         #expect(manager.state == .finished)
         let options = try ModelContext(container).fetch(FetchDescriptor<FieldOption>())
         let valueCount = try Fixture.enumsValueCount()
         #expect(options.count == valueCount)
+        let clients = try ModelContext(container).fetchCount(FetchDescriptor<Client>())
+        #expect(clients == 3)
     }
 
     @Test("A failure with nothing in store stops on the loading screen")
     func coldFailureBlocks() async throws {
         let container = try Self.inMemoryContainer()
-        let manager = SyncManager(tenantGuard: Self.guard(Marker("org-1")))
+        let manager = SyncManager(localStore: Self.store(tenant: .inMemory("org-1")))
 
         await manager.synchronize(
             context: container.mainContext,
             tenantID: "org-1",
             services: AppServices(container: container),
-            api: Self.client(statusCode: 500, body: Data())
+            api: Self.failing()
         )
 
         guard case .failed = manager.state else {
@@ -62,13 +57,16 @@ struct SyncManagerTests {
             FieldOption(entityName: "task", field: "reason", value: "CACHED", rank: 0)
         )
         try container.mainContext.save()
-        let manager = SyncManager(tenantGuard: Self.guard(Marker("org-1")))
+        // A complete client pass went through on that earlier run.
+        let manager = SyncManager(localStore: Self.store(
+            tenant: .inMemory("org-1"), cursor: .inMemory("cursor-pass-1")
+        ))
 
         await manager.synchronize(
             context: container.mainContext,
             tenantID: "org-1",
             services: AppServices(container: container),
-            api: Self.client(statusCode: 500, body: Data())
+            api: Self.failing()
         )
 
         // Offline in the shop: the advisor keeps what the last sync brought.
@@ -77,10 +75,33 @@ struct SyncManagerTests {
         #expect(values == ["CACHED"])
     }
 
+    @Test("A failure before any client pass completed stops on the loading screen")
+    func failureWithoutClientsBlocks() async throws {
+        let container = try Self.inMemoryContainer()
+        container.mainContext.insert(
+            FieldOption(entityName: "task", field: "reason", value: "CACHED", rank: 0)
+        )
+        try container.mainContext.save()
+        // The vocabulary is there, but no client pass has ever finished.
+        let manager = SyncManager(localStore: Self.store(tenant: .inMemory("org-1")))
+
+        await manager.synchronize(
+            context: container.mainContext,
+            tenantID: "org-1",
+            services: AppServices(container: container),
+            api: Self.failing()
+        )
+
+        guard case .failed = manager.state else {
+            Issue.record("Expected .failed, got \(manager.state)")
+            return
+        }
+    }
+
     // This one aborted the whole process while the wipe still went through
     // `container.deleteAllData()`: the sync that follows writes via contexts
     // the services built at launch, which that call invalidates. It passes
-    // now that `TenantGuard.erase` deletes rows instead — keep it.
+    // now that `LocalStore.erase` deletes rows instead — keep it.
     @Test("A tenant change wipes the store before anything is shown")
     func tenantChangeWipesFirst() async throws {
         let container = try Self.inMemoryContainer()
@@ -88,34 +109,34 @@ struct SyncManagerTests {
             FieldOption(entityName: "task", field: "reason", value: "OTHER_TENANT", rank: 0)
         )
         try container.mainContext.save()
-        let marker = Marker("org-1")
-        let manager = SyncManager(tenantGuard: Self.guard(marker))
+        let tenant = StoredValue<String>.inMemory("org-1")
+        let manager = SyncManager(localStore: Self.store(tenant: tenant))
 
         await manager.synchronize(
             context: container.mainContext,
             tenantID: "org-2",
             services: AppServices(container: container),
-            api: Self.client(statusCode: 200, body: try Fixture.data("enums"))
+            api: Self.serving()
         )
 
         // The previous tenant's rows are gone, replaced by the new sync only.
         let values = try ModelContext(container).fetch(FetchDescriptor<FieldOption>()).map(\.value)
         #expect(!values.contains("OTHER_TENANT"))
-        #expect(marker.value == "org-2")
+        #expect(tenant.get() == "org-2")
     }
 
     /// A sign-out leaves the manager `.finished`, which would send the next
-    /// sign-in straight into the app on a store `TenantGuard` just emptied.
+    /// sign-in straight into the app on a store `LocalStore` just emptied.
     @Test("Resetting sends the next sign-in back through the sync")
     func resetReturnsToIdle() async throws {
         let container = try Self.inMemoryContainer()
-        let manager = SyncManager(tenantGuard: Self.guard(Marker("org-1")))
+        let manager = SyncManager(localStore: Self.store(tenant: .inMemory("org-1")))
 
         await manager.synchronize(
             context: container.mainContext,
             tenantID: "org-1",
             services: AppServices(container: container),
-            api: Self.client(statusCode: 200, body: try Fixture.data("enums"))
+            api: Self.serving()
         )
         #expect(manager.state == .finished)
 
@@ -128,34 +149,55 @@ struct SyncManagerTests {
 
     private static func inMemoryContainer() throws -> ModelContainer {
         try ModelContainer(
-            for: AIAction.self, AgendaEvent.self, AgendaTask.self, FieldOption.self,
+            for: AIAction.self, AgendaEvent.self, AgendaTask.self, Client.self, FieldOption.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
     }
 
-    private static func `guard`(_ marker: Marker) -> TenantGuard {
-        TenantGuard(
-            lastTenantID: { marker.value },
-            setLastTenantID: { marker.value = $0 }
-        )
+    private static func store(
+        tenant: StoredValue<String>,
+        cursor: StoredValue<String> = .inMemory()
+    ) -> LocalStore {
+        LocalStore(tenantID: tenant, clientCursor: cursor)
     }
 
-    private nonisolated static func client(statusCode: Int, body: Data) -> APIClient {
+    /// Every startup route answered: the vocabulary, a client pass in two
+    /// pages, and the store's ids.
+    private nonisolated static func serving() -> APIClient {
+        client { request in
+            let url = request.url?.absoluteString ?? ""
+            let name = switch true {
+            case url.contains("client/filter"): "client_filter_ids"
+            case url.contains("after=cursor-page-2"): "client_sync_page2"
+            case url.contains("client/sync"): "client_sync_page1"
+            default: "enums"
+            }
+            return (response(request, statusCode: 200), try Fixture.data(name))
+        }
+    }
+
+    /// Every route down.
+    private nonisolated static func failing() -> APIClient {
+        client { request in (response(request, statusCode: 500), Data()) }
+    }
+
+    private nonisolated static func client(handler: @escaping MockURLProtocol.Handler) -> APIClient {
         APIClient(
             baseURL: URL(string: "https://api.example.com")!,
             tokens: TokenProviding(
                 validToken: { "valid-token" },
                 refreshedToken: { "refreshed-token" }
             ),
-            session: MockURLProtocol.session { request in
-                let response = HTTPURLResponse(
-                    url: request.url ?? URL(string: "https://invalid")!,
-                    statusCode: statusCode,
-                    httpVersion: nil,
-                    headerFields: nil
-                )!
-                return (response, body)
-            }
+            session: MockURLProtocol.session(handler: handler)
         )
+    }
+
+    private nonisolated static func response(_ request: URLRequest, statusCode: Int) -> HTTPURLResponse {
+        HTTPURLResponse(
+            url: request.url ?? URL(string: "https://invalid")!,
+            statusCode: statusCode,
+            httpVersion: nil,
+            headerFields: nil
+        )!
     }
 }

@@ -1,0 +1,32 @@
+{
+    "items": [
+        {
+            "id": "6d2a1f0e-5b3c-4e7a-9f10-2c4b8e6a0001",
+            "externalId": "seed-client-375493",
+            "firstName": "Aliette",
+            "lastName": "Martin",
+            "segment": "One Timer",
+            "storeCode": "90917634296",
+            "store": { "name": "Shop location" },
+            "SAExternalId": "seed-sa-001",
+            "SA": { "firstName": "Thomas", "lastName": "Torres" },
+            "primaryEmail": "seed.client.375493@example.test",
+            "primaryPhone": "+33612345678"
+        },
+        {
+            "id": "6d2a1f0e-5b3c-4e7a-9f10-2c4b8e6a0002",
+            "externalId": "seed-client-375494",
+            "firstName": null,
+            "lastName": null,
+            "segment": null,
+            "storeCode": "90917634296",
+            "store": { "name": "Shop location" },
+            "SAExternalId": null,
+            "SA": null,
+            "primaryEmail": null,
+            "primaryPhone": null
+        }
+    ],
+    "hasMore": true,
+    "nextCursor": "my-clients-cursor-2"
+}

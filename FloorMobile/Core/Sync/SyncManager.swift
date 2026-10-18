@@ -29,16 +29,16 @@ final class SyncManager {
 
     /// Back to square one when the session ends. Without this the manager
     /// stays `.finished` across a sign-out, and the next sign-in walks
-    /// straight into the app on a store `TenantGuard` has just emptied —
+    /// straight into the app on a store `LocalStore` has just emptied —
     /// no events, no tasks, and pickers falling back to their local lists.
     func reset() {
         state = .idle
     }
 
-    private let tenantGuard: TenantGuard
+    private let localStore: LocalStore
 
-    init(tenantGuard: TenantGuard = .live) {
-        self.tenantGuard = tenantGuard
+    init(localStore: LocalStore = .live) {
+        self.localStore = localStore
     }
 
     /// Starts the data synchronization.
@@ -58,7 +58,7 @@ final class SyncManager {
         state = .syncing
 
         do {
-            try tenantGuard.enforce(currentTenantID: tenantID, context: context)
+            try localStore.enforceTenant(tenantID, context: context)
         } catch {
             // A failed wipe is an isolation breach, not a refresh hiccup:
             // never fall through to the cache below, it belongs to the tenant
@@ -89,22 +89,35 @@ final class SyncManager {
         }
     }
 
-    /// What the app needs before it can show anything.
+    /// What the app needs before it can show anything, fanned out with
+    /// `async let`:
+    /// - the server's field vocabulary, which every picker reads;
+    /// - the store's clients — brought up to date, then cleared of those that
+    ///   left the store, in that order: the prune only means something once
+    ///   the delta is in.
     ///
-    /// One entry today — the server's field vocabulary, which every picker
-    /// reads. Feature data (events, tasks, AI actions) is deliberately absent:
-    /// each screen loads its own on appear and on pull-to-refresh, and must
-    /// not hold the launch back. Several entries here fan out with `async
-    /// let`, the way `HomeView` does.
+    /// Feature data that changes by the hour (events, tasks, AI actions) is
+    /// deliberately absent: Home loads it on appear and on pull-to-refresh,
+    /// and it must not hold the launch back.
     private func performSync(services: AppServices, api: APIClient) async throws {
-        try await services.enums.synchronize(using: api)
+        let clients = services.clients
+        let cursor = localStore.clientCursor
+        async let vocabulary: Void = services.enums.synchronize(using: api)
+        async let clientBook: Void = {
+            try await clients.synchronize(using: api, cursor: cursor)
+            try await clients.pruneDeparted(using: api)
+        }()
+        _ = try await (vocabulary, clientBook)
     }
 
-    /// Whether an earlier run left something usable behind. The vocabulary is
-    /// all the launch fetches today, so it is all there is to look at; extend
-    /// this alongside `performSync`.
+    /// Whether an earlier run left something usable behind — one entry per
+    /// line of `performSync`.
+    ///
+    /// For the clients, the cursor rather than a row count: it is stored only
+    /// once a pass has gone through, so it tells a complete copy from one cut
+    /// short — and a store may well have no client at all.
     private func hasUsableCache(in context: ModelContext) -> Bool {
-        let count = try? context.fetchCount(FetchDescriptor<FieldOption>())
-        return (count ?? 0) > 0
+        let vocabulary = (try? context.fetchCount(FetchDescriptor<FieldOption>())) ?? 0
+        return vocabulary > 0 && localStore.clientCursor.get() != nil
     }
 }

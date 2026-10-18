@@ -19,7 +19,7 @@ nonisolated struct StoreSummary: Codable, Sendable, Equatable {
         self.storeCode = storeCode
     }
 
-    init(dto: StoreDTO) {
-        self.init(id: dto.id, name: dto.name, storeCode: dto.storeCode)
+    init(wire: StoreWire) {
+        self.init(id: wire.id, name: wire.name, storeCode: wire.storeCode)
     }
 }

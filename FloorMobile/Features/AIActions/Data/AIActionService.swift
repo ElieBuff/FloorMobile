@@ -18,7 +18,7 @@ actor AIActionService {
     func synchronizePending(using client: APIClient) async throws {
         try await modelContext.refresh(
             from: { try await client.send(.getPendingActions()) },
-            make: AIAction.init(dto:)
+            make: AIAction.init(wire:)
         )
     }
 }

@@ -8,8 +8,9 @@ import os
 
 /// Single gateway for every Floor API call: Bearer injection, one retry on
 /// 401 with a refreshed token, uniform error mapping to `AppError`, one JSON
-/// configuration (ISO 8601 dates, fractional seconds tolerated) and
-/// privacy-safe logging.
+/// configuration (ISO 8601 dates, fractional seconds tolerated), fast failure
+/// for the calls a person waits on (`Endpoint.interactive`) and privacy-safe
+/// logging.
 nonisolated struct APIClient: Sendable {
     private let baseURL: URL
     private let tokens: TokenProviding
@@ -37,13 +38,21 @@ nonisolated struct APIClient: Sendable {
     )
 
     /// The production session: reasonable timeout, waits for connectivity
-    /// instead of failing immediately on a flaky store network.
+    /// instead of failing immediately on a flaky store network — except for an
+    /// interactive call (`Endpoint.interactive`), which fails fast instead.
     static func defaultSession(timeout: TimeInterval = 30) -> URLSession {
         let configuration = URLSessionConfiguration.default
         configuration.timeoutIntervalForRequest = timeout
         configuration.waitsForConnectivity = true
         return URLSession(configuration: configuration)
     }
+
+    /// How long an interactive call waits on a silent server before it fails:
+    /// an idle timeout, which every byte received starts again, taking
+    /// precedence over the session's for that request. Short, because the
+    /// screen has something else to show; to adjust on the round trips
+    /// measured in the stores.
+    private static let interactiveTimeout: TimeInterval = 3
 
     // MARK: - Public API
 
@@ -57,7 +66,7 @@ nonisolated struct APIClient: Sendable {
                 "Decoding \(Response.self, privacy: .public) failed: \(Self.describe(error), privacy: .public)"
             )
             // Full, explicit decoding error (kind, coding path, debug description,
-            // underlying error) for diagnosing an API/DTO mismatch.
+            // underlying error) for diagnosing an API/wire-type mismatch.
             AppLog.network.debug(
                 "Decoding \(Response.self, privacy: .public) error detail: \(String(reflecting: error), privacy: .public)"
             )
@@ -98,13 +107,13 @@ nonisolated struct APIClient: Sendable {
         request.setValue("Bearer \(try await tokens.validToken())", forHTTPHeaderField: "Authorization")
         logRequest(request, endpoint)
 
-        var (data, response) = try await execute(request)
+        var (data, response) = try await execute(request, interactive: endpoint.interactive)
 
         if statusCode(of: response) == 401 {
             // One retry with a freshly refreshed token; a second 401 means
             // the session is really over.
             request.setValue("Bearer \(try await tokens.refreshedToken())", forHTTPHeaderField: "Authorization")
-            (data, response) = try await execute(request)
+            (data, response) = try await execute(request, interactive: endpoint.interactive)
             if statusCode(of: response) == 401 {
                 throw AppError.authentication(.sessionExpired)
             }
@@ -128,9 +137,11 @@ nonisolated struct APIClient: Sendable {
         return data
     }
 
-    private func execute(_ request: URLRequest) async throws -> (Data, URLResponse) {
+    /// An interactive call gives its task the offline canceller: without a
+    /// connection it fails here at once, instead of waiting for one.
+    private func execute(_ request: URLRequest, interactive: Bool) async throws -> (Data, URLResponse) {
         do {
-            return try await session.data(for: request)
+            return try await session.data(for: request, delegate: interactive ? OfflineCanceller() : nil)
         } catch {
             throw AppError.network(underlying: error)
         }
@@ -150,6 +161,9 @@ nonisolated struct APIClient: Sendable {
 
         var request = URLRequest(url: url)
         request.httpMethod = endpoint.method.rawValue
+        if endpoint.interactive {
+            request.timeoutInterval = Self.interactiveTimeout
+        }
         if let body = endpoint.body {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             do {
@@ -163,6 +177,23 @@ nonisolated struct APIClient: Sendable {
 
     private func statusCode(of response: URLResponse) -> Int? {
         (response as? HTTPURLResponse)?.statusCode
+    }
+
+    // MARK: - Interactive calls
+
+    /// Cancels a task that would wait for a connection, so an interactive call
+    /// fails at once, as `AppError.network`, and its screen falls back on what
+    /// the device holds. `URLSession` asks at most once per task, and only when
+    /// the connection is missing at the start — the case Apple documents it
+    /// for, presenting an offline mode.
+    ///
+    /// Internal so a test can call it; nonisolated because `URLSession` calls
+    /// it on its own queue, off the main actor.
+    nonisolated final class OfflineCanceller: NSObject, URLSessionTaskDelegate, Sendable {
+        func urlSession(_ session: URLSession, taskIsWaitingForConnectivity task: URLSessionTask) {
+            AppLog.network.debug("No connection: an interactive call gives up instead of waiting")
+            task.cancel()
+        }
     }
 
     // MARK: - JSON configuration

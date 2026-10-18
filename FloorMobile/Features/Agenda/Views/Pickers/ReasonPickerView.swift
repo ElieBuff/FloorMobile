@@ -45,10 +45,7 @@ struct ReasonPickerView: View {
                 }
             }
         }
-        .listStyle(.insetGrouped)
-        .listRowBackground(Color(.OnCanvas.surface))
-        .listRowSeparatorTint(Color(.OnSurface.borderSubtle))
-        .scrollContentBackground(.hidden)
+        .cardList()
         .ambientBackground()
         .navigationTitle(Text("Reason"))
         .navigationBarTitleDisplayMode(.inline)
@@ -96,10 +93,10 @@ struct ReasonPickerView: View {
     )
     // Three of the six, out of alphabetical order, to show that the list and
     // its ordering are the payload's and not the enum's.
-    for row in FieldOptionDTO.rows(from: [
+    for row in EnumsWire.rows(from: [
         "event": ["reason": ["VIP_EVENT", "BIRTHDAY", "FOLLOW_UP"]]
     ]) {
-        container.mainContext.insert(FieldOption(dto: row))
+        container.mainContext.insert(FieldOption(wire: row))
     }
 
     return NavigationStack {

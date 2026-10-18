@@ -20,7 +20,7 @@ nonisolated extension Endpoint {
 
     /// The connected sales associate's tasks, cursor-paginated. Pass the
     /// previous page's `nextCursor` as `after` to get the next page.
-    static func tasks(after cursor: String? = nil) -> Endpoint {
+    static func taskAgenda(after cursor: String? = nil) -> Endpoint {
         Endpoint(
             path: "task/agenda",
             query: cursor.map { [URLQueryItem(name: "after", value: $0)] } ?? []
@@ -28,14 +28,14 @@ nonisolated extension Endpoint {
     }
 
     /// Creates a task. The created task comes back in the same shape the agenda
-    /// list serves, so one `TaskDTO` decodes both.
-    static func createTask(_ body: TaskRequest) -> Endpoint {
+    /// list serves, so one `TaskWire.Response` decodes both.
+    static func createTask(_ body: TaskWire.Request) -> Endpoint {
         Endpoint(path: "task", method: .post, body: body)
     }
 
     /// Replaces a task: a `PUT` of the whole task, not a patch — whatever the
     /// body carries is what the task becomes.
-    static func updateTask(id: String, body: TaskRequest) -> Endpoint {
+    static func updateTask(id: String, body: TaskWire.Request) -> Endpoint {
         Endpoint(path: "task/\(id)", method: .put, body: body)
     }
 
@@ -45,7 +45,7 @@ nonisolated extension Endpoint {
     ///
     /// The body is a dictionary rather than a request type: one field, written
     /// in one place, and the route's schema is strict — a spare key is a
-    /// rejected request. `TaskRequest` earns its type by mapping nine fields
+    /// rejected request. `TaskWire.Request` earns its type by mapping six fields
     /// off a draft; there is nothing here to map.
     static func updateTaskStatus(id: String, status: String) -> Endpoint {
         Endpoint(
@@ -56,13 +56,13 @@ nonisolated extension Endpoint {
     }
 
     /// Books an appointment. The created event comes back in the same shape the
-    /// agenda serves, so one `EventDTO` decodes both.
-    static func createEvent(_ body: EventRequest) -> Endpoint {
+    /// agenda serves, so one `EventWire.Response` decodes both.
+    static func createEvent(_ body: EventWire.Request) -> Endpoint {
         Endpoint(path: "event", method: .post, body: body)
     }
 
     /// Replaces an appointment — a `PUT` of the whole event, not a patch.
-    static func updateEvent(id: String, body: EventRequest) -> Endpoint {
+    static func updateEvent(id: String, body: EventWire.Request) -> Endpoint {
         Endpoint(path: "event/\(id)", method: .put, body: body)
     }
 }

@@ -1,5 +1,5 @@
 //
-//  AIActionDTOTests.swift
+//  AIActionWireTests.swift
 //  FloorMobileTests
 //
 
@@ -8,12 +8,12 @@ import Testing
 @testable import FloorMobile
 
 @Suite("AIAction wire format")
-struct AIActionDTOTests {
+struct AIActionWireTests {
 
     @Test("Decodes a real API response, nested people included")
     func decodesRealResponse() throws {
         let actions = try APIClient.makeDecoder()
-            .decode([AIActionDTO].self, from: Fixture.data("ai_actions_page1"))
+            .decode([AIActionWire.Response].self, from: Fixture.data("ai_actions_page1"))
 
         let action = try #require(actions.first)
         #expect(actions.count == 1)
@@ -64,7 +64,7 @@ struct AIActionDTOTests {
         ]
         """
         let actions = try APIClient.makeDecoder()
-            .decode([AIActionDTO].self, from: Data(json.utf8))
+            .decode([AIActionWire.Response].self, from: Data(json.utf8))
 
         let action = try #require(actions.first)
         #expect(action.status == "SOME_FUTURE_STATUS")

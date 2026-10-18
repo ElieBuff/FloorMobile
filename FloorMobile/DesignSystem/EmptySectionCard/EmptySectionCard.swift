@@ -14,13 +14,15 @@ struct EmptySectionAction {
     var handler: () -> Void
 }
 
-/// The "nothing to show" card for any section that can be empty: a
-/// translucent rounded card with an icon, a status message, and an optional
-/// trailing action button.
+/// The state card of a section: a translucent rounded card with an icon, a
+/// status message, and an optional trailing action button — for a section
+/// that has nothing to show ("No appointment today"), or whose content does
+/// not come from where it should (results from the device, standing in for a
+/// server that does not answer).
 ///
-/// Some empty states just inform ("No appointment today"), others offer one
-/// specific action ("New Task"): pass an `EmptySectionAction` to show the
-/// button, or leave it `nil` to omit it.
+/// Some states just inform, others offer one specific action ("New Task",
+/// "Try again"): pass an `EmptySectionAction` to show the button, or leave it
+/// `nil` to omit it.
 ///
 /// Text parameters are plain `String`s: localization is the call site's
 /// responsibility, via `String(localized:)` (design-system convention).

@@ -151,7 +151,7 @@ struct EnumsServiceTests {
 
     /// A minimal `GET enums` body carrying one field, in the given order.
     private nonisolated static func payload(taskReasons: [String]) throws -> Data {
-        let payload: EnumsPayload = ["task": ["reason": taskReasons]]
+        let payload: EnumsWire.Response = ["task": ["reason": taskReasons]]
         return try JSONEncoder().encode(payload)
     }
 

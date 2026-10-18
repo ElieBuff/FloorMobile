@@ -236,13 +236,13 @@ struct EventComposerView: View {
         for: FieldOption.self, AgendaEvent.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
-    for row in FieldOptionDTO.rows(from: [
+    for row in EnumsWire.rows(from: [
         "event": [
             "reason": ["BIRTHDAY", "BACK_IN_STOCK", "COLLECTION_LAUNCH", "VIP_EVENT", "FOLLOW_UP", "WISHLIST_AVAILABLE"],
             "meetingType": ["IN_PERSON", "VIDEO_CALL"]
         ]
     ]) {
-        container.mainContext.insert(FieldOption(dto: row))
+        container.mainContext.insert(FieldOption(wire: row))
     }
 
     // Saving needs the session and the services, injected at the root in the app.

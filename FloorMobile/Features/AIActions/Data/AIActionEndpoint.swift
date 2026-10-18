@@ -13,7 +13,7 @@ nonisolated extension Endpoint {
     /// filtering server-side — this endpoint backs exactly one mobile screen
     /// and takes no parameters.
     ///
-    /// - Returns: An endpoint that responds with `[AIActionDTO]`.
+    /// - Returns: An endpoint that responds with `[AIActionWire.Response]`.
     static func getPendingActions() -> Endpoint {
         Endpoint(path: "ai-action/pending")
     }

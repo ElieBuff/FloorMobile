@@ -33,19 +33,19 @@ struct AIActionTests {
 
     @Test("Mapping from the wire format flattens people")
     func mappingFromDTO() throws {
-        let dto = try #require(
+        let wire = try #require(
             try APIClient.makeDecoder()
-                .decode([AIActionDTO].self, from: Fixture.data("ai_actions_page1"))
+                .decode([AIActionWire.Response].self, from: Fixture.data("ai_actions_page1"))
                 .first
         )
 
-        let action = AIAction(dto: dto)
+        let action = AIAction(wire: wire)
 
-        #expect(action.id == dto.id)
+        #expect(action.id == wire.id)
         #expect(action.statusRaw == "PENDING")
         #expect(action.status == .pending)
-        #expect(action.client?.id == dto.client?.id)
-        #expect(action.salesAssociate?.id == dto.salesAssociate?.id)
+        #expect(action.client?.id == wire.client?.id)
+        #expect(action.salesAssociate?.id == wire.salesAssociate?.id)
         #expect(action.client?.firstName == "Elie")
         #expect(action.client?.lastName == "Buff")
         #expect(action.salesAssociate?.firstName == "Elie")

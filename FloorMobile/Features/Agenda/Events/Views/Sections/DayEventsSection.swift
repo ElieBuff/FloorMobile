@@ -74,7 +74,7 @@ struct DayEventsSection: View {
             )
         } else {
             TimelineView(.everyMinute) { context in
-                let items = DayTimeline.items(events: events, now: context.date, day: date)
+                let items = DayLayout.items(events: events, now: context.date, day: date)
                 VStack(alignment: .leading, spacing: 10) {
                     ForEach(items) { item in
                         switch item {

@@ -30,7 +30,7 @@ enum Fixture {
     /// product grows one, and a literal here fails on that growth instead of on
     /// a bug — which it has done twice.
     static func enumsValueCount() throws -> Int {
-        // Spelled out rather than `EnumsPayload`, so this file needs no
+        // Spelled out rather than `EnumsWire.Response`, so this file needs no
         // `@testable import` of its own.
         let payload = try JSONDecoder().decode([String: [String: [String]]].self, from: data("enums"))
         return payload.values.reduce(0) { total, fields in
