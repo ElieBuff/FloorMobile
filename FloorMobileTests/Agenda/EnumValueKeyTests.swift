@@ -1,5 +1,5 @@
 //
-//  FieldOptionKeyTests.swift
+//  EnumValueKeyTests.swift
 //  FloorMobileTests
 //
 
@@ -7,7 +7,8 @@ import Foundation
 import Testing
 @testable import FloorMobile
 
-/// The keys the agenda reads `GET enums` by, checked against a real payload.
+/// The keys the agenda reads the vocabulary by (the `enums` block of
+/// `GET setup`), checked against a real payload.
 ///
 /// This suite exists because the failure it catches is silent. When the server
 /// renames a field — `event.type` became `event.meetingType` — the store simply
@@ -16,10 +17,10 @@ import Testing
 /// stopped publishing. Good behaviour at runtime, and exactly the kind of quiet
 /// a test has to break.
 @Suite("Vocabulary keys")
-struct FieldOptionKeyTests {
+struct EnumValueKeyTests {
 
     /// Every key the agenda declares, with the name it goes by in prose.
-    private static let declared: [(name: String, key: FieldOption.Key)] = [
+    private static let declared: [(name: String, key: EnumValue.Key)] = [
         ("taskReason", .taskReason),
         ("eventReason", .eventReason),
         ("taskStatus", .taskStatus),
@@ -28,7 +29,7 @@ struct FieldOptionKeyTests {
     ]
 
     private static func payload() throws -> EnumsWire.Response {
-        try JSONDecoder().decode(EnumsWire.Response.self, from: Fixture.data("enums"))
+        try Fixture.enums()
     }
 
     @Test("Every declared key names a field the server actually publishes")
@@ -56,22 +57,22 @@ struct FieldOptionKeyTests {
 
     @Test("Each key stays on its own entity, so the two vocabularies never merge")
     func keysAreScopedToTheirEntity() {
-        #expect(FieldOption.Key.taskReason.entityName == "task")
-        #expect(FieldOption.Key.eventReason.entityName == "event")
-        #expect(FieldOption.Key.taskReason.field == FieldOption.Key.eventReason.field)
+        #expect(EnumValue.Key.taskReason.entityName == "task")
+        #expect(EnumValue.Key.eventReason.entityName == "event")
+        #expect(EnumValue.Key.taskReason.field == EnumValue.Key.eventReason.field)
         // Same field name, different entity — the pair is what identifies a
         // vocabulary, never the field alone.
-        #expect(FieldOption.Key.taskReason != FieldOption.Key.eventReason)
+        #expect(EnumValue.Key.taskReason != EnumValue.Key.eventReason)
     }
 
     @Test("The values behind each key are ones this build can name")
     func publishedValuesResolveToLocalEnums() throws {
         let payload = try Self.payload()
 
-        func options(_ key: FieldOption.Key) -> [FieldOption] {
+        func options(_ key: EnumValue.Key) -> [EnumValue] {
             EnumsWire.rows(from: payload)
                 .filter { $0.entityName == key.entityName && $0.field == key.field }
-                .map(FieldOption.init(wire:))
+                .map(EnumValue.init(wire:))
         }
 
         // `resolved` drops what it cannot name and falls back when it can name

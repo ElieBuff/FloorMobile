@@ -12,7 +12,7 @@ import Testing
 @MainActor
 struct SyncManagerTests {
 
-    @Test("A successful startup sync stores the vocabulary and the clients, and opens the app")
+    @Test("A successful startup sync stores the configuration and the clients, and opens the app")
     func finishesAndPersists() async throws {
         let container = try Self.inMemoryContainer()
         let manager = SyncManager(localStore: Self.store(tenant: .inMemory("org-1")))
@@ -25,9 +25,10 @@ struct SyncManagerTests {
         )
 
         #expect(manager.state == .finished)
-        let options = try ModelContext(container).fetch(FetchDescriptor<FieldOption>())
+        let options = try ModelContext(container).fetch(FetchDescriptor<EnumValue>())
         let valueCount = try Fixture.enumsValueCount()
         #expect(options.count == valueCount)
+        #expect(try ModelContext(container).fetchCount(FetchDescriptor<ClientFilter>()) == 2)
         let clients = try ModelContext(container).fetchCount(FetchDescriptor<Client>())
         #expect(clients == 3)
     }
@@ -54,7 +55,7 @@ struct SyncManagerTests {
     func warmFailureOpensOnCache() async throws {
         let container = try Self.inMemoryContainer()
         container.mainContext.insert(
-            FieldOption(entityName: "task", field: "reason", value: "CACHED", rank: 0)
+            EnumValue(entityName: "task", field: "reason", value: "CACHED", rank: 0)
         )
         try container.mainContext.save()
         // A complete client pass went through on that earlier run.
@@ -71,7 +72,7 @@ struct SyncManagerTests {
 
         // Offline in the shop: the advisor keeps what the last sync brought.
         #expect(manager.state == .finished)
-        let values = try ModelContext(container).fetch(FetchDescriptor<FieldOption>()).map(\.value)
+        let values = try ModelContext(container).fetch(FetchDescriptor<EnumValue>()).map(\.value)
         #expect(values == ["CACHED"])
     }
 
@@ -79,7 +80,7 @@ struct SyncManagerTests {
     func failureWithoutClientsBlocks() async throws {
         let container = try Self.inMemoryContainer()
         container.mainContext.insert(
-            FieldOption(entityName: "task", field: "reason", value: "CACHED", rank: 0)
+            EnumValue(entityName: "task", field: "reason", value: "CACHED", rank: 0)
         )
         try container.mainContext.save()
         // The vocabulary is there, but no client pass has ever finished.
@@ -106,7 +107,7 @@ struct SyncManagerTests {
     func tenantChangeWipesFirst() async throws {
         let container = try Self.inMemoryContainer()
         container.mainContext.insert(
-            FieldOption(entityName: "task", field: "reason", value: "OTHER_TENANT", rank: 0)
+            EnumValue(entityName: "task", field: "reason", value: "OTHER_TENANT", rank: 0)
         )
         try container.mainContext.save()
         let tenant = StoredValue<String>.inMemory("org-1")
@@ -120,7 +121,7 @@ struct SyncManagerTests {
         )
 
         // The previous tenant's rows are gone, replaced by the new sync only.
-        let values = try ModelContext(container).fetch(FetchDescriptor<FieldOption>()).map(\.value)
+        let values = try ModelContext(container).fetch(FetchDescriptor<EnumValue>()).map(\.value)
         #expect(!values.contains("OTHER_TENANT"))
         #expect(tenant.get() == "org-2")
     }
@@ -149,7 +150,7 @@ struct SyncManagerTests {
 
     private static func inMemoryContainer() throws -> ModelContainer {
         try ModelContainer(
-            for: AIAction.self, AgendaEvent.self, AgendaTask.self, Client.self, FieldOption.self,
+            for: AIAction.self, AgendaEvent.self, AgendaTask.self, Client.self, ClientFilter.self, EnumValue.self,
             RecentClient.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
@@ -162,7 +163,7 @@ struct SyncManagerTests {
         LocalStore(tenantID: tenant, clientCursor: cursor)
     }
 
-    /// Every startup route answered: the vocabulary, a client pass in two
+    /// Every startup route answered: the configuration, a client pass in two
     /// pages, the store's ids, and the recent clients — an empty list, inline
     /// until a fixture copied from the BFF replaces it.
     private nonisolated static func serving() -> APIClient {
@@ -175,7 +176,7 @@ struct SyncManagerTests {
             case url.contains("client/store-ids"): "client_filter_ids"
             case url.contains("after=cursor-page-2"): "client_sync_page2"
             case url.contains("client/sync"): "client_sync_page1"
-            default: "enums"
+            default: "setup"
             }
             return (response(request, statusCode: 200), try Fixture.data(name))
         }

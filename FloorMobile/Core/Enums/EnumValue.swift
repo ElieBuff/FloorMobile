@@ -1,5 +1,5 @@
 //
-//  FieldOption.swift
+//  EnumValue.swift
 //  FloorMobile
 //
 
@@ -7,7 +7,12 @@ import Foundation
 import SwiftData
 
 /// One allowed value for an open-set field of the API's data model — the
-/// vocabulary served by `GET enums` (`task.reason`, `event.reason`, …).
+/// vocabulary served in the `enums` block of `GET setup` (`task.reason`,
+/// `event.reason`, …).
+///
+/// Named after that block. Shipped as `FieldOption` in the first schema
+/// (`main`, `eccdb89`): the vocabulary is fetched again at every launch, so
+/// the rename loses nothing.
 ///
 /// Stored flat, one row per value, rather than as one typed object per entity:
 /// the server adds entities and fields over time, and a flat row absorbs them
@@ -16,9 +21,9 @@ import SwiftData
 ///
 /// Not `Syncable`: the mark-and-sweep token exists for data arriving in pages,
 /// where deleting first would empty the store if a page failed. This payload
-/// lands whole, so `EnumsService` simply replaces the set.
+/// lands whole, so `SetupService` saves the complete set at once.
 @Model
-nonisolated final class FieldOption {
+nonisolated final class EnumValue {
     /// `"task.reason|BIRTHDAY"`. Unique: the sync rewrites everything, but the
     /// invariant costs one attribute and rules out a duplicate should another
     /// code path ever insert the same value twice.
@@ -50,7 +55,7 @@ nonisolated final class FieldOption {
     }
 }
 
-nonisolated extension FieldOption {
+nonisolated extension EnumValue {
     static func identifier(entityName: String, field: String, value: String) -> String {
         "\(entityName).\(field)|\(value)"
     }
@@ -66,10 +71,10 @@ nonisolated extension FieldOption {
     /// `key`'s allowed values, in the server's own order — ready for `@Query`.
     /// The two locals are not decoration: `#Predicate` cannot capture a
     /// property of an outer value, only plain variables.
-    static func descriptor(for key: Key) -> FetchDescriptor<FieldOption> {
+    static func descriptor(for key: Key) -> FetchDescriptor<EnumValue> {
         let entityName = key.entityName
         let field = key.field
-        return FetchDescriptor<FieldOption>(
+        return FetchDescriptor<EnumValue>(
             predicate: #Predicate { $0.entityName == entityName && $0.field == field },
             sortBy: [SortDescriptor(\.rank, order: .forward)]
         )

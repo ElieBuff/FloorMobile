@@ -90,7 +90,8 @@ final class SyncManager {
     }
 
     /// What the launch brings up to date, fanned out with `async let`:
-    /// - the server's field vocabulary, which every picker reads;
+    /// - the app's configuration (`GET setup`): the field vocabulary, which
+    ///   every picker reads, and the tenant's "My Clients" filters;
     /// - the store's clients — brought up to date, then cleared of those that
     ///   left the store, in that order: the prune only means something once
     ///   the delta is in;
@@ -105,13 +106,13 @@ final class SyncManager {
     private func performSync(services: AppServices, api: APIClient) async throws {
         let clients = services.clients
         let cursor = localStore.clientCursor
-        async let vocabulary: Void = services.enums.synchronize(using: api)
+        async let configuration: Void = services.setup.synchronize(using: api)
         async let clientBook: Void = {
             try await clients.synchronize(using: api, cursor: cursor)
             try await clients.pruneDeparted(using: api)
         }()
         async let recentClients: Void = refreshRecentClients(clients, using: api)
-        _ = try await (vocabulary, clientBook, recentClients)
+        _ = try await (configuration, clientBook, recentClients)
     }
 
     /// Brings the associate's recent clients up to date, and never fails the
@@ -135,11 +136,12 @@ final class SyncManager {
     ///
     /// For the clients, the cursor rather than a row count: it is stored only
     /// once a pass has gone through, so it tells a complete copy from one cut
-    /// short — and a store may well have no client at all. The recent clients
-    /// have no entry: their refresh never fails the launch, so there is
-    /// nothing to check.
+    /// short — and a store may well have no client at all. The configuration
+    /// counts by its vocabulary alone: a tenant may have no filter, never an
+    /// empty vocabulary. The recent clients have no entry: their refresh never
+    /// fails the launch, so there is nothing to check.
     private func hasUsableCache(in context: ModelContext) -> Bool {
-        let vocabulary = (try? context.fetchCount(FetchDescriptor<FieldOption>())) ?? 0
+        let vocabulary = (try? context.fetchCount(FetchDescriptor<EnumValue>())) ?? 0
         return vocabulary > 0 && localStore.clientCursor.get() != nil
     }
 }

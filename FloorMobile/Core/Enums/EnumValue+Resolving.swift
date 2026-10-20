@@ -1,11 +1,11 @@
 //
-//  FieldOption+Resolving.swift
+//  EnumValue+Resolving.swift
 //  FloorMobile
 //
 
 import Foundation
 
-nonisolated extension Collection where Element == FieldOption {
+nonisolated extension Collection where Element == EnumValue {
 
     /// The server's vocabulary as a list of the local enum — what a picker
     /// offers.
@@ -24,7 +24,7 @@ nonisolated extension Collection where Element == FieldOption {
     /// rather than as missing data.
     ///
     /// ```swift
-    /// @Query(FieldOption.descriptor(for: .eventMeetingType)) private var meetingTypeOptions: [FieldOption]
+    /// @Query(EnumValue.descriptor(for: .eventMeetingType)) private var meetingTypeOptions: [EnumValue]
     /// // …
     /// meetingTypeOptions.resolved(fallback: MeetingType.selectable)
     /// ```

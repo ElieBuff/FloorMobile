@@ -10,7 +10,8 @@ import SwiftData
 /// *that* entity.
 ///
 /// The list comes from the stored vocabulary rather than from `Reason.allCases`,
-/// and the entity is a parameter, because `GET enums` answers per entity: today
+/// and the entity is a parameter, because the server's vocabulary (`GET setup`)
+/// answers per entity: today
 /// `task.reason` and `event.reason` happen to hold the same six values, and
 /// nothing says they will tomorrow. Ordering is the server's too — the payload's
 /// order is a product decision, not an alphabetical accident.
@@ -25,12 +26,12 @@ import SwiftData
 struct ReasonPickerView: View {
     @Binding var selection: Reason?
 
-    @Query private var options: [FieldOption]
+    @Query private var options: [EnumValue]
     @Environment(\.dismiss) private var dismiss
 
-    init(selection: Binding<Reason?>, key: FieldOption.Key) {
+    init(selection: Binding<Reason?>, key: EnumValue.Key) {
         _selection = selection
-        _options = Query(FieldOption.descriptor(for: key))
+        _options = Query(EnumValue.descriptor(for: key))
     }
 
     private var reasons: [Reason] {
@@ -88,7 +89,7 @@ struct ReasonPickerView: View {
     @Previewable @State var reason: Reason? = .followUp
 
     let container = try! ModelContainer(
-        for: FieldOption.self,
+        for: EnumValue.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
     // Three of the six, out of alphabetical order, to show that the list and
@@ -96,7 +97,7 @@ struct ReasonPickerView: View {
     for row in EnumsWire.rows(from: [
         "event": ["reason": ["VIP_EVENT", "BIRTHDAY", "FOLLOW_UP"]]
     ]) {
-        container.mainContext.insert(FieldOption(wire: row))
+        container.mainContext.insert(EnumValue(wire: row))
     }
 
     return NavigationStack {
@@ -114,6 +115,6 @@ struct ReasonPickerView: View {
     return NavigationStack {
         ReasonPickerView(selection: $reason, key: .taskReason)
     }
-    .modelContainer(for: FieldOption.self, inMemory: true)
+    .modelContainer(for: EnumValue.self, inMemory: true)
     .tint(Color(.Base.ink))
 }

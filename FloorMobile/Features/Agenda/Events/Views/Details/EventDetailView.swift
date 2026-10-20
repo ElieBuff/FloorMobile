@@ -113,7 +113,7 @@ struct EventDetailView: View {
 
 #Preview {
     let container = try! ModelContainer(
-        for: AgendaEvent.self, FieldOption.self,
+        for: AgendaEvent.self, EnumValue.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
     let start = Calendar.current.date(bySettingHour: 14, minute: 0, second: 0, of: .now) ?? .now
@@ -142,7 +142,7 @@ struct EventDetailView: View {
 
 #Preview("No type, no note, no reminder") {
     let container = try! ModelContainer(
-        for: AgendaEvent.self, FieldOption.self,
+        for: AgendaEvent.self, EnumValue.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
     container.mainContext.insert(AgendaEvent(

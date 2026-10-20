@@ -1,0 +1,107 @@
+{
+    "clients": {
+        "filters": [
+            {
+                "id": "01M5CJ75QEKQR98JVNHCZ675TN",
+                "titleKey": "client.filter.created",
+                "selection": "SINGLE",
+                "values": [
+                    {
+                        "ref": "01M5CJ75QJ37N2C7NS20G9KF9X",
+                        "parameters": [],
+                        "labelKey": "client.filter.value.last3Months"
+                    },
+                    {
+                        "ref": "01M5CJ75QJBVVAWYBEECJXMYS5",
+                        "parameters": [],
+                        "labelKey": "client.filter.value.last6Months"
+                    },
+                    {
+                        "ref": "01M5CJ75QJRMCC91987WFVK56K",
+                        "parameters": [],
+                        "labelKey": "client.filter.value.last12Months"
+                    },
+                    {
+                        "ref": "01M5CJ75QJBRSDT2XAJCX5YYC9",
+                        "parameters": [
+                            {
+                                "name": "since",
+                                "type": "date"
+                            }
+                        ],
+                        "labelKey": "client.filter.value.since"
+                    }
+                ]
+            },
+            {
+                "id": "01M5CJ75QP16918M3WRY9FYBEB",
+                "titleKey": "client.filter.lastPurchase",
+                "selection": "SINGLE",
+                "values": [
+                    {
+                        "ref": "01M5CJ75QQEEN39STTSVHB8DFF",
+                        "parameters": [],
+                        "labelKey": "client.filter.value.last3Months"
+                    },
+                    {
+                        "ref": "01M5CJ75QQHGX7E9K7H8ZNSCKG",
+                        "parameters": [],
+                        "labelKey": "client.filter.value.last6Months"
+                    },
+                    {
+                        "ref": "01M5CJ75QQ3562XJT4MG4YB6J6",
+                        "parameters": [],
+                        "labelKey": "client.filter.value.last12Months"
+                    },
+                    {
+                        "ref": "01M5CJ75QQDF7HTYH8TVRY496X",
+                        "parameters": [
+                            {
+                                "name": "since",
+                                "type": "date"
+                            }
+                        ],
+                        "labelKey": "client.filter.value.since"
+                    }
+                ]
+            }
+        ]
+    },
+    "enums": {
+        "task": {
+            "reason": [
+                "BIRTHDAY",
+                "BACK_IN_STOCK",
+                "COLLECTION_LAUNCH",
+                "VIP_EVENT",
+                "FOLLOW_UP",
+                "WISHLIST_AVAILABLE"
+            ],
+            "status": [
+                "TO_DO",
+                "COMPLETED",
+                "CANCELED"
+            ]
+        },
+        "event": {
+            "reason": [
+                "BIRTHDAY",
+                "BACK_IN_STOCK",
+                "COLLECTION_LAUNCH",
+                "VIP_EVENT",
+                "FOLLOW_UP",
+                "WISHLIST_AVAILABLE"
+            ],
+            "meetingType": [
+                "IN_PERSON",
+                "VIDEO_CALL"
+            ],
+            "status": [
+                "PLANNED",
+                "CONFIRMED",
+                "COMPLETED",
+                "CANCELLED"
+            ]
+        }
+    }
+}

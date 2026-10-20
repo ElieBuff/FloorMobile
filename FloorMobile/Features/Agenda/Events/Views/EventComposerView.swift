@@ -42,7 +42,7 @@ struct EventComposerView: View {
     /// *hard-coded* one: `duration` and `reminder` below are ours to decide,
     /// the meeting type is the backend's, and reading it from the store is what
     /// keeps the form honest the day a third kind of appointment appears.
-    @Query(FieldOption.descriptor(for: .eventMeetingType)) private var meetingTypeOptions: [FieldOption]
+    @Query(EnumValue.descriptor(for: .eventMeetingType)) private var meetingTypeOptions: [EnumValue]
 
     @Environment(AppSession.self) private var session
     @Environment(AppServices.self) private var services
@@ -233,7 +233,7 @@ struct EventComposerView: View {
 // preview would snapshot mid-animation.
 #Preview {
     let container = try! ModelContainer(
-        for: FieldOption.self, AgendaEvent.self,
+        for: EnumValue.self, AgendaEvent.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
     for row in EnumsWire.rows(from: [
@@ -242,7 +242,7 @@ struct EventComposerView: View {
             "meetingType": ["IN_PERSON", "VIDEO_CALL"]
         ]
     ]) {
-        container.mainContext.insert(FieldOption(wire: row))
+        container.mainContext.insert(EnumValue(wire: row))
     }
 
     // Saving needs the session and the services, injected at the root in the app.

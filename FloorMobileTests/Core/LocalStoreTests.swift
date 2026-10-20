@@ -27,7 +27,7 @@ struct LocalStoreTests {
     /// next session. `wipedRowCount` below turns that into a failing test.
     private func seededContext() throws -> ModelContext {
         let container = try ModelContainer(
-            for: AIAction.self, AgendaEvent.self, AgendaTask.self, Client.self, FieldOption.self,
+            for: AIAction.self, AgendaEvent.self, AgendaTask.self, Client.self, ClientFilter.self, EnumValue.self,
             RecentClient.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
@@ -42,7 +42,8 @@ struct LocalStoreTests {
                                   title: "t", startDate: epoch,
                                   createdAt: epoch, updatedAt: epoch))
         context.insert(Client(id: "c", externalId: "c"))
-        context.insert(FieldOption(entityName: "task", field: "reason", value: "CALL", rank: 0))
+        context.insert(ClientFilter(id: "f", titleKey: "client.filter.f", selectionRaw: "SINGLE", rank: 0, values: []))
+        context.insert(EnumValue(entityName: "task", field: "reason", value: "CALL", rank: 0))
         context.insert(RecentClient(id: "c", lastViewedAt: epoch, client: ClientSummary(id: "c")))
         try context.save()
         return context
@@ -54,7 +55,8 @@ struct LocalStoreTests {
             + context.fetchCount(FetchDescriptor<AgendaEvent>())
             + context.fetchCount(FetchDescriptor<AgendaTask>())
             + context.fetchCount(FetchDescriptor<Client>())
-            + context.fetchCount(FetchDescriptor<FieldOption>())
+            + context.fetchCount(FetchDescriptor<ClientFilter>())
+            + context.fetchCount(FetchDescriptor<EnumValue>())
             + context.fetchCount(FetchDescriptor<RecentClient>())
     }
 
@@ -66,7 +68,7 @@ struct LocalStoreTests {
 
         try makeStore(tenant: tenant, cursor: cursor).enforceTenant("org-1", context: context)
 
-        #expect(try remainingRowCount(in: context) == 6)
+        #expect(try remainingRowCount(in: context) == 7)
         #expect(tenant.get() == "org-1")
         #expect(cursor.get() == "cursor")
     }
@@ -108,9 +110,9 @@ struct LocalStoreTests {
         // The regression this guards against: `container.deleteAllData()` used
         // to reset the store under every live context, and the startup sync
         // aborted the process on its first write afterwards.
-        context.insert(FieldOption(entityName: "task", field: "reason", value: "AFTER", rank: 0))
+        context.insert(EnumValue(entityName: "task", field: "reason", value: "AFTER", rank: 0))
         try context.save()
 
-        #expect(try context.fetch(FetchDescriptor<FieldOption>()).map(\.value) == ["AFTER"])
+        #expect(try context.fetch(FetchDescriptor<EnumValue>()).map(\.value) == ["AFTER"])
     }
 }

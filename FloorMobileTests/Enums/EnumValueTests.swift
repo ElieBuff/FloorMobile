@@ -1,5 +1,5 @@
 //
-//  FieldOptionTests.swift
+//  EnumValueTests.swift
 //  FloorMobileTests
 //
 
@@ -8,13 +8,13 @@ import SwiftData
 import Testing
 @testable import FloorMobile
 
-@Suite("FieldOption vocabulary")
+@Suite("EnumValue vocabulary")
 @MainActor
-struct FieldOptionTests {
+struct EnumValueTests {
 
     @Test("The payload flattens into one row per value, keeping the server's order")
     func flattensPayload() throws {
-        let payload = try JSONDecoder().decode(EnumsWire.Response.self, from: Fixture.data("enums"))
+        let payload = try Fixture.enums()
 
         let rows = EnumsWire.rows(from: payload)
 
@@ -51,16 +51,16 @@ struct FieldOptionTests {
     @Test("A key's descriptor returns only its own field, in rank order")
     func descriptorFiltersAndSorts() throws {
         let container = try ModelContainer(
-            for: FieldOption.self,
+            for: EnumValue.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
         let context = container.mainContext
-        context.insert(FieldOption(entityName: "task", field: "reason", value: "SECOND", rank: 1))
-        context.insert(FieldOption(entityName: "task", field: "reason", value: "FIRST", rank: 0))
-        context.insert(FieldOption(entityName: "event", field: "reason", value: "ELSEWHERE", rank: 0))
+        context.insert(EnumValue(entityName: "task", field: "reason", value: "SECOND", rank: 1))
+        context.insert(EnumValue(entityName: "task", field: "reason", value: "FIRST", rank: 0))
+        context.insert(EnumValue(entityName: "event", field: "reason", value: "ELSEWHERE", rank: 0))
         try context.save()
 
-        let options = try context.fetch(FieldOption.descriptor(for: .taskReason))
+        let options = try context.fetch(EnumValue.descriptor(for: .taskReason))
 
         #expect(options.map(\.value) == ["FIRST", "SECOND"])
     }
@@ -69,10 +69,10 @@ struct FieldOptionTests {
 
     @Test("A field's stored values become the enum a picker offers, in the server's order")
     func resolvesToLocalEnum() throws {
-        let payload = try JSONDecoder().decode(EnumsWire.Response.self, from: Fixture.data("enums"))
+        let payload = try Fixture.enums()
         let options = EnumsWire.rows(from: payload)
             .filter { $0.entityName == "event" && $0.field == "meetingType" }
-            .map(FieldOption.init(wire:))
+            .map(EnumValue.init(wire:))
 
         #expect(options.resolved(fallback: MeetingType.selectable) == [.inPerson, .videoCall])
     }
@@ -80,8 +80,8 @@ struct FieldOptionTests {
     @Test("A value this build does not know is dropped rather than shown blank")
     func dropsUnknownValues() {
         let options = [
-            FieldOption(entityName: "task", field: "reason", value: "FOLLOW_UP", rank: 0),
-            FieldOption(entityName: "task", field: "reason", value: "STORE_VISIT", rank: 1),
+            EnumValue(entityName: "task", field: "reason", value: "FOLLOW_UP", rank: 0),
+            EnumValue(entityName: "task", field: "reason", value: "STORE_VISIT", rank: 1),
         ]
 
         // `STORE_VISIT` still decodes on a record — as `.other` — it simply
@@ -92,7 +92,7 @@ struct FieldOptionTests {
 
     @Test("An empty store falls back to the local list rather than an empty picker")
     func fallsBackWhenEmpty() {
-        let none: [FieldOption] = []
+        let none: [EnumValue] = []
 
         #expect(none.resolved(fallback: Reason.selectable) == Reason.selectable)
         #expect(none.resolved(fallback: MeetingType.selectable) == [.inPerson, .videoCall])
@@ -100,7 +100,7 @@ struct FieldOptionTests {
 
     @Test("A field of values the build knows nothing about falls back too")
     func fallsBackWhenNothingIsKnown() {
-        let options = [FieldOption(entityName: "task", field: "reason", value: "STORE_VISIT", rank: 0)]
+        let options = [EnumValue(entityName: "task", field: "reason", value: "STORE_VISIT", rank: 0)]
 
         #expect(options.resolved(fallback: Reason.selectable) == Reason.selectable)
     }

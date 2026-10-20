@@ -183,7 +183,7 @@ struct TaskComposerView: View {
     // No `@Query` in this view, but the reason picker it pushes has one — and
     // saving needs the session and the services, injected at the root in the app.
     let container = try! ModelContainer(
-        for: FieldOption.self, AgendaTask.self,
+        for: EnumValue.self, AgendaTask.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
 

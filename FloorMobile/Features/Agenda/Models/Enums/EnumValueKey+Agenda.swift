@@ -1,5 +1,5 @@
 //
-//  FieldOptionKey+Agenda.swift
+//  EnumValueKey+Agenda.swift
 //  FloorMobile
 //
 
@@ -8,7 +8,7 @@ import Foundation
 /// The vocabulary keys the agenda reads. One line per (entity, field) an
 /// agenda screen offers as a choice — the store holds whatever else the
 /// server sends, named or not.
-nonisolated extension FieldOption.Key {
+nonisolated extension EnumValue.Key {
     static let taskReason = Self(entityName: "task", field: "reason")
     static let eventReason = Self(entityName: "event", field: "reason")
     /// `TaskStatus` and `EventStatus`. Two lists, not one: a task is never

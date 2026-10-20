@@ -5,7 +5,8 @@
 
 import Foundation
 
-/// Wire format of `GET enums`. Read-only: there is no `Request`.
+/// Wire format of the vocabulary: the `enums` block of `GET setup`
+/// (`SetupWire`). Read-only: there is no `Request`.
 nonisolated enum EnumsWire {
     /// Entity → field → allowed values.
     ///
@@ -38,7 +39,7 @@ nonisolated enum EnumsWire {
     }
 }
 
-nonisolated extension FieldOption {
+nonisolated extension EnumValue {
     convenience init(wire: EnumsWire.Row) {
         self.init(entityName: wire.entityName, field: wire.field, value: wire.value, rank: wire.rank)
     }

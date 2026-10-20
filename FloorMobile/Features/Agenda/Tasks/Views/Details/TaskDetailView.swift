@@ -121,7 +121,7 @@ struct TaskDetailView: View {
 
 #Preview {
     let container = try! ModelContainer(
-        for: AgendaTask.self, FieldOption.self,
+        for: AgendaTask.self, EnumValue.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
     container.mainContext.insert(AgendaTask(
