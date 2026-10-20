@@ -172,7 +172,7 @@ struct SyncManagerTests {
                 return (response(request, statusCode: 200), Data(#"{"items":[]}"#.utf8))
             }
             let name = switch true {
-            case url.contains("client/filter"): "client_filter_ids"
+            case url.contains("client/store-ids"): "client_filter_ids"
             case url.contains("after=cursor-page-2"): "client_sync_page2"
             case url.contains("client/sync"): "client_sync_page1"
             default: "enums"

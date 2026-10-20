@@ -19,9 +19,9 @@ nonisolated extension Endpoint {
         Endpoint(path: "client/sync", query: after(cursor))
     }
 
-    /// Every client id of the connected associate's store, all at once: the
-    /// route's filters left out, which is what makes it the whole list.
-    static let storeClientIDs = Endpoint(path: "client/filter")
+    /// Every client id of the connected associate's store, all at once: what
+    /// the device prunes its copy against.
+    static let storeClientIDs = Endpoint(path: "client/store-ids")
 
     /// The fewest characters, spaces aside, a client search sends: the server
     /// refuses fewer. Below it, "All Brand" asks for more and "My Clients"

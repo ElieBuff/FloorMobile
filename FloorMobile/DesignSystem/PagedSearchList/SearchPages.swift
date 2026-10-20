@@ -50,7 +50,7 @@ nonisolated struct SearchPages<Item: Identifiable> {
     /// Puts `page`, fetched for `request`, under what is on screen, and keeps
     /// where the next page starts. A client already on screen is left out:
     /// between two pages, a refresh of the server's name dictionary can
-    /// repeat a few (`client-search.service.ts`).
+    /// repeat a few (`client-fuzzy-match.service.ts`).
     mutating func land(_ page: [Item], next: String?, for request: Request) {
         let shown = Set(items.map(\.id))
         items += page.filter { !shown.contains($0.id) }

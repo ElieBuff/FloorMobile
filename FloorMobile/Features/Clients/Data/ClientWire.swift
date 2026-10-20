@@ -59,8 +59,8 @@ nonisolated enum ClientWire {
         }
     }
 
-    /// Every client id of the store, as `client/filter` serves it without a
-    /// filter — what the device checks its own copy against.
+    /// Every client id of the store, as `client/store-ids` serves it — what
+    /// the device checks its own copy against.
     struct StoreIDs: Decodable, Sendable {
         var storeCode: String
         var ids: [String]
