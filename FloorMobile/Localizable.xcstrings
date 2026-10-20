@@ -107,6 +107,9 @@
     "Completed" : {
 
     },
+    "Couldn't load this client" : {
+
+    },
     "Created" : {
 
     },
@@ -132,6 +135,9 @@
 
     },
     "Edit Task" : {
+
+    },
+    "Email" : {
 
     },
     "Event" : {
@@ -248,6 +254,9 @@
     "Other" : {
 
     },
+    "Phone" : {
+
+    },
     "Prepare" : {
 
     },
@@ -267,6 +276,9 @@
 
     },
     "Reminder" : {
+
+    },
+    "Sales associate" : {
 
     },
     "Save" : {
@@ -315,6 +327,9 @@
 
     },
     "Status not changed" : {
+
+    },
+    "Store" : {
 
     },
     "Synchronizing data…" : {
