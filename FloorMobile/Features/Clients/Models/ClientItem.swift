@@ -16,6 +16,10 @@ import Foundation
 /// `salesAssociateExternalId` say whose client it is, by the server's ids:
 /// what a list mixing the brand's clients and the associate's own will read
 /// to show each one its way. No view reads them yet.
+///
+/// Not a `ClientSummary`: that one is stored as a composite in shipped models
+/// (`AgendaEvent`, `AgendaTask`, `AIAction`), so growing it with the email and
+/// the phone would change their store's shape.
 nonisolated struct ClientItem: Identifiable, Sendable, Equatable {
     let id: String
     /// "Raphaël Van den Berg", or `nil` when there is no name.

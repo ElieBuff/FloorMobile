@@ -78,10 +78,7 @@ actor ClientService {
         after cursor: String? = nil,
         using client: APIClient
     ) async throws -> (clients: [ClientItem], nextCursor: String?) {
-        let page: CursorPage<ClientWire.Response> = try await client.send(
-            .searchMyClients(query, after: cursor)
-        )
-        return (page.items.map(ClientItem.init(wire:)), page.hasMore ? page.nextCursor : nil)
+        try await searchPage(.searchMyClients(query, after: cursor), using: client)
     }
 
     /// One page of the brand's clients matching `query`, closest first, and
@@ -94,9 +91,17 @@ actor ClientService {
         after cursor: String? = nil,
         using client: APIClient
     ) async throws -> (clients: [ClientItem], nextCursor: String?) {
-        let page: CursorPage<ClientWire.Response> = try await client.send(
-            .searchBrandClients(query, after: cursor)
-        )
+        try await searchPage(.searchBrandClients(query, after: cursor), using: client)
+    }
+
+    /// One page of a client search, as both searches read it: the cards
+    /// converted for display, and where the next page starts. `hasMore`
+    /// decides: a cursor sent with the last page is not followed.
+    private func searchPage(
+        _ endpoint: Endpoint,
+        using client: APIClient
+    ) async throws -> (clients: [ClientItem], nextCursor: String?) {
+        let page: CursorPage<ClientWire.Response> = try await client.send(endpoint)
         return (page.items.map(ClientItem.init(wire:)), page.hasMore ? page.nextCursor : nil)
     }
 

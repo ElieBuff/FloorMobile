@@ -20,7 +20,7 @@ struct ClientItemTests {
 
     @Test("A brand card maps onto names, store and associate, with no way to reach the client")
     func brandCardMaps() throws {
-        let item = ClientItem(wire: try Self.page("client_search_page").items[0])
+        let item = ClientItem(wire: try #require(try Self.page("client_search_page").items.first))
 
         #expect(item.id == "01JBRAND0000000000000000A1")
         #expect(item.displayName == "Nina Larsen")
@@ -37,7 +37,7 @@ struct ClientItemTests {
     @Test("A card of the associate's own clients maps with the email and the phone too")
     func mineCardMaps() throws {
         let page = try Self.page("client_my_clients_page")
-        let item = ClientItem(wire: page.items[0])
+        let item = ClientItem(wire: try #require(page.items.first))
 
         #expect(page.nextCursor == "my-clients-cursor-2")
         #expect(item.displayName == "Aliette Martin")
@@ -51,7 +51,9 @@ struct ClientItemTests {
 
     @Test("A card with nothing but its ids maps to empty fields")
     func sparseCardMaps() throws {
-        let item = ClientItem(wire: try Self.page("client_search_page").items[1])
+        let items = try Self.page("client_search_page").items
+        try #require(items.count > 1)
+        let item = ClientItem(wire: items[1])
 
         #expect(item.displayName == nil)
         #expect(item.segment == nil)
@@ -85,5 +87,28 @@ struct ClientItemTests {
             salesAssociateExternalId: "378970372512460673", salesAssociateName: "Elie Buff",
             primaryEmail: "alice.martinez@example.com", primaryPhone: "+33 6 12 34 56 78"
         ))
+    }
+
+    @Test("A card gives the same item, from the server or kept on the device")
+    @MainActor
+    func storedCardMapsLikeTheCard() throws {
+        let container = try ModelContainer(
+            for: Client.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let cards = try Self.page("client_my_clients_page").items
+        for card in cards {
+            container.mainContext.insert(Client(wire: card))
+        }
+        try container.mainContext.save()
+
+        // Read back through another context: what the store kept, its store
+        // snapshot included, not the objects just built.
+        let stored = try ModelContext(container).fetch(FetchDescriptor<Client>())
+        #expect(stored.count == cards.count)
+        for card in cards {
+            let client = try #require(stored.first { $0.id == card.id })
+            #expect(ClientItem(client: client) == ClientItem(wire: card))
+        }
     }
 }

@@ -56,7 +56,13 @@ Fiches App Store Connect : « Floor Clienteling Staging » (`ai.floorapp.floormo
 3. `git tag vX.Y.Z && git push origin vX.Y.Z` → déclenche `Prod Release`.
 4. La soumission App Store finale reste un clic manuel dans App Store Connect.
 
-**Avant de merger `develop` sur `main`** (livraison staging) : le BFF de staging doit servir `client/search?scope=mine` et les `searchWords`/`searchPhones` de la synchro (FloorPlatform `a588a6f`, migrations `20261014114005` et `20261016033543` en fenêtre de maintenance), et `FloorSchemaV2` doit exister (V1 a changé depuis la dernière livraison). Sinon, « My Clients » liste toute la marque sans erreur, et la synchro des clients échoue au décodage. Il doit aussi servir `GET client/recent`, `POST client/{id}/view` (qui renvoie la liste des récents) et `GET client/{id}` (FloorPlatform `64369b1` et le commit de la fiche client, migration `20261019082534_client_views`), et `FloorSchemaV2` doit couvrir `RecentClient`. Sinon, la fiche client ne s'ouvre pas, et les récents restent vides (sans bloquer le démarrage).
+**Avant de merger `develop` sur `main`** (livraison staging) :
+- le BFF de staging doit servir :
+  - `client/search?scope=mine` (FloorPlatform `a588a6f`, migrations `20261014114005` et `20261016033543` en fenêtre de maintenance). Sinon, « My Clients » liste toute la marque sans erreur ;
+  - la synchro des clients en carte « mine », avec la boutique et les mots de recherche (FloorPlatform `3cbdfa7`). Sinon, elle range sans erreur des clients sans le nom de leur boutique, ou sans mots de recherche, qui ne se corrigent qu'au prochain changement de chacun, ou d'un coup par une synchro complète (déconnexion ou réinstallation) ;
+  - `GET client/recent`, `POST client/{id}/view` (qui renvoie la liste des récents) et `GET client/{id}` (FloorPlatform `64369b1` et `3cbdfa7`, migration `20261019082534_client_views`). Sinon, la fiche client ne s'ouvre pas, et les récents restent vides (sans bloquer le démarrage) ;
+- `3cbdfa7` applique aussi `20261018195148_drop_unused_client_indexes`, à passer services arrêtés ou dans un moment calme : chaque `DROP INDEX` verrouille `crm_clients` un instant. Le code tourne avec ou sans ces index ;
+- `FloorSchemaV2` doit exister : V1 redevient exactement la forme livrée sur `main` (`eccdb89` : `AIAction`, `AgendaEvent` et `AgendaTask` avec `reasonRaw` non optionnel, `FieldOption`), V2 porte la forme actuelle, `Client` et `RecentClient` compris, avec une étape de migration de V1 à V2.
 
 À faire avant une vraie prod : remplacer les placeholders Zitadel de `Staging.xcconfig`/`Prod.xcconfig` (TODO dans les fichiers), domaine `login.staging.floorapp.ai`/`login.floorapp.ai`, branding de la page de login Zitadel.
 
