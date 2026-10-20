@@ -29,7 +29,7 @@ import SwiftUI
 ///         alert = failure.alert    // the pages above it stay
 ///     }
 /// } row: { client in
-///     ClientRow(client: client)
+///     ClientRow(client: client, display: .brand)
 /// }
 /// ```
 ///

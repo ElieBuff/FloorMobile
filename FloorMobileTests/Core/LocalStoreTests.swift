@@ -28,6 +28,7 @@ struct LocalStoreTests {
     private func seededContext() throws -> ModelContext {
         let container = try ModelContainer(
             for: AIAction.self, AgendaEvent.self, AgendaTask.self, Client.self, FieldOption.self,
+            RecentClient.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
         let context = ModelContext(container)
@@ -42,6 +43,7 @@ struct LocalStoreTests {
                                   createdAt: epoch, updatedAt: epoch))
         context.insert(Client(id: "c", externalId: "c"))
         context.insert(FieldOption(entityName: "task", field: "reason", value: "CALL", rank: 0))
+        context.insert(RecentClient(id: "c", lastViewedAt: epoch, client: ClientSummary(id: "c")))
         try context.save()
         return context
     }
@@ -53,6 +55,7 @@ struct LocalStoreTests {
             + context.fetchCount(FetchDescriptor<AgendaTask>())
             + context.fetchCount(FetchDescriptor<Client>())
             + context.fetchCount(FetchDescriptor<FieldOption>())
+            + context.fetchCount(FetchDescriptor<RecentClient>())
     }
 
     @Test("Same tenant keeps the store and the marker")
@@ -63,7 +66,7 @@ struct LocalStoreTests {
 
         try makeStore(tenant: tenant, cursor: cursor).enforceTenant("org-1", context: context)
 
-        #expect(try remainingRowCount(in: context) == 5)
+        #expect(try remainingRowCount(in: context) == 6)
         #expect(tenant.get() == "org-1")
         #expect(cursor.get() == "cursor")
     }

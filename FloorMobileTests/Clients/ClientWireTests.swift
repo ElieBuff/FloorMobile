@@ -27,7 +27,7 @@ struct ClientWireTests {
         #expect(page.nextCursor == "cursor-page-2")
     }
 
-    @Test("A full client maps onto the model, the associate flattened")
+    @Test("A full client maps onto the model, the store and the associate kept as snapshots")
     func fullClientMaps() throws {
         let client = Client(wire: try Self.page().items[0])
 
@@ -37,34 +37,38 @@ struct ClientWireTests {
         #expect(client.primaryEmail == "seed.client.206362@example.test")
         #expect(client.primaryPhone == nil)
         #expect(client.segment == "One Timer")
-        #expect(client.optinEmail && client.optinPhone && !client.optinIM)
-        // `SAExternalId` / `SA` on the wire.
+        #expect(client.storeCode == "90917634296")
+        #expect(client.store?.name == "Shop location")
+        // `SAExternalId` / `SA` on the wire; the associate comes with its internal id too.
         #expect(client.salesAssociateExternalId == "378970372512460673")
+        #expect(client.salesAssociate?.id == "01KTRSFERMNXK5FGSQW11M1478")
         #expect(client.salesAssociate?.displayName == "Elie Buff")
-        #expect(client.totalSpent12M == 1250)
-        #expect(client.totalSpentLifetime == 4380)
-        #expect(client.numTransactions12M == 3)
-        #expect(client.lastTransactionAt != nil)
-        // A date without fractional seconds decodes too.
-        #expect(client.lastInteractionAt != nil)
-        #expect(client.preferredChannelRaw == "EMAIL")
-        #expect(client.rfmRecency12M == 4)
         #expect(client.searchWords == ["206362", "alice", "client", "martinez", "seed", "seedclient206362"])
         #expect(client.searchPhones.isEmpty)
     }
 
-    @Test("A client with nothing but its ids and flags decodes")
+    @Test("A client with nothing but its ids and its store decodes")
     func sparseClientMaps() throws {
         let client = Client(wire: try Self.page().items[1])
 
         #expect(client.displayName == nil)
+        #expect(client.primaryEmail == nil)
+        #expect(client.segment == nil)
         #expect(client.salesAssociate == nil)
         #expect(client.salesAssociateExternalId == nil)
-        #expect(client.preferredChannelRaw == nil)
-        #expect(client.rfmRecency12M == nil)
-        #expect(client.totalSpentLifetime == 0)
         #expect(client.searchWords.isEmpty)
         #expect(client.searchPhones.isEmpty)
+    }
+
+    @Test("A client from a BFF that does not send the store yet decodes, its store left empty")
+    func clientWithoutStoreDecodes() throws {
+        // client_sync_page2.json is the sync as the BFF served it before the card: no store, the fields it no
+        // longer sends still there — decoding ignores them.
+        let client = Client(wire: try Self.page("client_sync_page2").items[0])
+
+        #expect(client.storeCode == "90917634296")
+        #expect(client.store == nil)
+        #expect(client.salesAssociate?.displayName == "Elie Buff")
     }
 
     @Test("A compound name and a phone number decode as the server built them")

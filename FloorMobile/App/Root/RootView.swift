@@ -90,7 +90,7 @@ struct RootView: View {
 
 #Preview {
     let container = try! ModelContainer(
-        for: AIAction.self, AgendaEvent.self, AgendaTask.self, Client.self, FieldOption.self,
+        for: AIAction.self, AgendaEvent.self, AgendaTask.self, Client.self, FieldOption.self, RecentClient.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
     return RootView()

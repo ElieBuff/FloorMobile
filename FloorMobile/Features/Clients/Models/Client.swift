@@ -6,7 +6,10 @@
 import Foundation
 import SwiftData
 
-/// A client of the connected sales associate's store, kept on the device.
+/// A client of the connected sales associate's store, kept on the device: the
+/// card the server sends of the associate's own clients (`ClientWire`), and
+/// nothing more — who they are, their store and associate, how to reach them,
+/// and the words a future search on the device will read.
 ///
 /// Local-first: the store's clients are loaded in full once, then only what
 /// changed (`ClientService`), and read by the views through `@Query`. Every
@@ -23,32 +26,16 @@ nonisolated final class Client {
     var primaryPhone: String?
     var segment: String?
     var storeCode: String?
-
-    var optinEmail: Bool
-    var optinPhone: Bool
-    var optinIM: Bool
+    /// That store as a display snapshot, for its name. A rename reaches the
+    /// device with the client's next change.
+    var store: StoreSummary?
 
     /// The associate the client is assigned to, by the external id the
-    /// server keys them on — not the id `SalesAssociateSummary.id` carries
-    /// elsewhere, hence a field of its own.
+    /// server keys them on — `salesAssociate` carries the internal one, hence
+    /// a field of its own.
     var salesAssociateExternalId: String?
     /// That associate's name, as a display snapshot.
     var salesAssociate: SalesAssociateSummary?
-
-    /// Whole units, as the server stores them.
-    var totalSpent12M: Int
-    var totalSpentLifetime: Int
-    var numTransactions12M: Int
-    var firstTransactionAt: Date?
-    var lastTransactionAt: Date?
-    var lastInteractionAt: Date?
-
-    /// Raw server value (open set, e.g. "EMAIL" / "WHATSAPP"): kept raw.
-    var preferredChannelRaw: String?
-
-    var rfmRecency12M: Int?
-    var rfmFrequency12M: Int?
-    var rfmMonetary12M: Int?
 
     /// The words the server finds the client by (first name, last name, the
     /// email before its @ — folded, each multi-word value also glued), kept as
@@ -68,21 +55,9 @@ nonisolated final class Client {
         primaryPhone: String? = nil,
         segment: String? = nil,
         storeCode: String? = nil,
-        optinEmail: Bool = false,
-        optinPhone: Bool = false,
-        optinIM: Bool = false,
+        store: StoreSummary? = nil,
         salesAssociateExternalId: String? = nil,
         salesAssociate: SalesAssociateSummary? = nil,
-        totalSpent12M: Int = 0,
-        totalSpentLifetime: Int = 0,
-        numTransactions12M: Int = 0,
-        firstTransactionAt: Date? = nil,
-        lastTransactionAt: Date? = nil,
-        lastInteractionAt: Date? = nil,
-        preferredChannelRaw: String? = nil,
-        rfmRecency12M: Int? = nil,
-        rfmFrequency12M: Int? = nil,
-        rfmMonetary12M: Int? = nil,
         searchWords: [String] = [],
         searchPhones: [String] = []
     ) {
@@ -94,21 +69,9 @@ nonisolated final class Client {
         self.primaryPhone = primaryPhone
         self.segment = segment
         self.storeCode = storeCode
-        self.optinEmail = optinEmail
-        self.optinPhone = optinPhone
-        self.optinIM = optinIM
+        self.store = store
         self.salesAssociateExternalId = salesAssociateExternalId
         self.salesAssociate = salesAssociate
-        self.totalSpent12M = totalSpent12M
-        self.totalSpentLifetime = totalSpentLifetime
-        self.numTransactions12M = numTransactions12M
-        self.firstTransactionAt = firstTransactionAt
-        self.lastTransactionAt = lastTransactionAt
-        self.lastInteractionAt = lastInteractionAt
-        self.preferredChannelRaw = preferredChannelRaw
-        self.rfmRecency12M = rfmRecency12M
-        self.rfmFrequency12M = rfmFrequency12M
-        self.rfmMonetary12M = rfmMonetary12M
         self.searchWords = searchWords
         self.searchPhones = searchPhones
     }

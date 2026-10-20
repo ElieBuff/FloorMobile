@@ -5,58 +5,42 @@
 
 import SwiftUI
 
-/// One client in a list: their initials, their name, and up to two lines of
-/// detail beneath.
+/// One client in a list: their initials, their name, and two lines of detail
+/// beneath, which the list chooses by its display style.
 ///
-/// Shared by every client list. Each kind of client has its own initializer,
-/// which decides what the two lines show and in which order — so a list only
-/// hands over its model, and the row reads the same wherever it appears: one
-/// of the associate's own clients shows the same lines whether the device or
-/// the server found them. A line the client has nothing for is left out; a
-/// client with no name on file reads "Unnamed client" rather than a blank
-/// line.
+/// Shared by every client list, whatever the client's source — the server or
+/// the device both give a `ClientItem`. The style says what the two lines
+/// are, so a row never guesses from what happens to be there: `.mine` shows
+/// how to reach the client, `.brand` where they belong. A line the client
+/// has nothing for is left out; the name is `ClientItem.displayLabel`, never
+/// a blank line.
 struct ClientRow: View {
-    private let name: String?
-    private let primaryLine: String?
-    private let secondaryLine: String?
+    let client: ClientItem
+    let display: Display
 
-    /// A client of the store: email, then phone.
-    init(client: Client) {
-        name = client.displayName
-        primaryLine = client.primaryEmail
-        secondaryLine = client.primaryPhone
-    }
-
-    /// One of the associate's own clients, as the server found them: email,
-    /// then phone — the lines of a client the device keeps.
-    init(client: MyClient) {
-        name = client.displayName
-        primaryLine = client.primaryEmail
-        secondaryLine = client.primaryPhone
-    }
-
-    /// A client of the brand: their store, then the associate they are
-    /// assigned to — the server sends neither email nor phone for them.
-    init(client: BrandClient) {
-        name = client.displayName
-        primaryLine = client.storeName
-        secondaryLine = client.salesAssociateName
+    /// What the two lines under the name show.
+    enum Display {
+        /// The associate's own clients ("My Clients", on the server or the
+        /// device): email, then phone.
+        case mine
+        /// Any client of the brand ("All Brand"): their store, then the
+        /// associate they are assigned to — the brand search sends neither
+        /// email nor phone for them (their profile does).
+        case brand
     }
 
     var body: some View {
         HStack(spacing: 12) {
-            InitialsAvatar(name: name ?? "", size: 40)
+            InitialsAvatar(name: client.displayName ?? "", size: 40)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(name ?? String(localized: "Unnamed client"))
+                Text(client.displayLabel)
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(Color(.OnSurface.textPrimary))
 
-                if let primaryLine, !primaryLine.isEmpty {
-                    detail(primaryLine)
-                }
-                if let secondaryLine, !secondaryLine.isEmpty {
-                    detail(secondaryLine)
+                switch display {
+                case .mine: MineDetails(client: client)
+                case .brand: BrandDetails(client: client)
                 }
             }
             .lineLimit(1)
@@ -66,35 +50,70 @@ struct ClientRow: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
     }
+}
 
-    private func detail(_ text: String) -> some View {
-        Text(text)
-            .font(.caption)
-            .foregroundStyle(Color(.OnSurface.textSecondary))
+/// How to reach one of the associate's own clients.
+private struct MineDetails: View {
+    let client: ClientItem
+
+    var body: some View {
+        DetailLine(client.primaryEmail)
+        DetailLine(client.primaryPhone)
+    }
+}
+
+/// Where a client of the brand belongs.
+private struct BrandDetails: View {
+    let client: ClientItem
+
+    var body: some View {
+        DetailLine(client.storeName)
+        DetailLine(client.salesAssociateName)
+    }
+}
+
+/// One line of detail in the row's look — nothing at all for a value the
+/// client does not have.
+private struct DetailLine: View {
+    let text: String?
+
+    init(_ text: String?) {
+        self.text = text
+    }
+
+    var body: some View {
+        if let text, !text.isEmpty {
+            Text(text)
+                .font(.caption)
+                .foregroundStyle(Color(.OnSurface.textSecondary))
+        }
     }
 }
 
 // MARK: - Previews
 
-#Preview("Each kind of client") {
+#Preview("Both styles") {
+    let alice = ClientItem(
+        id: "1", displayName: "Alice Martinez", segment: "VIC",
+        storeCode: "90917634296", storeName: "Regent Street",
+        salesAssociateExternalId: "378970372512460673", salesAssociateName: "Elie Buff",
+        primaryEmail: "alice.martinez@example.com", primaryPhone: "+33 6 12 34 56 78"
+    )
     List {
-        ClientRow(client: Client(
-            id: "1", externalId: "1", firstName: "Alice", lastName: "Martinez",
-            primaryEmail: "alice.martinez@example.com", primaryPhone: "+33 6 12 34 56 78"
-        ))
-        ClientRow(client: Client(
-            id: "2", externalId: "2", firstName: "Raphaël", lastName: "Van den Berg",
-            primaryPhone: "+33 6 98 76 54 32"
-        ))
-        ClientRow(client: MyClient(
-            id: "3", displayName: "Aliette Martin",
-            primaryEmail: "aliette.martin@example.com", primaryPhone: "+33 6 11 22 33 44"
-        ))
-        ClientRow(client: BrandClient(
-            id: "4", displayName: "Nina Larsen", segment: "VIC",
-            storeName: "Regent Street", salesAssociateName: "Elie Buff"
-        ))
-        ClientRow(client: Client(id: "5", externalId: "5"))
+        ClientRow(client: alice, display: .mine)
+        ClientRow(client: alice, display: .brand)
+        // One of the associate's own clients without a phone: one line only.
+        ClientRow(client: ClientItem(
+            id: "2", displayName: "Raphaël Van den Berg", segment: nil,
+            storeCode: "90917634296", storeName: "Regent Street",
+            salesAssociateExternalId: nil, salesAssociateName: nil,
+            primaryEmail: "raphael.vandenberg@example.com", primaryPhone: nil
+        ), display: .mine)
+        // No name on file.
+        ClientRow(client: ClientItem(
+            id: "3", displayName: nil, segment: nil, storeCode: nil, storeName: nil,
+            salesAssociateExternalId: nil, salesAssociateName: nil, primaryEmail: nil, primaryPhone: nil
+        ), display: .mine)
     }
     .cardList()
 }

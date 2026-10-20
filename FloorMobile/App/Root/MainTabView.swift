@@ -18,8 +18,8 @@ import SwiftData
 struct MainTabView: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var selectedTab: AppTab = .home
-    /// The Home tab's own navigation path; the other tabs get theirs when
-    /// they have somewhere to push to.
+    /// The Home tab's own navigation path, for the screens pushed from code.
+    /// A tab whose every push comes from a link (Clients) needs none.
     @State private var homeRouter = Router<HomeRoute>()
 
     var body: some View {
@@ -45,6 +45,15 @@ struct MainTabView: View {
             Tab(value: .clients) {
                 NavigationStack {
                     ClientsView()
+                        // Declared on the stack's root content, never inside a
+                        // lazy container (List, LazyVStack), where it might
+                        // never register.
+                        .navigationDestination(for: ClientsRoute.self) { route in
+                            switch route {
+                            case .profile(let id):
+                                ClientProfileView(clientID: id)
+                            }
+                        }
                 }
             } label: {
                 label(String(localized: "Clients"), systemImage: "person.2", tab: .clients)

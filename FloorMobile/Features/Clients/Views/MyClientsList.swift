@@ -106,7 +106,9 @@ struct MyClientsList: View {
                     alert = failure.alert
                 }
             } row: { client in
-                ClientRow(client: client)
+                NavigationLink(value: ClientsRoute.profile(id: client.id)) {
+                    ClientRow(client: client, display: .mine)
+                }
             }
         }
     }
@@ -176,14 +178,16 @@ private struct MatchingClients: View {
 
     var body: some View {
         List(clients) { client in
-            ClientRow(client: client)
-                .listRowInsets(.cardRow)
-                .onAppearNearEnd(of: clients, item: client) {
-                    // Fewer than asked for means the store has no more.
-                    if clients.count == limit {
-                        onNearEnd()
-                    }
+            NavigationLink(value: ClientsRoute.profile(id: client.id)) {
+                ClientRow(client: ClientItem(client: client), display: .mine)
+            }
+            .listRowInsets(.cardRow)
+            .onAppearNearEnd(of: clients, item: client) {
+                // Fewer than asked for means the store has no more.
+                if clients.count == limit {
+                    onNearEnd()
                 }
+            }
         }
         .cardList()
         .overlay {

@@ -5,55 +5,57 @@
 
 import Foundation
 
-/// Wire format of the store's `Client`s: what `client/sync` and
-/// `client/filter` serve to keep the device's copy. Read-only — the app does
-/// not write clients yet, so there is no `Request`. The brand's clients, a
-/// different model, have their own file (`BrandClientWire`).
+/// Wire format of a client: the one card the server sends for every client
+/// list — the store's clients the device keeps (`client/sync`), the
+/// associate's own clients a search finds (`client/search?scope=mine`), and
+/// any client of the brand (`client/search`) — and that a client's profile
+/// (`client/{id}`) holds among its columns. Read-only: the app does not write
+/// clients yet, so there is no `Request`.
+///
+/// One card for three readers, to keep in step with it: `Client` keeps it
+/// (`init(wire:)`, below), `ClientItem` shows it (`ClientItem.init(wire:)`,
+/// in its own file), and `ClientProfileWire` reads it from a profile. Not the
+/// recent clients: theirs comes embedded, as `ClientSummaryWire`.
 nonisolated enum ClientWire {
-    /// A client exactly as `client/sync` serves it, one item of a page. The
-    /// page itself decodes as a `CursorPage` (its `storeCode` is not needed).
+    /// One client card: of a page — the page itself decodes as a `CursorPage`
+    /// (the sync's `storeCode` on it is not needed) — or of a profile
+    /// (`ClientProfileWire`). In a list, the store and the associate come as
+    /// the shared projections an agenda item embeds them with; a profile's
+    /// store carries only `storeCode` and `name`.
+    ///
+    /// What a card carries depends on where it comes from. In a list, the
+    /// email, the phone and the search's words — drawn from the name, the
+    /// email and the phone — come only for the associate's own clients (the
+    /// sync, "My Clients"), never for a client of the brand. A profile
+    /// (`client/{id}`) carries the email and the phone of any client it
+    /// opens, but never the search's words.
     struct Response: Decodable, Sendable {
         var id: String
         var externalId: String
         var firstName: String?
         var lastName: String?
-        var primaryEmail: String?
-        var primaryPhone: String?
         var segment: String?
         var storeCode: String?
-        var optinEmail: Bool
-        var optinPhone: Bool
-        var optinIM: Bool
+        /// The client's store, for its name. Absent from a BFF that does not
+        /// send it yet.
+        var store: StoreWire?
         var salesAssociateExternalId: String?
         var salesAssociate: SalesAssociateWire?
-        var totalSpent12M: Int
-        var totalSpentLifetime: Int
-        var numTransactions12M: Int
-        var firstTransactionAt: Date?
-        var lastTransactionAt: Date?
-        var lastInteractionAt: Date?
-        var preferredChannel: String?
-        var rfmRecency12M: Int?
-        var rfmFrequency12M: Int?
-        var rfmMonetary12M: Int?
-        /// The words the server finds the client by — the first name's, the last
-        /// name's and the email's before its @, folded, each multi-word value also
-        /// glued — and its phone numbers as digits: what the server's
-        /// `floor_clients_search_columns` writes. Arrays, `[]` when empty, never
-        /// null.
-        var searchWords: [String]
-        var searchPhones: [String]
+        var primaryEmail: String?
+        var primaryPhone: String?
+        /// The words the server finds the client by — the first name's, the
+        /// last name's and the email's before its @, folded, each multi-word
+        /// value also glued — and its phone numbers as digits: what the
+        /// server's `floor_clients_search_columns` writes.
+        var searchWords: [String]?
+        var searchPhones: [String]?
 
         /// The server spells the associate `SA`; the app spells it out.
         enum CodingKeys: String, CodingKey {
-            case id, externalId, firstName, lastName, primaryEmail, primaryPhone
-            case segment, storeCode, optinEmail, optinPhone, optinIM
+            case id, externalId, firstName, lastName, segment, storeCode, store
             case salesAssociateExternalId = "SAExternalId"
             case salesAssociate = "SA"
-            case totalSpent12M, totalSpentLifetime, numTransactions12M
-            case firstTransactionAt, lastTransactionAt, lastInteractionAt
-            case preferredChannel, rfmRecency12M, rfmFrequency12M, rfmMonetary12M
-            case searchWords, searchPhones
+            case primaryEmail, primaryPhone, searchWords, searchPhones
         }
     }
 
@@ -66,7 +68,9 @@ nonisolated enum ClientWire {
 }
 
 nonisolated extension Client {
-    /// Maps the wire format into the local model, flattening the associate.
+    /// Maps the card into the local model, the store and the associate kept
+    /// as display snapshots; search words a card leaves out become empty
+    /// lists.
     convenience init(wire: ClientWire.Response) {
         self.init(
             id: wire.id,
@@ -77,23 +81,11 @@ nonisolated extension Client {
             primaryPhone: wire.primaryPhone,
             segment: wire.segment,
             storeCode: wire.storeCode,
-            optinEmail: wire.optinEmail,
-            optinPhone: wire.optinPhone,
-            optinIM: wire.optinIM,
+            store: wire.store.map(StoreSummary.init(wire:)),
             salesAssociateExternalId: wire.salesAssociateExternalId,
             salesAssociate: wire.salesAssociate.map(SalesAssociateSummary.init(wire:)),
-            totalSpent12M: wire.totalSpent12M,
-            totalSpentLifetime: wire.totalSpentLifetime,
-            numTransactions12M: wire.numTransactions12M,
-            firstTransactionAt: wire.firstTransactionAt,
-            lastTransactionAt: wire.lastTransactionAt,
-            lastInteractionAt: wire.lastInteractionAt,
-            preferredChannelRaw: wire.preferredChannel,
-            rfmRecency12M: wire.rfmRecency12M,
-            rfmFrequency12M: wire.rfmFrequency12M,
-            rfmMonetary12M: wire.rfmMonetary12M,
-            searchWords: wire.searchWords,
-            searchPhones: wire.searchPhones
+            searchWords: wire.searchWords ?? [],
+            searchPhones: wire.searchPhones ?? []
         )
     }
 }

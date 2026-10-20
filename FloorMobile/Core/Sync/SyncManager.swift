@@ -89,12 +89,15 @@ final class SyncManager {
         }
     }
 
-    /// What the app needs before it can show anything, fanned out with
-    /// `async let`:
+    /// What the launch brings up to date, fanned out with `async let`:
     /// - the server's field vocabulary, which every picker reads;
     /// - the store's clients — brought up to date, then cleared of those that
     ///   left the store, in that order: the prune only means something once
-    ///   the delta is in.
+    ///   the delta is in;
+    /// - the associate's recent clients, which never stop the launch
+    ///   (`refreshRecentClients`). When one of the first two fails, leaving
+    ///   the function cancels this one if it is still running; a list it
+    ///   already kept stays.
     ///
     /// Feature data that changes by the hour (events, tasks, AI actions) is
     /// deliberately absent: Home loads it on appear and on pull-to-refresh,
@@ -107,15 +110,34 @@ final class SyncManager {
             try await clients.synchronize(using: api, cursor: cursor)
             try await clients.pruneDeparted(using: api)
         }()
-        _ = try await (vocabulary, clientBook)
+        async let recentClients: Void = refreshRecentClients(clients, using: api)
+        _ = try await (vocabulary, clientBook, recentClients)
+    }
+
+    /// Brings the associate's recent clients up to date, and never fails the
+    /// launch: they are a convenience, not what the app needs to open. A
+    /// failure is logged, and the list of the last launch stays. A
+    /// cancellation — the rest of the launch failed first — is not a failure:
+    /// `APIClient` reports it as a network error, which is not logged.
+    private func refreshRecentClients(_ clients: ClientService, using api: APIClient) async {
+        do {
+            try await clients.synchronizeRecent(using: api)
+        } catch {
+            guard !Task.isCancelled else { return }
+            AppLog.sync.error(
+                "Recent clients refresh failed: \(error.localizedDescription, privacy: .public)"
+            )
+        }
     }
 
     /// Whether an earlier run left something usable behind — one entry per
-    /// line of `performSync`.
+    /// line of `performSync` that can fail it.
     ///
     /// For the clients, the cursor rather than a row count: it is stored only
     /// once a pass has gone through, so it tells a complete copy from one cut
-    /// short — and a store may well have no client at all.
+    /// short — and a store may well have no client at all. The recent clients
+    /// have no entry: their refresh never fails the launch, so there is
+    /// nothing to check.
     private func hasUsableCache(in context: ModelContext) -> Bool {
         let vocabulary = (try? context.fetchCount(FetchDescriptor<FieldOption>())) ?? 0
         return vocabulary > 0 && localStore.clientCursor.get() != nil

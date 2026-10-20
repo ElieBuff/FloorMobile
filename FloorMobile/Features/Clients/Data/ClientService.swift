@@ -7,13 +7,16 @@ import Foundation
 import SwiftData
 
 /// The Clients feature's data service: keeps the connected associate's store
-/// clients in SwiftData. A `@ModelActor` so the import runs off the main actor
-/// on a private, actor-owned context.
+/// clients and their recent clients in SwiftData, and asks for a client's
+/// profile without keeping it. A `@ModelActor` so the import runs off the main
+/// actor on a private, actor-owned context.
 ///
-/// Not a full refresh like the agenda's: a store holds thousands of clients,
-/// so they are loaded in full once, then only what changed. That is why a page
-/// never sweeps what it does not carry — what is missing from a delta is
-/// unchanged, not gone. What is gone is found by `pruneDeparted(using:)`.
+/// The store's clients are not refreshed in full like the agenda's: a store
+/// holds thousands of them, so they are loaded in full once, then only what
+/// changed. That is why a page never sweeps what it does not carry — what is
+/// missing from a delta is unchanged, not gone. What is gone is found by
+/// `pruneDeparted(using:)`. The recent clients are refreshed in full: a few
+/// of them, in the server's order, which `lastViewedAt` carries.
 @ModelActor
 actor ClientService {
 
@@ -74,11 +77,11 @@ actor ClientService {
         _ query: String,
         after cursor: String? = nil,
         using client: APIClient
-    ) async throws -> (clients: [MyClient], nextCursor: String?) {
-        let page: CursorPage<MyClientWire.Response> = try await client.send(
+    ) async throws -> (clients: [ClientItem], nextCursor: String?) {
+        let page: CursorPage<ClientWire.Response> = try await client.send(
             .searchMyClients(query, after: cursor)
         )
-        return (page.items.map(MyClient.init(wire:)), page.hasMore ? page.nextCursor : nil)
+        return (page.items.map(ClientItem.init(wire:)), page.hasMore ? page.nextCursor : nil)
     }
 
     /// One page of the brand's clients matching `query`, closest first, and
@@ -90,11 +93,47 @@ actor ClientService {
         _ query: String,
         after cursor: String? = nil,
         using client: APIClient
-    ) async throws -> (clients: [BrandClient], nextCursor: String?) {
-        let page: CursorPage<BrandClientWire.Response> = try await client.send(
+    ) async throws -> (clients: [ClientItem], nextCursor: String?) {
+        let page: CursorPage<ClientWire.Response> = try await client.send(
             .searchBrandClients(query, after: cursor)
         )
-        return (page.items.map(BrandClient.init(wire:)), page.hasMore ? page.nextCursor : nil)
+        return (page.items.map(ClientItem.init(wire:)), page.hasMore ? page.nextCursor : nil)
+    }
+
+    /// One client's profile, everything the server holds on them.
+    ///
+    /// Straight from the server and not stored, like a search result: any
+    /// client of the brand can be opened, while the device keeps only its
+    /// store's.
+    func profile(id: String, using client: APIClient) async throws -> ClientProfile {
+        let wire: ClientProfileWire.Response = try await client.send(.clientProfile(id: id))
+        return ClientProfile(wire: wire)
+    }
+
+    /// Asks for the associate's recent clients and keeps them, at launch.
+    func synchronizeRecent(using client: APIClient) async throws {
+        let list: RecentClientWire.List = try await client.send(.recentClients)
+        try await replaceRecent(with: list)
+    }
+
+    /// Records that the associate opened this client's profile, and keeps the
+    /// recent clients the server answers with, as they now stand — this
+    /// client first, moved up if it was already there. No second call, and a
+    /// list that holds the view it follows.
+    ///
+    /// A view the server refuses (404) or that never leaves (offline, see
+    /// `Endpoint.recordClientView`) throws before anything is written: the
+    /// list stays as it was.
+    func recordView(of id: String, using client: APIClient) async throws {
+        let list: RecentClientWire.List = try await client.send(.recordClientView(id: id))
+        try await replaceRecent(with: list)
+    }
+
+    /// Replaces the device's recent clients with `list`, by mark-and-sweep
+    /// like the AI actions: the server alone orders and bounds it, so the
+    /// device keeps exactly what it sends — whichever route sent it.
+    private func replaceRecent(with list: RecentClientWire.List) async throws {
+        try await modelContext.refresh(from: { list.items }, make: RecentClient.init(wire:))
     }
 
     /// Well under SQLite's limit on bound variables per statement.

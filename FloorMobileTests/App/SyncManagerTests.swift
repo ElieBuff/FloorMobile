@@ -150,6 +150,7 @@ struct SyncManagerTests {
     private static func inMemoryContainer() throws -> ModelContainer {
         try ModelContainer(
             for: AIAction.self, AgendaEvent.self, AgendaTask.self, Client.self, FieldOption.self,
+            RecentClient.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
     }
@@ -162,10 +163,14 @@ struct SyncManagerTests {
     }
 
     /// Every startup route answered: the vocabulary, a client pass in two
-    /// pages, and the store's ids.
+    /// pages, the store's ids, and the recent clients — an empty list, inline
+    /// until a fixture copied from the BFF replaces it.
     private nonisolated static func serving() -> APIClient {
         client { request in
             let url = request.url?.absoluteString ?? ""
+            if url.contains("client/recent") {
+                return (response(request, statusCode: 200), Data(#"{"items":[]}"#.utf8))
+            }
             let name = switch true {
             case url.contains("client/filter"): "client_filter_ids"
             case url.contains("after=cursor-page-2"): "client_sync_page2"

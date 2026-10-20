@@ -7,11 +7,23 @@
             "lastName": "Martin",
             "segment": "One Timer",
             "storeCode": "90917634296",
-            "store": { "name": "Shop location" },
+            "store": {
+                "id": "09270e8c-d9ff-4c29-ba93-330212bda2ef",
+                "externalId": "90917634296",
+                "storeCode": "90917634296",
+                "name": "Shop location"
+            },
             "SAExternalId": "seed-sa-001",
-            "SA": { "firstName": "Thomas", "lastName": "Torres" },
+            "SA": {
+                "id": "746e1240-8fe3-43a2-897b-281c01d64b69",
+                "externalId": "seed-sa-001",
+                "firstName": "Thomas",
+                "lastName": "Torres"
+            },
             "primaryEmail": "seed.client.375493@example.test",
-            "primaryPhone": "+33612345678"
+            "primaryPhone": "+33612345678",
+            "searchWords": ["375493", "aliette", "client", "martin", "seed", "seedclient375493"],
+            "searchPhones": ["33612345678"]
         },
         {
             "id": "6d2a1f0e-5b3c-4e7a-9f10-2c4b8e6a0002",
@@ -20,11 +32,18 @@
             "lastName": null,
             "segment": null,
             "storeCode": "90917634296",
-            "store": { "name": "Shop location" },
+            "store": {
+                "id": "09270e8c-d9ff-4c29-ba93-330212bda2ef",
+                "externalId": "90917634296",
+                "storeCode": "90917634296",
+                "name": "Shop location"
+            },
             "SAExternalId": null,
             "SA": null,
             "primaryEmail": null,
-            "primaryPhone": null
+            "primaryPhone": null,
+            "searchWords": [],
+            "searchPhones": []
         }
     ],
     "hasMore": true,

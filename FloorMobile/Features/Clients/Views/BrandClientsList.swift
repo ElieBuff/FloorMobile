@@ -67,7 +67,9 @@ struct BrandClientsList: View {
                     alert = failure.alert
                 }
             } row: { client in
-                ClientRow(client: client)
+                NavigationLink(value: ClientsRoute.profile(id: client.id)) {
+                    ClientRow(client: client, display: .brand)
+                }
             }
         }
     }
@@ -75,14 +77,8 @@ struct BrandClientsList: View {
     /// What went wrong with a first page, and "Try again", which builds the
     /// list afresh — so it asks for that first page again.
     private func failedFirstPage(_ failure: PagedSearchFailure) -> some View {
-        ContentUnavailableView {
-            Label(String(localized: "Search failed"), systemImage: "exclamationmark.triangle")
-        } description: {
-            Text(failure.error.localizedDescription)
-        } actions: {
-            Button(String(localized: "Try again")) {
-                failedSearch = nil
-            }
+        LoadFailureView(title: String(localized: "Search failed"), error: failure.error) {
+            failedSearch = nil
         }
     }
 }

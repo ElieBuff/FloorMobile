@@ -54,6 +54,7 @@ nonisolated struct LocalStore: Sendable {
         try context.delete(model: AgendaTask.self)
         try context.delete(model: Client.self)
         try context.delete(model: FieldOption.self)
+        try context.delete(model: RecentClient.self)
         try context.save()
         clientCursor.set(nil)
     }

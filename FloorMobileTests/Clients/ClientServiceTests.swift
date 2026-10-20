@@ -211,6 +211,8 @@ struct ClientServiceTests {
         #expect(url.queryItems?.first { $0.name == "q" }?.value == "nina lar")
         #expect(url.queryItems?.first { $0.name == "after" }?.value == "search-cursor-1")
         #expect(page.clients.map(\.displayName) == ["Nina Larsen", nil])
+        // A client of the brand comes with no way to reach them.
+        #expect(page.clients.allSatisfy { $0.primaryEmail == nil && $0.primaryPhone == nil })
         #expect(page.nextCursor == "search-cursor-2")
         // Shown, never stored.
         #expect(try ModelContext(container).fetchCount(FetchDescriptor<Client>()) == 0)
@@ -234,7 +236,7 @@ struct ClientServiceTests {
 
     private static func inMemoryContainer() throws -> ModelContainer {
         try ModelContainer(
-            for: Client.self,
+            for: Client.self, RecentClient.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
     }

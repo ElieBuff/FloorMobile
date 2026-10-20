@@ -7,9 +7,19 @@
             "lastName": "Larsen",
             "segment": "VIC",
             "storeCode": "90917667064",
-            "store": { "name": "Regent Street" },
+            "store": {
+                "id": "2e3a0647-09ac-4d36-bf8d-9400170f22cb",
+                "externalId": "90917667064",
+                "storeCode": "90917667064",
+                "name": "My Custom Location"
+            },
             "SAExternalId": "378970372512460673",
-            "SA": { "firstName": "Elie", "lastName": "Buff" }
+            "SA": {
+                "id": "01KTRSFERMNXK5FGSQW11M1478",
+                "externalId": "378970372512460673",
+                "firstName": "Elie",
+                "lastName": "Buff"
+            }
         },
         {
             "id": "01JBRAND0000000000000000A2",

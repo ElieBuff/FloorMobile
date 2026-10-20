@@ -56,7 +56,7 @@ Fiches App Store Connect : « Floor Clienteling Staging » (`ai.floorapp.floormo
 3. `git tag vX.Y.Z && git push origin vX.Y.Z` → déclenche `Prod Release`.
 4. La soumission App Store finale reste un clic manuel dans App Store Connect.
 
-**Avant de merger `develop` sur `main`** (livraison staging) : le BFF de staging doit servir `client/search?scope=mine` et les `searchWords`/`searchPhones` de la synchro (FloorPlatform `a588a6f`, migrations `20261014114005` et `20261016033543` en fenêtre de maintenance), et `FloorSchemaV2` doit exister (V1 a changé depuis la dernière livraison). Sinon, « My Clients » liste toute la marque sans erreur, et la synchro des clients échoue au décodage.
+**Avant de merger `develop` sur `main`** (livraison staging) : le BFF de staging doit servir `client/search?scope=mine` et les `searchWords`/`searchPhones` de la synchro (FloorPlatform `a588a6f`, migrations `20261014114005` et `20261016033543` en fenêtre de maintenance), et `FloorSchemaV2` doit exister (V1 a changé depuis la dernière livraison). Sinon, « My Clients » liste toute la marque sans erreur, et la synchro des clients échoue au décodage. Il doit aussi servir `GET client/recent`, `POST client/{id}/view` (qui renvoie la liste des récents) et `GET client/{id}` (FloorPlatform `64369b1` et le commit de la fiche client, migration `20261019082534_client_views`), et `FloorSchemaV2` doit couvrir `RecentClient`. Sinon, la fiche client ne s'ouvre pas, et les récents restent vides (sans bloquer le démarrage).
 
 À faire avant une vraie prod : remplacer les placeholders Zitadel de `Staging.xcconfig`/`Prod.xcconfig` (TODO dans les fichiers), domaine `login.staging.floorapp.ai`/`login.floorapp.ai`, branding de la page de login Zitadel.
 
