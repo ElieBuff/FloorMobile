@@ -69,34 +69,6 @@ actor SetupService {
         try modelContext.save()
     }
 
-    // MARK: - Client filters
-
-    private func saveFilters(_ filters: [ClientFilterWire.Response]) throws {
-        let incoming = filters.enumerated().map { ClientFilter(wire: $1, rank: $0) }
-        let stored = try modelContext.fetch(
-            FetchDescriptor<ClientFilter>(sortBy: [SortDescriptor(\.rank, order: .forward)])
-        )
-        guard Self.differs(stored: stored, from: incoming) else { return }
-
-        for filter in stored {
-            modelContext.delete(filter)
-        }
-        for filter in incoming {
-            modelContext.insert(filter)
-        }
-        try modelContext.save()
-    }
-
-    /// Whether the served filters differ from the stored ones, both in rank
-    /// order: every field counts, the order included — it is the screen's.
-    private static func differs(stored: [ClientFilter], from incoming: [ClientFilter]) -> Bool {
-        guard stored.count == incoming.count else { return true }
-        return zip(stored, incoming).contains { old, new in
-            old.id != new.id || old.rank != new.rank || old.titleKey != new.titleKey
-                || old.selectionRaw != new.selectionRaw || old.values != new.values
-        }
-    }
-    
     /// Whether the served vocabulary differs from the stored one.
     ///
     /// Compared on the identity *and* the rank of every row: `rank` carries the
@@ -117,5 +89,41 @@ actor SetupService {
             }
             .sorted { $0.id < $1.id }
         return zip(stored, incoming).contains { $0.id != $1.id || $0.rank != $1.rank }
+    }
+
+    // MARK: - Client filters
+
+    /// The same way as the vocabulary: compared first, rewritten only when
+    /// something changed, logged either way.
+    private func saveFilters(_ filters: [ClientFilterWire.Response]) throws {
+        let incoming = filters.enumerated().map { ClientFilter(wire: $1, rank: $0) }
+        let stored = try modelContext.fetch(
+            FetchDescriptor<ClientFilter>(sortBy: [SortDescriptor(\.rank, order: .forward)])
+        )
+        guard Self.differs(stored: stored, from: incoming) else {
+            AppLog.sync.debug(
+                "Client filters unchanged (\(incoming.count, privacy: .public) filters), store left alone"
+            )
+            return
+        }
+        AppLog.sync.debug(
+            "Client filters changed: \(stored.count, privacy: .public) stored → \(incoming.count, privacy: .public) served, rewriting"
+        )
+
+        for filter in stored {
+            modelContext.delete(filter)
+        }
+        for filter in incoming {
+            modelContext.insert(filter)
+        }
+        try modelContext.save()
+    }
+
+    /// Whether the served filters differ from the stored ones, both in rank
+    /// order — the order is the screen's, so a reordering is a change. What
+    /// "the same filter" means is the model's (`ClientFilter.hasSameContent`).
+    private static func differs(stored: [ClientFilter], from incoming: [ClientFilter]) -> Bool {
+        guard stored.count == incoming.count else { return true }
+        return zip(stored, incoming).contains { !$0.hasSameContent(as: $1) }
     }
 }

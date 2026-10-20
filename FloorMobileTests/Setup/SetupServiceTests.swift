@@ -151,6 +151,7 @@ struct SetupServiceTests {
             FetchDescriptor<ClientFilter>(sortBy: [SortDescriptor(\.rank)])
         )
         #expect(filters.map(\.titleKey) == ["client.filter.created", "client.filter.lastPurchase"])
+        #expect(filters.map(\.rank) == [0, 1])
         let created = try #require(filters.first)
         #expect(created.id == "01M5CJ75QEKQR98JVNHCZ675TN")
         #expect(created.selectionRaw == "SINGLE")
@@ -183,6 +184,50 @@ struct SetupServiceTests {
         #expect(filters.map(\.id) == ["b"])
         #expect(filters.first?.titleKey == "client.filter.b.renamed")
         #expect(filters.first?.rank == 0)
+    }
+
+    @Test("As many filters as before, one of them changed: the change is written")
+    func synchronizeRewritesASameSizeChange() async throws {
+        let payloads = Mutex<[Data]>([
+            try Self.payload(filters: [("a", "client.filter.a"), ("b", "client.filter.b")]),
+            try Self.payload(filters: [("a", "client.filter.a"), ("b", "client.filter.b.renamed")]),
+        ])
+        let client = Self.makeClient { request in
+            (Self.response(request, statusCode: 200), payloads.withLock { $0.removeFirst() })
+        }
+        let container = try Self.inMemoryContainer()
+        let service = SetupService(modelContainer: container)
+
+        try await service.synchronize(using: client)
+        try await service.synchronize(using: client)
+
+        // Same count, so the comparison has to look inside each filter.
+        let filters = try ModelContext(container).fetch(
+            FetchDescriptor<ClientFilter>(sortBy: [SortDescriptor(\.rank)])
+        )
+        #expect(filters.map(\.titleKey) == ["client.filter.a", "client.filter.b.renamed"])
+    }
+
+    @Test("The same filters in another order: the new order is written")
+    func synchronizeRewritesAReorder() async throws {
+        let payloads = Mutex<[Data]>([
+            try Self.payload(filters: [("a", "client.filter.a"), ("b", "client.filter.b")]),
+            try Self.payload(filters: [("b", "client.filter.b"), ("a", "client.filter.a")]),
+        ])
+        let client = Self.makeClient { request in
+            (Self.response(request, statusCode: 200), payloads.withLock { $0.removeFirst() })
+        }
+        let container = try Self.inMemoryContainer()
+        let service = SetupService(modelContainer: container)
+
+        try await service.synchronize(using: client)
+        try await service.synchronize(using: client)
+
+        let filters = try ModelContext(container).fetch(
+            FetchDescriptor<ClientFilter>(sortBy: [SortDescriptor(\.rank)])
+        )
+        #expect(filters.map(\.id) == ["b", "a"])
+        #expect(filters.map(\.rank) == [0, 1])
     }
 
     // MARK: - Helpers

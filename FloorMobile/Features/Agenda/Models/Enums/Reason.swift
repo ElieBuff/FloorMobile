@@ -23,7 +23,8 @@ nonisolated enum Reason: String, CaseIterable, Sendable {
     }
 
     /// The fallback list for a picker, used only while the stored vocabulary is
-    /// empty — the real list comes from `GET enums`, per entity, because the
+    /// empty — the real list comes from the vocabulary (`enums` block of
+    /// `GET setup`), per entity, because the
     /// server is free to offer a task a reason it does not offer an event.
     ///
     /// `.other` is absent for the same reason it is absent from the payload:

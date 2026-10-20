@@ -12,7 +12,10 @@ import SwiftData
 ///
 /// Named after that block. Shipped as `FieldOption` in the first schema
 /// (`main`, `eccdb89`): the vocabulary is fetched again at every launch, so
-/// the rename loses nothing.
+/// the rename loses no data. It does leave `EnumValue` empty right after the
+/// V1 → V2 migration, and `SyncManager.hasUsableCache` wants a vocabulary: a
+/// first launch offline after that update stays on the loading screen until
+/// the network is back.
 ///
 /// Stored flat, one row per value, rather than as one typed object per entity:
 /// the server adds entities and fields over time, and a flat row absorbs them

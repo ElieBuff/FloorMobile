@@ -40,10 +40,8 @@ nonisolated enum EventWire {
     /// holds a name, not an id, until the Clients feature lands.
     /// There is no `type` here, and there must not be: `createEventSchema` and
     /// `updateEventSchema` are `.strict()` and declare `meetingType` alone, so a
-    /// spare `type` key is a rejected request rather than an ignored one. The app
-    /// used to send both, back when `GET enums` published the vocabulary under
-    /// `event.type` — the server has since reconciled the two names on
-    /// `meetingType`, and this is the only name left.
+    /// spare `type` key is a rejected request rather than an ignored one: the
+    /// vocabulary (`GET setup`) publishes the field as `event.meetingType` too.
     struct Request: Encodable, Sendable {
         var title: String
         var status: String

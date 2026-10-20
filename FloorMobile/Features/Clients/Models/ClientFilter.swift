@@ -10,8 +10,9 @@ import SwiftData
 /// `clients.filters` block of `GET setup` — kept for the filters screen.
 ///
 /// What a filter offers, not what an associate picked: the server owns the
-/// list, its order and each value's meaning; the app only sends a value's
-/// `ref` back to `client/search`. Tied to the tenant like everything stored:
+/// list, its order and each value's meaning. The filters screen will send a
+/// picked value's `ref` back in `client/search`'s `filters`; nothing reads
+/// this model yet. Tied to the tenant like everything stored:
 /// `LocalStore.erase` wipes it.
 ///
 /// Not `Syncable`, like `EnumValue`: the block lands whole, so
@@ -21,8 +22,9 @@ nonisolated final class ClientFilter {
     @Attribute(.unique) var id: String
     /// The title's translation key, e.g. `"client.filter.created"`.
     var titleKey: String
-    /// `"SINGLE"` today: how many of its values can be picked. Kept raw, like
-    /// `statusRaw` elsewhere.
+    /// `"SINGLE"` or `"MULTIPLE"` (the Tier): how many of its values the
+    /// associate may pick — display only, the search ORs a filter's picked
+    /// values either way. Kept raw, like `statusRaw` elsewhere.
     var selectionRaw: String
     /// The position the server listed it at: the order the screen shows.
     var rank: Int
@@ -36,6 +38,20 @@ nonisolated final class ClientFilter {
         self.selectionRaw = selectionRaw
         self.rank = rank
         self.values = values
+    }
+}
+
+nonisolated extension ClientFilter {
+
+    // MARK: - Sync
+
+    /// Whether `other` holds the same content, field by field — what decides
+    /// that `SetupService` leaves the stored filters alone. Every stored field
+    /// above is compared here: one added to the class must be added here too,
+    /// or a server change to it alone would never be written.
+    func hasSameContent(as other: ClientFilter) -> Bool {
+        id == other.id && rank == other.rank && titleKey == other.titleKey
+            && selectionRaw == other.selectionRaw && values == other.values
     }
 }
 

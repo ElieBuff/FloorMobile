@@ -9,8 +9,8 @@ import Foundation
 /// subject — all kept by `SetupService`. Read-only: there is no `Request`.
 nonisolated enum SetupWire {
     struct Response: Decodable, Sendable {
-        /// The values of the app's pickers, entity → field → values, in the
-        /// shape `GET enums` used to serve.
+        /// The values of the app's pickers, entity → field → values, decoded
+        /// by `EnumsWire`.
         var enums: EnumsWire.Response
         var clients: Clients
     }

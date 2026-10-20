@@ -51,6 +51,26 @@ struct SyncManagerTests {
         }
     }
 
+    @Test("The configuration alone down, with nothing in store: the launch still stops")
+    func setupFailureWithoutCacheBlocks() async throws {
+        let container = try Self.inMemoryContainer()
+        let manager = SyncManager(localStore: Self.store(tenant: .inMemory("org-1")))
+
+        // Every other route answers: the failure can only come from `setup`,
+        // which the launch must not treat as optional — the pickers need it.
+        await manager.synchronize(
+            context: container.mainContext,
+            tenantID: "org-1",
+            services: AppServices(container: container),
+            api: Self.serving(setupFails: true)
+        )
+
+        guard case .failed = manager.state else {
+            Issue.record("Expected .failed, got \(manager.state)")
+            return
+        }
+    }
+
     @Test("A failure with data from an earlier run opens the app anyway")
     func warmFailureOpensOnCache() async throws {
         let container = try Self.inMemoryContainer()
@@ -165,10 +185,14 @@ struct SyncManagerTests {
 
     /// Every startup route answered: the configuration, a client pass in two
     /// pages, the store's ids, and the recent clients — an empty list, inline
-    /// until a fixture copied from the BFF replaces it.
-    private nonisolated static func serving() -> APIClient {
+    /// until a fixture copied from the BFF replaces it. `setupFails` takes the
+    /// configuration down alone.
+    private nonisolated static func serving(setupFails: Bool = false) -> APIClient {
         client { request in
             let url = request.url?.absoluteString ?? ""
+            if setupFails, url.hasSuffix("setup") {
+                return (response(request, statusCode: 500), Data())
+            }
             if url.contains("client/recent") {
                 return (response(request, statusCode: 200), Data(#"{"items":[]}"#.utf8))
             }

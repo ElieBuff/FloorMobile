@@ -38,7 +38,7 @@ nonisolated enum TaskWire {
     /// until the Clients feature lands.
     ///
     /// There is no `type` here. The task routes have no such field — it appears in
-    /// neither the read payload nor `GET enums` — and the route's schema is strict,
+    /// neither the read payload nor the vocabulary (`GET setup`) — and the route's schema is strict,
     /// so a key the app made up is a rejected request.
     struct Request: Encodable, Sendable {
         /// Absent when nobody picked one: the optional makes `JSONEncoder` drop the
