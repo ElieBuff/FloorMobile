@@ -41,7 +41,7 @@ provide (`TaskActions` documents why it does). Copying the closest precedent is 
 model the feature owns: that suffix is for extending a type defined elsewhere (`Date+NextHour`). A plain struct (a
 value, a summary, a wire type) keeps its computed properties in its own body.
 
-**Wire → model → view, no exception.** Server JSON is decoded into a wire type in `Data/`, converted by
+**Wire → model → view, no exception.** Server JSON is decoded into a wire type in `Data/Wire/`, converted by
 `init(wire:)`, and views see only the model. One `<Model>Wire.swift` per local model, an `enum` namespace holding
 `Response` and, if the app writes, `Request` — two types, never one shared `Codable`. A model built from another
 model's `Response` has no wire file: its `init(wire:)` lives in its own file, as for a shared fragment
