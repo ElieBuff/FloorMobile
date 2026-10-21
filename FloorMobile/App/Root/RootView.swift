@@ -63,6 +63,12 @@ struct RootView: View {
         switch syncManager.state {
         case .finished:
             MainTabView()
+                // The transcription models of the device's language and the
+                // associate's, which the sync just wrote, prepared while the
+                // app is used — never holding the launch back.
+                .task {
+                    await TranscriptionLanguage.live.prepareModels()
+                }
         case .failed(let message):
             LoadingView(message: message) {
                 Task { await startSync() }

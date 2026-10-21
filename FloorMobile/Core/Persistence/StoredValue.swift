@@ -59,4 +59,7 @@ nonisolated enum StoredKey: String, Sendable {
     /// The connected associate's language, as `GET setup` sends it — see
     /// `LocalStore`.
     case preferredLanguage
+    /// The language last picked in the transcription sheet — a preference of
+    /// the device, kept across sign-outs. See `TranscriptionLanguage`.
+    case transcriptionLanguage
 }
