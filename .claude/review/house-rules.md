@@ -67,7 +67,8 @@ feature. A feature never imports another feature's views: what two features shar
 
 **A new local entity** (a `@Model` the app stores) touches, all together: its `@Model` (`Syncable` with
 `@Attribute(.unique) var id` and `syncToken` when it is refreshed by mark-and-sweep); its `<Model>Wire.swift` with
-`init(wire:)`; an `Endpoint` static func; a service method (`ModelContext.refresh`, `store(_:as:)` for writes);
+`init(wire:)`; an `Endpoint` static func; a service method (`ModelContext.refresh`, `replace` for a set sent whole,
+`store(_:as:)` for writes);
 `FloorSchemaV1.models`; `LocalStore.erase` **and** both lists of `LocalStoreTests` (they are hand-mirrored, nothing
 cross-checks them); `AppServices` if it gets a service; the preview containers that list every model
 (`RootView.swift`); its trigger — at startup `SyncManager.performSync` **and** a `hasUsableCache` term, or on screen;

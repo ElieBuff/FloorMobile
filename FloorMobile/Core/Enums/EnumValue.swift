@@ -83,3 +83,17 @@ nonisolated extension EnumValue {
         )
     }
 }
+
+nonisolated extension EnumValue: ContentComparable {
+
+    // MARK: - Sync
+
+    /// Whether `other` is the same value at the same rank — what decides that
+    /// `ModelContext.replace` leaves the stored vocabulary alone. `id` carries
+    /// the entity, the field and the value; `rank` the order the pickers show,
+    /// so a reordering is a real change. A stored field added above must be
+    /// added here too.
+    func hasSameContent(as other: EnumValue) -> Bool {
+        id == other.id && rank == other.rank
+    }
+}

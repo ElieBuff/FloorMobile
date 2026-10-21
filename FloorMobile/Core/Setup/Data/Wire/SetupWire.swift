@@ -28,5 +28,7 @@ nonisolated enum SetupWire {
         /// The tenant's "My Clients" filters, in the order the screen shows
         /// them.
         var filters: [ClientFilterWire.Response]
+        /// The tenant's "My Clients" sorts, each with its position.
+        var sorts: [ClientSortWire.Response]
     }
 }

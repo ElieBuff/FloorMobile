@@ -41,12 +41,12 @@ nonisolated final class ClientFilter {
     }
 }
 
-nonisolated extension ClientFilter {
+nonisolated extension ClientFilter: ContentComparable {
 
     // MARK: - Sync
 
     /// Whether `other` holds the same content, field by field — what decides
-    /// that `SetupService` leaves the stored filters alone. Every stored field
+    /// that `ModelContext.replace` leaves the stored filters alone. Every stored field
     /// above is compared here: one added to the class must be added here too,
     /// or a server change to it alone would never be written.
     func hasSameContent(as other: ClientFilter) -> Bool {

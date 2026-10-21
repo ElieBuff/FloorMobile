@@ -26,11 +26,13 @@ struct SyncManagerTests {
         )
 
         #expect(manager.state == .finished)
-        #expect(language.get() == "Fr")
+        // The real setup's associate has no language.
+        #expect(language.get() == nil)
         let options = try ModelContext(container).fetch(FetchDescriptor<EnumValue>())
         let valueCount = try Fixture.enumsValueCount()
         #expect(options.count == valueCount)
         #expect(try ModelContext(container).fetchCount(FetchDescriptor<ClientFilter>()) == 2)
+        #expect(try ModelContext(container).fetchCount(FetchDescriptor<ClientSort>()) == 6)
         let clients = try ModelContext(container).fetchCount(FetchDescriptor<Client>())
         #expect(clients == 3)
     }
@@ -172,8 +174,8 @@ struct SyncManagerTests {
 
     private static func inMemoryContainer() throws -> ModelContainer {
         try ModelContainer(
-            for: AIAction.self, AgendaEvent.self, AgendaTask.self, Client.self, ClientFilter.self, EnumValue.self,
-            RecentClient.self,
+            for: AIAction.self, AgendaEvent.self, AgendaTask.self, Client.self, ClientFilter.self, ClientSort.self,
+            EnumValue.self, RecentClient.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
     }

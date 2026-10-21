@@ -1,7 +1,4 @@
 {
-    "salesAssociate": {
-        "preferredLanguage": "Fr"
-    },
     "clients": {
         "filters": [
             {
@@ -68,6 +65,50 @@
                     }
                 ]
             }
+        ],
+        "sorts": [
+            {
+                "value": "name",
+                "labelKey": "client.sort.name",
+                "direction": "asc",
+                "isDefault": true,
+                "position": 0
+            },
+            {
+                "value": "lastPurchase",
+                "labelKey": "client.sort.lastPurchase",
+                "direction": "desc",
+                "isDefault": false,
+                "position": 1
+            },
+            {
+                "value": "spent12M",
+                "labelKey": "client.sort.spent12M",
+                "direction": "desc",
+                "isDefault": false,
+                "position": 2
+            },
+            {
+                "value": "spentLifetime",
+                "labelKey": "client.sort.spentLifetime",
+                "direction": "desc",
+                "isDefault": false,
+                "position": 3
+            },
+            {
+                "value": "createdDate",
+                "labelKey": "client.sort.createdDate",
+                "direction": "desc",
+                "isDefault": false,
+                "position": 4
+            },
+            {
+                "value": "contactedByMe",
+                "labelKey": "client.sort.contactedByMe",
+                "direction": "desc",
+                "isDefault": false,
+                "position": 5
+            }
         ]
     },
     "enums": {
@@ -106,5 +147,12 @@
                 "CANCELLED"
             ]
         }
+    },
+    "salesAssociate": {
+        "id": "01KTRSFERMNXK5FGSQW11M1478",
+        "externalId": "378970372512460673",
+        "firstName": "Elie",
+        "lastName": "Buff",
+        "preferredLanguage": null
     }
 }

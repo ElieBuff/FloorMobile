@@ -22,6 +22,15 @@ nonisolated protocol Syncable: PersistentModel {
     static func stale(token: String) -> Predicate<Self>
 }
 
+/// A persistent model whose stored set is replaced whole — and only when it
+/// changed (`ModelContext.replace(with:order:)`). `hasSameContent(as:)` lives
+/// beside the model's stored fields, so a field added there is not forgotten
+/// here.
+nonisolated protocol ContentComparable: PersistentModel {
+    /// Whether `other` holds the same content, every stored field compared.
+    func hasSameContent(as other: Self) -> Bool
+}
+
 extension ModelContext {
     /// Inserts (upserts) a batch and saves. Upsert relies on the model's
     /// identity key being `@Attribute(.unique)`, so re-inserting a known id
@@ -51,6 +60,40 @@ extension ModelContext {
             model.syncToken = UUID().uuidString
             return model
         }
+    }
+
+    /// Replaces every stored `Model` with `incoming`, a set the server sends
+    /// whole — but only when the two differ. Returns whether it wrote.
+    ///
+    /// `incoming` comes in `order`, the order the stored side is read in, so
+    /// the two compare row by row: a reordering is a change. An unchanged set
+    /// costs one fetch and no write, which matters for what is fetched at
+    /// every launch and nearly never changes.
+    ///
+    /// No mark-and-sweep token, unlike `refresh`: that protects data arriving
+    /// in pages, where deleting first would empty the store if a page failed.
+    /// This set is complete in memory before anything is touched. Deleted row
+    /// by row rather than with `delete(model:)`: a batch delete reaches the
+    /// store at once, and a reader landing before the save would see an empty
+    /// list; per-object deletes wait for the save.
+    @discardableResult
+    nonisolated func replace<Model: ContentComparable>(
+        with incoming: [Model],
+        order: SortDescriptor<Model>
+    ) throws -> Bool {
+        let stored = try fetch(FetchDescriptor<Model>(sortBy: [order]))
+        let unchanged = stored.count == incoming.count
+            && zip(stored, incoming).allSatisfy { $0.hasSameContent(as: $1) }
+        guard !unchanged else { return false }
+
+        for model in stored {
+            delete(model)
+        }
+        for model in incoming {
+            insert(model)
+        }
+        try save()
+        return true
     }
 
     /// Batch-deletes every row matching `predicate`, then saves.

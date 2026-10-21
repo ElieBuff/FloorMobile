@@ -74,6 +74,7 @@ struct SetupServiceTests {
         let context = ModelContext(container)
         #expect(try context.fetchCount(FetchDescriptor<EnumValue>()) == (try Fixture.enumsValueCount()))
         #expect(try context.fetchCount(FetchDescriptor<ClientFilter>()) == 2)
+        #expect(try context.fetchCount(FetchDescriptor<ClientSort>()) == 6)
     }
 
     @Test("An unchanged setup is not written to the store")
@@ -235,11 +236,91 @@ struct SetupServiceTests {
     @Test("The associate's language is kept, raw, beside the store")
     func synchronizeKeepsTheLanguage() async throws {
         let localStore = Self.localStore()
+        let client = Self.makeClient { request in
+            (Self.response(request, statusCode: 200), try Self.payload(language: "Fr"))
+        }
+
+        try await SetupService(modelContainer: try Self.inMemoryContainer())
+            .synchronize(using: client, localStore: localStore)
+
+        #expect(localStore.preferredLanguage.get() == "Fr")
+    }
+
+    @Test("The real setup, whose associate has no language, keeps none")
+    func synchronizeKeepsNoLanguageFromTheFixture() async throws {
+        let localStore = Self.localStore(language: "En")
 
         try await SetupService(modelContainer: try Self.inMemoryContainer())
             .synchronize(using: Self.serving("setup"), localStore: localStore)
 
-        #expect(localStore.preferredLanguage.get() == "Fr")
+        #expect(localStore.preferredLanguage.get() == nil)
+    }
+
+    // MARK: - Client sorts
+
+    @Test("The tenant's sorts are kept in the server's positions, one by default")
+    func synchronizePersistsSorts() async throws {
+        let container = try Self.inMemoryContainer()
+
+        try await SetupService(modelContainer: container)
+            .synchronize(using: Self.serving("setup"), localStore: Self.localStore())
+
+        let sorts = try ModelContext(container).fetch(FetchDescriptor<ClientSort>(sortBy: [SortDescriptor(\.rank)]))
+        #expect(sorts.map(\.value) == ["name", "lastPurchase", "spent12M", "spentLifetime", "createdDate", "contactedByMe"])
+        #expect(sorts.map(\.rank) == Array(0..<6))
+        #expect(sorts.filter(\.isDefault).map(\.value) == ["name"])
+        #expect(sorts.first?.directionRaw == "asc")
+        #expect(sorts.first?.labelKey == "client.sort.name")
+    }
+
+    @Test("Sorts the server lists out of order are kept by position")
+    func synchronizeOrdersSortsByPosition() async throws {
+        let client = Self.makeClient { request in
+            (Self.response(request, statusCode: 200), try Self.payload(sorts: [("b", 1, false), ("a", 0, true)]))
+        }
+        let container = try Self.inMemoryContainer()
+
+        try await SetupService(modelContainer: container).synchronize(using: client, localStore: Self.localStore())
+
+        let sorts = try ModelContext(container).fetch(FetchDescriptor<ClientSort>(sortBy: [SortDescriptor(\.rank)]))
+        #expect(sorts.map(\.value) == ["a", "b"])
+    }
+
+    @Test("As many sorts as before, the default moved: the change is written")
+    func synchronizeRewritesAChangedSort() async throws {
+        let payloads = Mutex<[Data]>([
+            try Self.payload(sorts: [("a", 0, true), ("b", 1, false)]),
+            try Self.payload(sorts: [("a", 0, false), ("b", 1, true)]),
+        ])
+        let client = Self.makeClient { request in
+            (Self.response(request, statusCode: 200), payloads.withLock { $0.removeFirst() })
+        }
+        let container = try Self.inMemoryContainer()
+        let service = SetupService(modelContainer: container)
+
+        try await service.synchronize(using: client, localStore: Self.localStore())
+        try await service.synchronize(using: client, localStore: Self.localStore())
+
+        let sorts = try ModelContext(container).fetch(FetchDescriptor<ClientSort>(sortBy: [SortDescriptor(\.rank)]))
+        #expect(sorts.filter(\.isDefault).map(\.value) == ["b"])
+    }
+
+    @Test("A sort the server no longer offers disappears")
+    func synchronizeDropsARetiredSort() async throws {
+        let payloads = Mutex<[Data]>([
+            try Self.payload(sorts: [("a", 0, true), ("b", 1, false)]),
+            try Self.payload(sorts: [("a", 0, true)]),
+        ])
+        let client = Self.makeClient { request in
+            (Self.response(request, statusCode: 200), payloads.withLock { $0.removeFirst() })
+        }
+        let container = try Self.inMemoryContainer()
+        let service = SetupService(modelContainer: container)
+
+        try await service.synchronize(using: client, localStore: Self.localStore())
+        try await service.synchronize(using: client, localStore: Self.localStore())
+
+        #expect(try ModelContext(container).fetch(FetchDescriptor<ClientSort>()).map(\.value) == ["a"])
     }
 
     @Test("An associate with no language any more clears the kept one")
@@ -269,14 +350,17 @@ struct SetupServiceTests {
         let context = ModelContext(container)
         let values = try context.fetch(FetchDescriptor<EnumValue>()).map(\.persistentModelID)
         let filters = try context.fetch(FetchDescriptor<ClientFilter>()).map(\.persistentModelID)
-        return Set(values + filters)
+        let sorts = try context.fetch(FetchDescriptor<ClientSort>()).map(\.persistentModelID)
+        return Set(values + filters + sorts)
     }
 
     /// A minimal `GET setup` body: one vocabulary field in the given order,
-    /// the given filters, each with no value, and the associate's language.
+    /// the given filters, each with no value, the given sorts, and the
+    /// associate's language.
     private nonisolated static func payload(
         taskReasons: [String] = ["FOLLOW_UP"],
         filters: [(id: String, titleKey: String)] = [],
+        sorts: [(value: String, position: Int, isDefault: Bool)] = [],
         language: String? = "Fr"
     ) throws -> Data {
         let body: [String: Any] = [
@@ -284,6 +368,12 @@ struct SetupServiceTests {
             "clients": [
                 "filters": filters.map {
                     ["id": $0.id, "titleKey": $0.titleKey, "selection": "SINGLE", "values": [Any]()] as [String: Any]
+                },
+                "sorts": sorts.map {
+                    [
+                        "value": $0.value, "labelKey": "client.sort.\($0.value)", "direction": "desc",
+                        "isDefault": $0.isDefault, "position": $0.position,
+                    ] as [String: Any]
                 },
             ],
             "salesAssociate": ["preferredLanguage": language as Any? ?? NSNull()],
@@ -293,7 +383,7 @@ struct SetupServiceTests {
 
     private static func inMemoryContainer() throws -> ModelContainer {
         try ModelContainer(
-            for: EnumValue.self, ClientFilter.self,
+            for: EnumValue.self, ClientFilter.self, ClientSort.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
     }
