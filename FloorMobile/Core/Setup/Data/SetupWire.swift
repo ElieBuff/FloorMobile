@@ -13,6 +13,14 @@ nonisolated enum SetupWire {
         /// by `EnumsWire`.
         var enums: EnumsWire.Response
         var clients: Clients
+        var salesAssociate: SalesAssociate
+    }
+
+    /// The connected associate's block.
+    struct SalesAssociate: Decodable, Sendable {
+        /// `"Fr"`, `"En"`… — kept raw, the server may add more. `nil` when
+        /// the associate has no preference.
+        var preferredLanguage: String?
     }
 
     /// The Clients feature's block.

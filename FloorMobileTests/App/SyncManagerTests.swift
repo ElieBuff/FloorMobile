@@ -15,7 +15,8 @@ struct SyncManagerTests {
     @Test("A successful startup sync stores the configuration and the clients, and opens the app")
     func finishesAndPersists() async throws {
         let container = try Self.inMemoryContainer()
-        let manager = SyncManager(localStore: Self.store(tenant: .inMemory("org-1")))
+        let language = StoredValue<String>.inMemory()
+        let manager = SyncManager(localStore: Self.store(tenant: .inMemory("org-1"), language: language))
 
         await manager.synchronize(
             context: container.mainContext,
@@ -25,6 +26,7 @@ struct SyncManagerTests {
         )
 
         #expect(manager.state == .finished)
+        #expect(language.get() == "Fr")
         let options = try ModelContext(container).fetch(FetchDescriptor<EnumValue>())
         let valueCount = try Fixture.enumsValueCount()
         #expect(options.count == valueCount)
@@ -178,9 +180,10 @@ struct SyncManagerTests {
 
     private static func store(
         tenant: StoredValue<String>,
-        cursor: StoredValue<String> = .inMemory()
+        cursor: StoredValue<String> = .inMemory(),
+        language: StoredValue<String> = .inMemory()
     ) -> LocalStore {
-        LocalStore(tenantID: tenant, clientCursor: cursor)
+        LocalStore(tenantID: tenant, clientCursor: cursor, preferredLanguage: language)
     }
 
     /// Every startup route answered: the configuration, a client pass in two

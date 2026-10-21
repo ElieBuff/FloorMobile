@@ -91,7 +91,8 @@ final class SyncManager {
 
     /// What the launch brings up to date, fanned out with `async let`:
     /// - the app's configuration (`GET setup`): the field vocabulary, which
-    ///   every picker reads, and the tenant's "My Clients" filters;
+    ///   every picker reads, the tenant's "My Clients" filters, and the
+    ///   associate's language;
     /// - the store's clients — brought up to date, then cleared of those that
     ///   left the store, in that order: the prune only means something once
     ///   the delta is in;
@@ -106,7 +107,7 @@ final class SyncManager {
     private func performSync(services: AppServices, api: APIClient) async throws {
         let clients = services.clients
         let cursor = localStore.clientCursor
-        async let configuration: Void = services.setup.synchronize(using: api)
+        async let configuration: Void = services.setup.synchronize(using: api, localStore: localStore)
         async let clientBook: Void = {
             try await clients.synchronize(using: api, cursor: cursor)
             try await clients.pruneDeparted(using: api)

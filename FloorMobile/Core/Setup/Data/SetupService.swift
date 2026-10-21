@@ -7,10 +7,11 @@ import Foundation
 import SwiftData
 import os
 
-/// Keeps the app's configuration in SwiftData — what `GET setup` serves: the
-/// field vocabulary (`EnumValue`) and the tenant's "My Clients" filters
-/// (`ClientFilter`). A `@ModelActor`, like the other services, so its writes
-/// run off the main actor.
+/// Keeps the app's configuration — what `GET setup` serves: the field
+/// vocabulary (`EnumValue`) and the tenant's "My Clients" filters
+/// (`ClientFilter`) in SwiftData, the associate's language in `LocalStore`. A
+/// `@ModelActor`, like the other services, so its writes run off the main
+/// actor.
 @ModelActor
 actor SetupService {
 
@@ -34,10 +35,24 @@ actor SetupService {
     /// reaches the store immediately, and a reader landing between it and the
     /// save would see an empty list. Per-object deletes are held until the
     /// save, so readers go straight from the old values to the new ones.
-    func synchronize(using client: APIClient) async throws {
+    ///
+    /// What describes the associate is a few single values, kept in
+    /// `localStore` rather than in SwiftData — wiped with the store. A
+    /// parameter, like `ClientService`'s cursor, so a test passes one held in
+    /// memory.
+    func synchronize(using client: APIClient, localStore: LocalStore) async throws {
         let setup: SetupWire.Response = try await client.send(.setup())
         try saveVocabulary(setup.enums)
         try saveFilters(setup.clients.filters)
+        saveSalesAssociate(setup.salesAssociate, in: localStore)
+    }
+
+    // MARK: - Sales associate
+
+    /// Keeps what the server says of the connected associate. A missing
+    /// language clears the stored one: the associate no longer has one.
+    private func saveSalesAssociate(_ salesAssociate: SetupWire.SalesAssociate, in localStore: LocalStore) {
+        localStore.preferredLanguage.set(salesAssociate.preferredLanguage)
     }
 
     // MARK: - Vocabulary

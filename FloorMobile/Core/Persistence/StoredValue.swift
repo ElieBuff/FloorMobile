@@ -56,4 +56,7 @@ nonisolated enum StoredKey: String, Sendable {
     case lastTenantID
     /// Where the store's client sync resumes from — see `ClientService`.
     case clientSyncCursor
+    /// The connected associate's language, as `GET setup` sends it — see
+    /// `LocalStore`.
+    case preferredLanguage
 }

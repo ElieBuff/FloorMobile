@@ -22,6 +22,10 @@ nonisolated struct LocalStore: Sendable {
     var tenantID: StoredValue<String>
     /// Where the store's client sync resumes from — see `ClientService`.
     var clientCursor: StoredValue<String>
+    /// The connected associate's language, raw as `GET setup` sends it (`"Fr"`,
+    /// `"En"`) — `nil` when they have none. Theirs, not the device's: it goes
+    /// with the store, so the next associate on this phone never inherits it.
+    var preferredLanguage: StoredValue<String>
 
     /// Erases the store when `currentTenantID` is not the tenant it holds, and
     /// records the new one.
@@ -47,6 +51,7 @@ nonisolated struct LocalStore: Sendable {
     /// The client sync cursor goes too: it says which clients the store
     /// already holds, and after this it holds none. Left behind, the next sync
     /// would ask only for recent changes and leave the store all but empty.
+    /// So does every other value of `sessionValues`.
     @MainActor
     func erase(in context: ModelContext) throws {
         try context.delete(model: AIAction.self)
@@ -57,11 +62,20 @@ nonisolated struct LocalStore: Sendable {
         try context.delete(model: EnumValue.self)
         try context.delete(model: RecentClient.self)
         try context.save()
-        clientCursor.set(nil)
+        sessionValues.forEach { $0.set(nil) }
+    }
+
+    /// The values that belong to the session, wiped with the store. A value
+    /// added above joins this list if it describes the rows or the associate.
+    /// Not `tenantID`, which `enforceTenant` writes right after, nor a device
+    /// preference, which outlives a sign-out.
+    private var sessionValues: [StoredValue<String>] {
+        [clientCursor, preferredLanguage]
     }
 
     static let live = LocalStore(
         tenantID: .userDefaults(.lastTenantID),
-        clientCursor: .userDefaults(.clientSyncCursor)
+        clientCursor: .userDefaults(.clientSyncCursor),
+        preferredLanguage: .userDefaults(.preferredLanguage)
     )
 }

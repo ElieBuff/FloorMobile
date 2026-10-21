@@ -1,4 +1,7 @@
 {
+    "salesAssociate": {
+        "preferredLanguage": "Fr"
+    },
     "clients": {
         "filters": [
             {
