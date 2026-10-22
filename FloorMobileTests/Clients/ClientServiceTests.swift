@@ -122,7 +122,7 @@ struct ClientServiceTests {
         }
 
         let page = try await ClientService(modelContainer: container)
-            .searchMyClients("aliette mar", after: "my-clients-cursor-1", using: api)
+            .searchClients("aliette mar", in: .mine, after: "my-clients-cursor-1", using: api)
 
         let url = try #require(requested.withLock { $0 })
         #expect(url.path.hasSuffix("client/search"))
@@ -146,7 +146,7 @@ struct ClientServiceTests {
         }
 
         let page = try await ClientService(modelContainer: try Self.inMemoryContainer())
-            .searchMyClients("aliette", using: api)
+            .searchClients("aliette", in: .mine, using: api)
 
         #expect(page.clients.isEmpty)
         #expect(page.nextCursor == nil)
@@ -154,8 +154,42 @@ struct ClientServiceTests {
 
     @Test("A search of my clients fails fast, being interactive; the brand's still waits")
     func onlyMyClientsSearchIsInteractive() {
-        #expect(Endpoint.searchMyClients("aliette").interactive)
-        #expect(!Endpoint.searchBrandClients("aliette").interactive)
+        #expect(Endpoint.searchClients("aliette", in: .mine).interactive)
+        #expect(!Endpoint.searchClients("aliette", in: .brand).interactive)
+    }
+
+    @Test("My clients' sort, direction and filters go with the search, the filters as JSON")
+    func myClientsOptionsAreSent() throws {
+        let options = ClientSearchOptions(sortBy: "lastPurchase", direction: .desc, filterRefs: ["a", "b"])
+
+        let items = Endpoint.searchClients("aliette", in: .mine, options: options).query
+
+        #expect(items.first { $0.name == "orderBy" }?.value == "lastPurchase")
+        #expect(items.first { $0.name == "direction" }?.value == "desc")
+        let filters = try #require(items.first { $0.name == "filters" }?.value)
+        let decoded = try JSONDecoder().decode([[String: String]].self, from: Data(filters.utf8))
+        #expect(decoded == [["ref": "a"], ["ref": "b"]])
+    }
+
+    @Test("A brand search takes the sort but never the filters, which the server refuses there")
+    func brandSearchNeverSendsFilters() {
+        let options = ClientSearchOptions(sortBy: "name", direction: .asc, filterRefs: ["a"])
+
+        let names = Endpoint.searchClients("nina", in: .brand, options: options).query.map(\.name)
+
+        #expect(names.contains("orderBy"))
+        #expect(names.contains("direction"))
+        #expect(!names.contains("filters"))
+        #expect(!names.contains("scope"))
+    }
+
+    @Test("Without a text the search sends no q; with nothing picked, nothing beside it")
+    func noTextNoOptions() {
+        let withoutText = Endpoint.searchClients(nil, in: .mine, options: ClientSearchOptions(filterRefs: ["a"]))
+        #expect(!withoutText.query.map(\.name).contains("q"))
+
+        let plain = Endpoint.searchClients("aliette", in: .mine).query.map(\.name)
+        #expect(plain == ["scope", "q"])
     }
 
     @Test(
@@ -167,7 +201,8 @@ struct ClientServiceTests {
         let api = Self.makeClient { _ in throw URLError(code) }
 
         let error = await #expect(throws: AppError.self) {
-            try await ClientService(modelContainer: try Self.inMemoryContainer()).searchMyClients("aliette", using: api)
+            try await ClientService(modelContainer: try Self.inMemoryContainer())
+                .searchClients("aliette", in: .mine, using: api)
         }
 
         guard case .network? = error else {
@@ -183,7 +218,8 @@ struct ClientServiceTests {
         }
 
         let error = await #expect(throws: AppError.self) {
-            try await ClientService(modelContainer: try Self.inMemoryContainer()).searchMyClients("aliette", using: api)
+            try await ClientService(modelContainer: try Self.inMemoryContainer())
+                .searchClients("aliette", in: .mine, using: api)
         }
 
         guard case .server(statusCode: 400)? = error else {
@@ -204,10 +240,11 @@ struct ClientServiceTests {
         }
 
         let page = try await ClientService(modelContainer: container)
-            .searchBrand("nina lar", after: "search-cursor-1", using: api)
+            .searchClients("nina lar", in: .brand, after: "search-cursor-1", using: api)
 
         let url = try #require(requested.withLock { $0 })
         #expect(url.path.hasSuffix("client/search"))
+        #expect(url.queryItems?.first { $0.name == "scope" } == nil)
         #expect(url.queryItems?.first { $0.name == "q" }?.value == "nina lar")
         #expect(url.queryItems?.first { $0.name == "after" }?.value == "search-cursor-1")
         #expect(page.clients.map(\.displayName) == ["Nina Larsen", nil])
@@ -226,7 +263,7 @@ struct ClientServiceTests {
         }
 
         let page = try await ClientService(modelContainer: try Self.inMemoryContainer())
-            .searchBrand("nina", using: api)
+            .searchClients("nina", in: .brand, using: api)
 
         #expect(page.clients.isEmpty)
         #expect(page.nextCursor == nil)

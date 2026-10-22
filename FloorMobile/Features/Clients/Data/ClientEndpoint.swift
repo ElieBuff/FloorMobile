@@ -7,6 +7,14 @@ import Foundation
 
 // MARK: - Client Endpoints
 
+/// Whose clients a search looks among (`Endpoint.searchClients`).
+nonisolated enum ClientSearchScope: Sendable {
+    /// The associate's own clients — "My Clients".
+    case mine
+    /// Any client of the brand — "All Brand".
+    case brand
+}
+
 nonisolated extension Endpoint {
     /// The connected associate's store clients: all of them without a cursor,
     /// then only those changed since it. The store comes from the token, never
@@ -28,29 +36,43 @@ nonisolated extension Endpoint {
     /// searches the device.
     static let clientSearchMinimumLength = 3
 
-    /// The associate's own clients whose name, email or phone matches
-    /// `query` — the closest first, 50 a page, each with their email and
-    /// phone. Whose clients they are is the server's to set (their store
-    /// today, from the token): the app only says `scope=mine`. Interactive:
-    /// the associate waits on it, so it fails fast and the list falls back on
-    /// the device.
-    static func searchMyClients(_ query: String, after cursor: String? = nil) -> Endpoint {
-        Endpoint(
-            path: "client/search",
-            query: [URLQueryItem(name: "scope", value: "mine"), URLQueryItem(name: "q", value: query)]
-                + after(cursor),
-            interactive: true
-        )
-    }
-
-    /// Any client of the brand whose name, email or phone matches `query` —
-    /// the closest first, 50 a page. Never sent with fewer than
-    /// `clientSearchMinimumLength` characters, which the server refuses.
-    static func searchBrandClients(_ query: String, after cursor: String? = nil) -> Endpoint {
-        Endpoint(
-            path: "client/search",
-            query: [URLQueryItem(name: "q", value: query)] + after(cursor)
-        )
+    /// A page of clients, 50 at most, from one route for both lists:
+    /// - `.mine`, the associate's own clients, each with their email and
+    ///   phone. Whose clients they are is the server's to set (their store
+    ///   today, from the token): the app only says `scope=mine`. Interactive:
+    ///   the associate waits on it, so it fails fast and the list falls back on
+    ///   the device.
+    /// - `.brand`, any client of the brand, as a card without contacts.
+    ///
+    /// `query` matches a name, an email or a phone, the closest first; never
+    /// sent with fewer than `clientSearchMinimumLength` characters, which the
+    /// server refuses. Without it, the clients in the sort's order. The sort
+    /// goes with both scopes; the filters with `.mine` only — the server
+    /// refuses them otherwise — as a JSON list of `{ "ref" }`.
+    static func searchClients(
+        _ query: String?,
+        in scope: ClientSearchScope,
+        options: ClientSearchOptions = ClientSearchOptions(),
+        after cursor: String? = nil
+    ) -> Endpoint {
+        var items: [URLQueryItem] = []
+        if scope == .mine {
+            items.append(URLQueryItem(name: "scope", value: "mine"))
+        }
+        if let query {
+            items.append(URLQueryItem(name: "q", value: query))
+        }
+        if let sortBy = options.sortBy {
+            items.append(URLQueryItem(name: "orderBy", value: sortBy))
+        }
+        if let direction = options.direction {
+            items.append(URLQueryItem(name: "direction", value: direction.rawValue))
+        }
+        if scope == .mine, !options.filterRefs.isEmpty,
+           let filters = URLQueryItem(name: "filters", json: options.filterRefs.map { ["ref": $0] }) {
+            items.append(filters)
+        }
+        return Endpoint(path: "client/search", query: items + after(cursor), interactive: scope == .mine)
     }
 
     /// Everything the server holds on one client of the brand: the profile

@@ -21,7 +21,7 @@ import SwiftUI
 ///
 /// ```swift
 /// PagedSearchList(query: text) {
-///     try await services.clients.searchBrand($0, after: $1, using: session.api)
+///     try await services.clients.searchClients($0, in: .brand, after: $1, using: session.api)
 /// } onFailure: { failure in
 ///     if failure.isFirstPage {
 ///         failedSearch = failure   // the error takes the list's place

@@ -67,41 +67,24 @@ actor ClientService {
         try modelContext.save()
     }
 
-    /// One page of the associate's own clients matching `query`, closest
-    /// first, and where the next page starts — `nil` once there is none.
+    /// One page of the clients `scope` holds matching `query` — or, without
+    /// it, in the sort's order — and where the next page starts: `nil` once
+    /// `hasMore` says there is none, whatever cursor the last page carries.
     ///
-    /// Straight from the server and not stored, like the brand search: the
-    /// device already keeps the store's clients, and this is only what the
-    /// server found among them, typos and all.
-    func searchMyClients(
-        _ query: String,
+    /// Straight from the server and not stored: the device already keeps the
+    /// store's clients ("My Clients" is what the server found among them,
+    /// typos and all), and the brand runs to far more clients than a device
+    /// should hold. See `Endpoint.searchClients` for what each scope sends.
+    func searchClients(
+        _ query: String?,
+        in scope: ClientSearchScope,
+        options: ClientSearchOptions = ClientSearchOptions(),
         after cursor: String? = nil,
         using client: APIClient
     ) async throws -> (clients: [ClientItem], nextCursor: String?) {
-        try await searchPage(.searchMyClients(query, after: cursor), using: client)
-    }
-
-    /// One page of the brand's clients matching `query`, closest first, and
-    /// where the next page starts — `nil` once there is none.
-    ///
-    /// Straight from the server and not stored: the brand runs to far more
-    /// clients than a device should hold, and they are not this store's.
-    func searchBrand(
-        _ query: String,
-        after cursor: String? = nil,
-        using client: APIClient
-    ) async throws -> (clients: [ClientItem], nextCursor: String?) {
-        try await searchPage(.searchBrandClients(query, after: cursor), using: client)
-    }
-
-    /// One page of a client search, as both searches read it: the cards
-    /// converted for display, and where the next page starts. `hasMore`
-    /// decides: a cursor sent with the last page is not followed.
-    private func searchPage(
-        _ endpoint: Endpoint,
-        using client: APIClient
-    ) async throws -> (clients: [ClientItem], nextCursor: String?) {
-        let page: CursorPage<ClientWire.Response> = try await client.send(endpoint)
+        let page: CursorPage<ClientWire.Response> = try await client.send(
+            .searchClients(query, in: scope, options: options, after: cursor)
+        )
         return (page.items.map(ClientItem.init(wire:)), page.hasMore ? page.nextCursor : nil)
     }
 

@@ -9,18 +9,26 @@ import SwiftUI
 /// "My Clients": the associate's own clients matching the search — their
 /// store's today, as the server sets it.
 ///
-/// Where the matches come from depends on the search, spaces around it aside:
-/// - below `Endpoint.clientSearchMinimumLength` characters, the device: the
-///   store's clients as the startup sync keeps them, by last name then first
-///   name, narrowed to those that match (`Client.matching`) — instant, and
-///   all of them while nothing is typed;
-/// - from there on, the server (`ClientService.searchMyClients`), typos and
-///   all, closest first, a page at a time (`PagedSearchList`);
+/// Where the matches come from depends on the search, spaces around it aside,
+/// and on the sort and filters picked (`options`) — see `usesServer`:
+/// - below `Endpoint.clientSearchMinimumLength` characters with nothing
+///   picked, the device: the store's clients as the startup sync keeps them,
+///   by last name then first name, narrowed to those that match
+///   (`Client.matching`) — instant, and all of them while nothing is typed;
+/// - from there on, or as soon as a sort or a filter is picked — the device
+///   can apply neither — the server (`ClientService.searchClients`, `.mine`),
+///   typos and all, closest first, a page at a time (`PagedSearchList`). A
+///   text too short for the server is not sent: the clients then come in the
+///   sort's order;
 /// - when the server fails that first page — an error, no connection, a
 ///   server that stays silent — the device again, for the same text, under a
 ///   notice that says so. The request is interactive (`Endpoint.interactive`):
 ///   without a connection it fails as soon as the typing pauses, with a
 ///   silent server once `APIClient`'s short timeout runs out.
+///
+/// The sort and the filters are picked in `ClientSearchControls`' sheets, over
+/// the list. They are this list's: a trip to "All Brand" rebuilds it, and
+/// starts them over.
 ///
 /// The fallback lasts one text: every new text asks the server first, and so
 /// does the notice's "Try again". A next page that fails keeps the server's
@@ -36,6 +44,13 @@ import SwiftUI
 /// screen, not the whole book.
 struct MyClientsList: View {
     let query: String
+
+    /// The sort picked (`ClientSort.value`); `nil`, the server's default.
+    @State private var sortBy: String?
+    /// The sort's direction; `nil`, the sort's own.
+    @State private var direction: ClientSearchOptions.SortDirection?
+    /// The filter values picked (`ClientFilterValue.ref`).
+    @State private var filterRefs: [String] = []
 
     @Environment(AppSession.self) private var session
     @Environment(AppServices.self) private var services
@@ -64,17 +79,37 @@ struct MyClientsList: View {
         query.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    /// The three picks, as the server's search sends them.
+    private var options: ClientSearchOptions {
+        ClientSearchOptions(sortBy: sortBy, direction: direction, filterRefs: filterRefs)
+    }
+
+    /// Whether the server answers rather than the device: a text long enough
+    /// for it, or a sort or a filter picked, which the device cannot apply.
+    static func usesServer(text: String, options: ClientSearchOptions) -> Bool {
+        text.count >= Endpoint.clientSearchMinimumLength || !options.isDefault
+    }
+
     var body: some View {
-        content
-            // A new text asks the server first again, starts the device's list
-            // from its first page, and drops an alert about the last one. On
-            // the trimmed text, so a space typed after a word changes nothing.
-            .onChange(of: text) {
-                unansweredText = nil
-                limit = Self.pageSize
-                alert = nil
-            }
+        VStack(spacing: 0) {
+            ClientSearchControls(sortBy: $sortBy, direction: $direction, filterRefs: $filterRefs)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
+            content
+        }
+            // A new text, or a new sort or filter, asks the server first
+            // again, starts the device's list from its first page, and drops
+            // an alert about the last one. On the trimmed text, so a space
+            // typed after a word changes nothing.
+            .onChange(of: text) { reset() }
+            .onChange(of: options) { reset() }
             .floorAlert($alert)
+    }
+
+    private func reset() {
+        unansweredText = nil
+        limit = Self.pageSize
+        alert = nil
     }
 
     /// The device's matches below the server's minimum, and under the notice
@@ -84,7 +119,7 @@ struct MyClientsList: View {
     /// which asks for the first page again.
     @ViewBuilder
     private var content: some View {
-        if text.count < Endpoint.clientSearchMinimumLength {
+        if !Self.usesServer(text: text, options: options) {
             deviceMatches
         } else if unansweredText == text {
             // Above the list rather than over it: the card is translucent, and
@@ -95,8 +130,12 @@ struct MyClientsList: View {
                 deviceMatches
             }
         } else {
-            PagedSearchList(query: text) {
-                try await services.clients.searchMyClients($0, after: $1, using: session.api)
+            PagedSearchList(query: text, filters: options) { text, cursor in
+                // A text too short for the server is left out: the sort alone orders.
+                let query = text.count >= Endpoint.clientSearchMinimumLength ? text : nil
+                return try await services.clients.searchClients(
+                    query, in: .mine, options: options, after: cursor, using: session.api
+                )
             } onFailure: { failure in
                 if failure.isFirstPage {
                     // Nothing of the server's on screen yet: the device stands in.

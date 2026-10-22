@@ -7,7 +7,7 @@ import SwiftData
 import SwiftUI
 
 /// "All Brand": any client of the brand matching the search, straight from
-/// the server (`ClientService.searchBrand`), closest first, a page at a time
+/// the server (`ClientService.searchClients`, `.brand`), closest first, a page at a time
 /// (`PagedSearchList`).
 ///
 /// Below `Endpoint.clientSearchMinimumLength` characters, spaces around them
@@ -57,7 +57,7 @@ struct BrandClientsList: View {
             failedFirstPage(failedSearch)
         } else {
             PagedSearchList(query: text) {
-                try await services.clients.searchBrand($0, after: $1, using: session.api)
+                try await services.clients.searchClients($0, in: .brand, after: $1, using: session.api)
             } onFailure: { failure in
                 if failure.isFirstPage {
                     // Nothing of the server's on screen: the error takes the list's place.
