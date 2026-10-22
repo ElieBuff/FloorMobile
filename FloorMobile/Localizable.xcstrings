@@ -44,6 +44,9 @@
     "All Brand" : {
 
     },
+    "Allow the microphone in Settings to dictate." : {
+
+    },
     "Appointment not booked" : {
 
     },
@@ -66,6 +69,9 @@
 
     },
     "Call" : {
+
+    },
+    "Cancel" : {
 
     },
     "Canceled" : {
@@ -110,10 +116,16 @@
     "Couldn't load this client" : {
 
     },
+    "Couldn't start dictation" : {
+
+    },
     "Created" : {
 
     },
     "Dictate" : {
+
+    },
+    "Dictation isn't available on this device" : {
 
     },
     "Discard" : {
@@ -182,6 +194,9 @@
     "Keep editing" : {
 
     },
+    "Language" : {
+
+    },
     "Leave without saving?" : {
 
     },
@@ -189,6 +204,9 @@
 
     },
     "Message" : {
+
+    },
+    "Microphone access is off" : {
 
     },
     "More" : {
@@ -251,6 +269,9 @@
     "Online search isn't responding. Showing results from this device." : {
 
     },
+    "Open Settings" : {
+
+    },
     "Other" : {
 
     },
@@ -258,6 +279,9 @@
 
     },
     "Prepare" : {
+
+    },
+    "Preparing %@…" : {
 
     },
     "Previous month" : {
@@ -318,6 +342,9 @@
 
     },
     "Something went wrong. Please try again." : {
+
+    },
+    "Speak: the text appears here." : {
 
     },
     "Start" : {

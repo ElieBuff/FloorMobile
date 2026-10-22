@@ -98,17 +98,25 @@ struct TranscriptionSheet: View {
                     Text(String(localized: "Speak: the text appears here."))
                         .foregroundStyle(Color(.OnSurface.textTertiary))
                 } else {
-                    let finalized = Text(transcription.transcript.finalized)
-                        .foregroundStyle(Color(.OnSurface.textPrimary))
-                    let volatile = Text(transcription.transcript.volatile)
-                        .foregroundStyle(Color(.OnSurface.textTertiary))
-                    Text("\(finalized)\(volatile)")
+                    Text(heardText)
                 }
             }
             .font(.body)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .defaultScrollAnchor(.bottom)
+    }
+
+    /// The two parts in one text, each in its own colour. An `AttributedString`
+    /// rather than `Text` interpolation: what the associate said is not a
+    /// string to translate, and interpolating would add a `%@%@` key to the
+    /// string catalog.
+    private var heardText: AttributedString {
+        var finalized = AttributedString(transcription.transcript.finalized)
+        finalized.foregroundColor = Color(.OnSurface.textPrimary)
+        var volatile = AttributedString(transcription.transcript.volatile)
+        volatile.foregroundColor = Color(.OnSurface.textTertiary)
+        return finalized + volatile
     }
 
     @ViewBuilder
