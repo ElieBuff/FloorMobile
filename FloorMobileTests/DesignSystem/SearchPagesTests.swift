@@ -29,12 +29,12 @@ struct SearchPagesTests {
 
     @Test("A new search asks for its first page, and is loading")
     func asksForTheFirstPage() {
-        let pages = Self.pages()
+        var pages = Self.pages()
 
         #expect(pages.request.isFirstPage)
-        #expect(pages.needsFetch(pages.request))
-        #expect(pages.loaded == nil)
-        #expect(pages.isLoading)
+        #expect(pages.status == .loading)
+        let fetches = pages.beginFetch()
+        #expect(fetches)
     }
 
     @Test("The next page is asked for once, from where it starts, and is not a first page")
@@ -48,8 +48,9 @@ struct SearchPagesTests {
 
         #expect(pages.request == Request(search: "mar", cursor: "page-2"))
         #expect(!pages.request.isFirstPage)
-        #expect(pages.needsFetch(pages.request))
-        #expect(pages.isLoading)
+        #expect(pages.status == .loading)
+        let fetches = pages.beginFetch()
+        #expect(fetches)
     }
 
     @Test("Nothing is asked for after the last page")
@@ -64,8 +65,9 @@ struct SearchPagesTests {
         pages.requestNextPage()
 
         #expect(pages.request == last)
-        #expect(!pages.needsFetch(pages.request))
-        #expect(!pages.isLoading)
+        #expect(pages.status == .loaded)
+        let fetches = pages.beginFetch()
+        #expect(!fetches)
     }
 
     @Test("A page lands once, though asked for again after it landed")
@@ -76,10 +78,13 @@ struct SearchPagesTests {
         pages.land(Self.matches(4...6), next: "page-3", for: pages.request)
 
         // Back on screen, the list asks again for the page it shows…
-        #expect(!pages.needsFetch(pages.request))
+        let fetchesOnReturn = pages.beginFetch()
+        #expect(!fetchesOnReturn)
         // …and a "Try again" left on screen comes after that page landed.
         pages.retry(pages.request)
-        #expect(!pages.needsFetch(pages.request))
+        let fetchesOnRetry = pages.beginFetch()
+        #expect(pages.status == .loaded)
+        #expect(!fetchesOnRetry)
         #expect(pages.items.map(\.id) == [1, 2, 3, 4, 5, 6])
     }
 
@@ -98,13 +103,11 @@ struct SearchPagesTests {
     @Test("A first page that comes back empty is told from one not back yet")
     func emptyFirstPageLands() {
         var pages = Self.pages()
-        let first = pages.request
 
-        pages.land([], next: nil, for: first)
+        pages.land([], next: nil, for: pages.request)
 
         #expect(pages.items.isEmpty)
-        #expect(pages.loaded == first)
-        #expect(!pages.isLoading)
+        #expect(pages.status == .loaded)
     }
 
     // MARK: - A new search
@@ -118,10 +121,10 @@ struct SearchPagesTests {
         pages.start("mart")
 
         #expect(pages.items.isEmpty)
-        #expect(pages.loaded == nil)
         #expect(pages.request == Request(search: "mart"))
-        #expect(pages.needsFetch(pages.request))
-        #expect(pages.isLoading)
+        #expect(pages.status == .loading)
+        let fetches = pages.beginFetch()
+        #expect(fetches)
         // No cursor of the last search carries over.
         pages.requestNextPage()
         #expect(pages.request.isFirstPage)
@@ -137,7 +140,7 @@ struct SearchPagesTests {
 
         #expect(pages.request == request)
         #expect(pages.items.map(\.id) == [1, 2, 3])
-        #expect(!pages.isLoading)
+        #expect(pages.status == .loaded)
     }
 
     @Test("A page of a search left behind, coming back late, does not land")
@@ -149,18 +152,7 @@ struct SearchPagesTests {
         pages.land(Self.matches(1...3), next: "page-2", for: old)
 
         #expect(pages.items.isEmpty)
-        #expect(pages.loaded == nil)
-        #expect(pages.isLoading)
-    }
-
-    @Test("Another search's first page is to fetch, though this one's first page landed")
-    func otherSearchFirstPageNeedsFetch() {
-        var pages = Self.pages()
-        pages.land(Self.matches(1...3), next: nil, for: pages.request)
-
-        // The same cursor, nil: only the search tells the two apart.
-        #expect(!pages.needsFetch(Request(search: "mar")))
-        #expect(pages.needsFetch(Request(search: "mart")))
+        #expect(pages.status == .loading)
     }
 
     // MARK: - Failures and retries
@@ -173,15 +165,16 @@ struct SearchPagesTests {
         // Page 2 fails: nothing lands.
         let failed = pages.request
         pages.fail(failed)
-        #expect(!pages.isLoading)
+        #expect(pages.status == .failed)
 
         pages.retry(failed)
 
         // A new request, so the task runs again — on the same page.
         #expect(pages.request != failed)
         #expect(pages.request.cursor == failed.cursor)
-        #expect(pages.needsFetch(pages.request))
-        #expect(pages.isLoading)
+        #expect(pages.status == .loading)
+        let fetches = pages.beginFetch()
+        #expect(fetches)
         #expect(pages.items.map(\.id) == [1, 2, 3])
     }
 
@@ -194,25 +187,14 @@ struct SearchPagesTests {
         pages.fail(failed)
 
         // Back on screen, the task runs again on the same request.
-        pages.fetching(failed)
+        let fetches = pages.beginFetch()
+        #expect(fetches)
 
         #expect(pages.request == failed)
-        #expect(pages.isLoading)
+        #expect(pages.status == .loading)
     }
 
-    @Test("Fetching a request left behind changes neither the failure nor the loading")
-    func staleFetchingChangesNothing() {
-        var pages = Self.pages()
-        let old = pages.request
-        pages.start("mart")
-        pages.fail(pages.request)
-
-        pages.fetching(old)
-
-        #expect(!pages.isLoading)
-    }
-
-    @Test("A late failure of a request left behind changes neither the failure nor the loading")
+    @Test("A late failure of a request left behind changes nothing")
     func lateFailureIsDropped() {
         var pages = Self.pages()
         let old = pages.request
@@ -220,14 +202,14 @@ struct SearchPagesTests {
         pages.start("mart")
         pages.fail(old)
 
-        #expect(pages.failed == nil)
-        #expect(pages.isLoading)
+        #expect(pages.status == .loading)
     }
 
     @Test("A retry of a search or a page left behind changes nothing")
     func staleRetryChangesNothing() {
         var pages = Self.pages()
         let oldSearch = pages.request
+        pages.fail(oldSearch)
         pages.start("mart")
         let current = pages.request
 

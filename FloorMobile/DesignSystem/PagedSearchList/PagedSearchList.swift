@@ -119,7 +119,7 @@ struct PagedSearchFailure {
 /// when it changes — a new search's first page, the next page, a retry —
 /// cancels the one under way, cancels it too when the list goes away, and
 /// starts it again every time the list comes back on screen (a tab switch, a
-/// push), which `needsFetch` turns down for a page already there.
+/// push), which `beginFetch` turns down for a page already there.
 private struct QueryPages<Item: Identifiable, Row: View>: View {
     /// The query, and how to fetch a page, draw a row and report a failure.
     let list: PagedSearchList<Item, Row>
@@ -144,7 +144,7 @@ private struct QueryPages<Item: Identifiable, Row: View>: View {
                         pages.requestNextPage()
                     }
             }
-            if pages.isLoading, !pages.items.isEmpty {
+            if pages.status == .loading, !pages.items.isEmpty {
                 ProgressView()
                     .frame(maxWidth: .infinity)
                     .listRowBackground(Color.clear)
@@ -158,7 +158,7 @@ private struct QueryPages<Item: Identifiable, Row: View>: View {
             pages.start(list.search)
         }
         .task(id: pages.request) {
-            await load(pages.request)
+            await load()
         }
     }
 
@@ -168,18 +168,18 @@ private struct QueryPages<Item: Identifiable, Row: View>: View {
     @ViewBuilder
     private var placeholder: some View {
         if pages.items.isEmpty {
-            if pages.isLoading {
-                ProgressView()
-            } else if pages.loaded != nil {
-                ContentUnavailableView.search(text: list.query)
+            switch pages.status {
+            case .loading: ProgressView()
+            case .loaded: ContentUnavailableView.search(text: list.query)
+            case .failed: EmptyView()
             }
         }
     }
 
     // MARK: - Loading
 
-    /// Fetches the page `request` asks for, unless it is already on screen
-    /// (`SearchPages.needsFetch`), and lands it under the others. The first
+    /// Fetches the page asked for, unless it is already on screen
+    /// (`SearchPages.beginFetch`), and lands it under the others. The first
     /// waits for the typing to pause: a keystroke meanwhile is a new search,
     /// whose new request cancels the wait — so that page is never sent.
     ///
@@ -188,9 +188,9 @@ private struct QueryPages<Item: Identifiable, Row: View>: View {
     /// dropped: no page, no failure, nothing told to the parent. A late
     /// failure of an earlier sort would otherwise send "My Clients" to the
     /// device's list.
-    private func load(_ request: SearchPages<Item>.Request) async {
-        guard pages.needsFetch(request) else { return }
-        pages.fetching(request)
+    private func load() async {
+        guard pages.beginFetch() else { return }
+        let request = pages.request
         do {
             if request.isFirstPage {
                 try await Task.sleep(for: Self.debounce)
