@@ -28,7 +28,9 @@ provide (`TaskActions` documents why it does). Copying the closest precedent is 
   the service and the wire types; `Models/` what the data *is* and every rule testable without a view (with
   `Models/Enums/` and `Models/Drafts/` past half a dozen files); `Views/` the views (`Components/`, `Sections/`,
   `Details/`, `Pickers/`). Two entities with distinct vocabularies in one feature get a sub-folder each, as
-  `Agenda/{Events,Tasks}` does — never one folder per screen. Tests follow the same tree in `FloorMobileTests/`.
+  `Agenda/{Events,Tasks}` does — or the second one alone, beside the first at the feature's root, as
+  `Clients/SearchOptions/` does for the sorts and filters of "My Clients" — never one folder per screen. Tests
+  follow the same tree in `FloorMobileTests/`.
 - Shared foundations go in `Core/`: `Networking/` (with `Networking/Wire/` for wire fragments several responses
   embed), `Models/` (shared value snapshots: `ClientSummary`, `StoreSummary`…), `Extensions/`, `Auth/`,
   `Persistence/`, `Enums/`, `Sync/`. Components that speak no feature's vocabulary go in `DesignSystem/<Component>/`,
