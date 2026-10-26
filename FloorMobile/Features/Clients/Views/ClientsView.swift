@@ -13,12 +13,12 @@ import SwiftUI
 /// server. The query is shared, so switching scope keeps what was typed.
 struct ClientsView: View {
     @State private var query = ""
-    @State private var scope = Scope.mine
+    @State private var scope = ClientSearchScope.mine
 
     var body: some View {
         VStack(spacing: 0) {
             Picker(String(localized: "Clients"), selection: $scope) {
-                ForEach(Scope.allCases, id: \.self) { scope in
+                ForEach(ClientSearchScope.allCases, id: \.self) { scope in
                     Text(scope.title).tag(scope)
                 }
             }
@@ -40,22 +40,6 @@ struct ClientsView: View {
         )
         .ambientBackground()
         .appHeader()
-    }
-
-    /// Where the search looks.
-    private enum Scope: CaseIterable {
-        /// The associate's own clients, on the server or on the device — see
-        /// `MyClientsList`.
-        case mine
-        /// Any client of the brand, on the server.
-        case brand
-
-        var title: String {
-            switch self {
-            case .mine: String(localized: "My Clients")
-            case .brand: String(localized: "All Brand")
-            }
-        }
     }
 }
 

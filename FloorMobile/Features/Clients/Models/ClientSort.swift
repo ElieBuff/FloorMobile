@@ -43,6 +43,19 @@ nonisolated final class ClientSort {
 
 nonisolated extension ClientSort: ContentComparable {
 
+    // MARK: - Typed views
+
+    /// Which way a sort runs: `client/search`'s `direction`, and each sort's
+    /// starting one in `GET setup`.
+    nonisolated enum Direction: String, Sendable {
+        case asc
+        case desc
+    }
+
+    /// Typed view of `directionRaw`, the way the server starts this sort;
+    /// `nil` for a value this app does not know.
+    var direction: Direction? { Direction(rawValue: directionRaw) }
+
     // MARK: - Sync
 
     /// Whether `other` holds the same content, field by field — what decides

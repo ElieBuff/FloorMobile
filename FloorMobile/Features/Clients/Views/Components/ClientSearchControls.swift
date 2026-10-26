@@ -9,12 +9,10 @@ import SwiftUI
 /// height, closed with a swipe down.
 ///
 /// The picks themselves live in `MyClientsList`, which sends them with the
-/// search; the sheets will set them through these bindings once they list the
+/// search; the pickers will set them through this binding once they list the
 /// tenant's sorts and filters.
 struct ClientSearchControls: View {
-    @Binding var sortBy: String?
-    @Binding var direction: ClientSearchOptions.SortDirection?
-    @Binding var filterRefs: [String]
+    @Binding var options: ClientSearchOptions
 
     @State private var presentedSheet: Sheet?
 
@@ -38,8 +36,8 @@ struct ClientSearchControls: View {
         .sheet(item: $presentedSheet) { sheet in
             Group {
                 switch sheet {
-                case .sort: ClientSortSheet()
-                case .filter: ClientFilterSheet()
+                case .sort: ClientSortPickerView()
+                case .filter: ClientFilterPickerView()
                 }
             }
             .presentationDetents([.medium])
@@ -59,10 +57,8 @@ struct ClientSearchControls: View {
 // MARK: - Previews
 
 #Preview {
-    @Previewable @State var sortBy: String?
-    @Previewable @State var direction: ClientSearchOptions.SortDirection?
-    @Previewable @State var filterRefs: [String] = []
+    @Previewable @State var options = ClientSearchOptions()
 
-    ClientSearchControls(sortBy: $sortBy, direction: $direction, filterRefs: $filterRefs)
+    ClientSearchControls(options: $options)
         .padding()
 }

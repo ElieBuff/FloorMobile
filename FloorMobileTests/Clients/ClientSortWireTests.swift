@@ -31,6 +31,7 @@ struct ClientSortWireTests {
 
         #expect(sort.labelKey == "client.sort.lastPurchase")
         #expect(sort.directionRaw == "desc")
+        #expect(sort.direction == .desc)
         #expect(sort.isDefault == false)
         #expect(sort.rank == 1)
     }

@@ -45,12 +45,8 @@ import SwiftUI
 struct MyClientsList: View {
     let query: String
 
-    /// The sort picked (`ClientSort.value`); `nil`, the server's default.
-    @State private var sortBy: String?
-    /// The sort's direction; `nil`, the sort's own.
-    @State private var direction: ClientSearchOptions.SortDirection?
-    /// The filter values picked (`ClientFilterValue.ref`).
-    @State private var filterRefs: [String] = []
+    /// The sort and the filters picked, as the server's search sends them.
+    @State private var options = ClientSearchOptions()
 
     @Environment(AppSession.self) private var session
     @Environment(AppServices.self) private var services
@@ -79,11 +75,6 @@ struct MyClientsList: View {
         query.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    /// The three picks, as the server's search sends them.
-    private var options: ClientSearchOptions {
-        ClientSearchOptions(sortBy: sortBy, direction: direction, filterRefs: filterRefs)
-    }
-
     /// Whether the server answers rather than the device: a text long enough
     /// for it, or a sort or a filter picked, which the device cannot apply.
     static func usesServer(text: String, options: ClientSearchOptions) -> Bool {
@@ -92,7 +83,7 @@ struct MyClientsList: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ClientSearchControls(sortBy: $sortBy, direction: $direction, filterRefs: $filterRefs)
+            ClientSearchControls(options: $options)
                 .padding(.horizontal, 16)
                 .padding(.bottom, 8)
             content

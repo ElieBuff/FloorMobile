@@ -158,22 +158,39 @@ struct ClientServiceTests {
         #expect(!Endpoint.searchClients("aliette", in: .brand).interactive)
     }
 
-    @Test("My clients' sort, direction and filters go with the search, the filters as JSON")
+    /// A filter choice as the server reads it, decoded apart from the app's
+    /// own types.
+    private struct SentFilterChoice: Decodable, Equatable {
+        var ref: String
+        var params: [String: String]?
+    }
+
+    @Test("My clients' sort, direction and filters go with the search, the filters as JSON, params only when filled in")
     func myClientsOptionsAreSent() throws {
-        let options = ClientSearchOptions(sortBy: "lastPurchase", direction: .desc, filterRefs: ["a", "b"])
+        let options = ClientSearchOptions(
+            sortBy: "lastPurchase",
+            direction: .desc,
+            filters: [
+                ClientFilterChoice(ref: "a"),
+                ClientFilterChoice(ref: "b", parameters: ["since": "2026-07-01"]),
+            ]
+        )
 
         let items = Endpoint.searchClients("aliette", in: .mine, options: options).query
 
         #expect(items.first { $0.name == "orderBy" }?.value == "lastPurchase")
         #expect(items.first { $0.name == "direction" }?.value == "desc")
         let filters = try #require(items.first { $0.name == "filters" }?.value)
-        let decoded = try JSONDecoder().decode([[String: String]].self, from: Data(filters.utf8))
-        #expect(decoded == [["ref": "a"], ["ref": "b"]])
+        let decoded = try JSONDecoder().decode([SentFilterChoice].self, from: Data(filters.utf8))
+        #expect(decoded == [
+            SentFilterChoice(ref: "a", params: nil),
+            SentFilterChoice(ref: "b", params: ["since": "2026-07-01"]),
+        ])
     }
 
     @Test("A brand search takes the sort but never the filters, which the server refuses there")
     func brandSearchNeverSendsFilters() {
-        let options = ClientSearchOptions(sortBy: "name", direction: .asc, filterRefs: ["a"])
+        let options = ClientSearchOptions(sortBy: "name", direction: .asc, filters: [ClientFilterChoice(ref: "a")])
 
         let names = Endpoint.searchClients("nina", in: .brand, options: options).query.map(\.name)
 
@@ -185,7 +202,9 @@ struct ClientServiceTests {
 
     @Test("Without a text the search sends no q; with nothing picked, nothing beside it")
     func noTextNoOptions() {
-        let withoutText = Endpoint.searchClients(nil, in: .mine, options: ClientSearchOptions(filterRefs: ["a"]))
+        let withoutText = Endpoint.searchClients(
+            nil, in: .mine, options: ClientSearchOptions(filters: [ClientFilterChoice(ref: "a")])
+        )
         #expect(!withoutText.query.map(\.name).contains("q"))
 
         let plain = Endpoint.searchClients("aliette", in: .mine).query.map(\.name)

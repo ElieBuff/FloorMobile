@@ -15,6 +15,6 @@ struct ClientSearchOptionsTests {
         #expect(ClientSearchOptions().isDefault)
         #expect(!ClientSearchOptions(sortBy: "name").isDefault)
         #expect(!ClientSearchOptions(direction: .desc).isDefault)
-        #expect(!ClientSearchOptions(filterRefs: ["a"]).isDefault)
+        #expect(!ClientSearchOptions(filters: [ClientFilterChoice(ref: "a")]).isDefault)
     }
 }

@@ -7,14 +7,6 @@ import Foundation
 
 // MARK: - Client Endpoints
 
-/// Whose clients a search looks among (`Endpoint.searchClients`).
-nonisolated enum ClientSearchScope: Sendable {
-    /// The associate's own clients — "My Clients".
-    case mine
-    /// Any client of the brand — "All Brand".
-    case brand
-}
-
 nonisolated extension Endpoint {
     /// The connected associate's store clients: all of them without a cursor,
     /// then only those changed since it. The store comes from the token, never
@@ -48,7 +40,7 @@ nonisolated extension Endpoint {
     /// sent with fewer than `clientSearchMinimumLength` characters, which the
     /// server refuses. Without it, the clients in the sort's order. The sort
     /// goes with both scopes; the filters with `.mine` only — the server
-    /// refuses them otherwise — as a JSON list of `{ "ref" }`.
+    /// refuses them otherwise — as a JSON list (`ClientFilterChoiceWire`).
     static func searchClients(
         _ query: String?,
         in scope: ClientSearchScope,
@@ -68,8 +60,11 @@ nonisolated extension Endpoint {
         if let direction = options.direction {
             items.append(URLQueryItem(name: "direction", value: direction.rawValue))
         }
-        if scope == .mine, !options.filterRefs.isEmpty,
-           let filters = URLQueryItem(name: "filters", json: options.filterRefs.map { ["ref": $0] }) {
+        if scope == .mine, !options.filters.isEmpty,
+           let filters = URLQueryItem(
+               name: "filters",
+               json: options.filters.map(ClientFilterChoiceWire.Request.init(choice:))
+           ) {
             items.append(filters)
         }
         return Endpoint(path: "client/search", query: items + after(cursor), interactive: scope == .mine)

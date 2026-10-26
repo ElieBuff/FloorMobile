@@ -1,14 +1,15 @@
 //
-//  ClientFilterSheet.swift
+//  ClientFilterPickerView.swift
 //  FloorMobile
 //
 
 import SwiftUI
 
-/// "Filter" for "My Clients", opened from `ClientSearchControls` at half
-/// height and closed with a swipe down. Empty for now: it will list the
-/// tenant's filters (`ClientFilter`) and set the list's picked refs.
-struct ClientFilterSheet: View {
+/// "Filter" for "My Clients", opened from `ClientSearchControls` as a sheet
+/// at half height and closed with a swipe down. Empty for now: it will list
+/// the tenant's filters (`ClientFilter`) and set the list's picked values
+/// (`ClientFilterChoice`).
+struct ClientFilterPickerView: View {
     var body: some View {
         NavigationStack {
             Color.clear
@@ -23,7 +24,7 @@ struct ClientFilterSheet: View {
 #Preview {
     Color.clear
         .sheet(isPresented: .constant(true)) {
-            ClientFilterSheet()
+            ClientFilterPickerView()
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
         }
