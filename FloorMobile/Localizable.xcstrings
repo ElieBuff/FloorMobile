@@ -95,6 +95,90 @@
     "Client search arrives with the Clients tab." : {
 
     },
+    "client.sort.contactedByMe" : {
+      "comment" : "A \"My Clients\" sort, its key from GET setup.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last contacted by me"
+          }
+        }
+      }
+    },
+    "client.sort.createdDate" : {
+      "comment" : "A \"My Clients\" sort, its key from GET setup.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Newest clients"
+          }
+        }
+      }
+    },
+    "client.sort.lastPurchase" : {
+      "comment" : "A \"My Clients\" sort, its key from GET setup.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last purchase"
+          }
+        }
+      }
+    },
+    "client.sort.name" : {
+      "comment" : "A \"My Clients\" sort, its key from GET setup.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        }
+      }
+    },
+    "client.sort.segment" : {
+      "comment" : "A \"My Clients\" sort, its key from GET setup: only sent once the brand has ordered its segments.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tier"
+          }
+        }
+      }
+    },
+    "client.sort.spent12M" : {
+      "comment" : "A \"My Clients\" sort, its key from GET setup.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spent, last 12 months"
+          }
+        }
+      }
+    },
+    "client.sort.spentLifetime" : {
+      "comment" : "A \"My Clients\" sort, its key from GET setup.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spent, lifetime"
+          }
+        }
+      }
+    },
     "Clients" : {
 
     },
@@ -159,6 +243,9 @@
 
     },
     "Expanded" : {
+
+    },
+    "Filter" : {
 
     },
     "FloorMobile" : {
@@ -243,6 +330,9 @@
 
     },
     "No recommendation yet" : {
+
+    },
+    "No sorts yet" : {
 
     },
     "No task" : {
@@ -342,6 +432,9 @@
 
     },
     "Something went wrong. Please try again." : {
+
+    },
+    "Sort by" : {
 
     },
     "Speak: the text appears here." : {

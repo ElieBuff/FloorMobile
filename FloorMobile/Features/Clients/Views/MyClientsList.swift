@@ -235,8 +235,9 @@ private struct MatchingClients: View {
 // root in the app — so the previews hand them over too, though they stay
 // below three characters and never ask.
 #Preview("On the device") {
+    // ClientSort too: "Sort by" reads it.
     let container = try! ModelContainer(
-        for: Client.self,
+        for: Client.self, ClientSort.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
     container.mainContext.insert(Client(
@@ -256,7 +257,7 @@ private struct MatchingClients: View {
 
 #Preview("No clients yet") {
     let container = try! ModelContainer(
-        for: Client.self,
+        for: Client.self, ClientSort.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
     return MyClientsList(query: "")

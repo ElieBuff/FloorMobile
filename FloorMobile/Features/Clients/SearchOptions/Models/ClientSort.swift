@@ -10,10 +10,10 @@ import SwiftData
 /// `clients.sorts` block of `GET setup` — kept for the sort screen.
 ///
 /// What a sort offers, not what an associate picked: the server owns the
-/// list, its order and which one applies by default. The sort screen will
-/// send a picked sort's `value` to `client/search`; nothing reads this model
-/// yet. Tied to the tenant like everything stored: `LocalStore.erase` wipes
-/// it.
+/// list, its order and which one applies by default. "Sort by"
+/// (`ClientSortPickerView`) lists them in `rank` order; the one picked goes
+/// into `ClientSearchOptions`, which sends its `value` to `client/search`.
+/// Tied to the tenant like everything stored: `LocalStore.erase` wipes it.
 ///
 /// Not `Syncable`, like `ClientFilter`: the block lands whole, so
 /// `SetupService` saves the complete set at once.
@@ -56,6 +56,16 @@ nonisolated extension ClientSort: ContentComparable {
     /// `nil` for a value this app does not know.
     var direction: Direction? { Direction(rawValue: directionRaw) }
 
+    // MARK: - Display
+
+    /// The sort's name on screen: its `labelKey` looked up in the string
+    /// catalog — the key itself while the catalog has no entry for it. On the
+    /// model rather than in a view, so every screen that names a sort (the
+    /// picker, the button showing the current one) reads the same.
+    var title: LocalizedStringResource {
+        LocalizedStringResource(stringLiteral: labelKey)
+    }
+
     // MARK: - Sync
 
     /// Whether `other` holds the same content, field by field — what decides
@@ -65,5 +75,32 @@ nonisolated extension ClientSort: ContentComparable {
     func hasSameContent(as other: ClientSort) -> Bool {
         value == other.value && labelKey == other.labelKey && directionRaw == other.directionRaw
             && isDefault == other.isDefault && rank == other.rank
+    }
+}
+
+nonisolated extension ClientSort {
+
+    // MARK: - Previews
+
+    /// An in-memory store holding the sorts `GET setup` serves in dev, for the
+    /// previews that open "Sort by". Not under `#if DEBUG`: a `#Preview`
+    /// compiles in Release builds too.
+    @MainActor
+    static func previewContainer() -> ModelContainer {
+        let container = try! ModelContainer(
+            for: ClientSort.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let sorts: [(String, String)] = [
+            ("name", "asc"), ("lastPurchase", "desc"), ("spent12M", "desc"),
+            ("spentLifetime", "desc"), ("createdDate", "desc"), ("contactedByMe", "desc"),
+        ]
+        for (rank, (value, direction)) in sorts.enumerated() {
+            container.mainContext.insert(ClientSort(
+                value: value, labelKey: "client.sort.\(value)", directionRaw: direction,
+                isDefault: rank == 0, rank: rank
+            ))
+        }
+        return container
     }
 }

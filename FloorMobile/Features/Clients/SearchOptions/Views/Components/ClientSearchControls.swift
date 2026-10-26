@@ -3,14 +3,15 @@
 //  FloorMobile
 //
 
+import SwiftData
 import SwiftUI
 
 /// "Sort by" and "Filter" over "My Clients": each opens its sheet at half
 /// height, closed with a swipe down.
 ///
 /// The picks themselves live in `MyClientsList`, which sends them with the
-/// search; the pickers will set them through this binding once they list the
-/// tenant's sorts and filters.
+/// search. "Sort by" sets the sort through this binding; "Filter" will set the
+/// filters the same way once it lists them.
 struct ClientSearchControls: View {
     @Binding var options: ClientSearchOptions
 
@@ -36,7 +37,7 @@ struct ClientSearchControls: View {
         .sheet(item: $presentedSheet) { sheet in
             Group {
                 switch sheet {
-                case .sort: ClientSortPickerView()
+                case .sort: ClientSortPickerView(options: $options)
                 case .filter: ClientFilterPickerView()
                 }
             }
@@ -61,4 +62,6 @@ struct ClientSearchControls: View {
 
     ClientSearchControls(options: $options)
         .padding()
+        // "Sort by" reads the stored sorts.
+        .modelContainer(ClientSort.previewContainer())
 }

@@ -24,4 +24,21 @@ nonisolated struct ClientSearchOptions: Hashable, Sendable {
     var isDefault: Bool {
         sortBy == nil && direction == nil && filters.isEmpty
     }
+
+    // MARK: - Sort
+
+    /// Picks `sort`, in the direction the server gives it; the filters stay.
+    /// Any sort is sent as picked, the default one included: which sort is the
+    /// default is the server's to change.
+    mutating func pick(_ sort: ClientSort) {
+        sortBy = sort.value
+        direction = sort.direction
+    }
+
+    /// Whether `sort` is the one the search runs: the picked one, in its own
+    /// direction — or the server's default while none is picked.
+    func isPicked(_ sort: ClientSort) -> Bool {
+        guard let sortBy else { return sort.isDefault }
+        return sort.value == sortBy && sort.direction == direction
+    }
 }
