@@ -121,7 +121,8 @@ struct MyClientsList: View {
                 deviceMatches
             }
         } else {
-            PagedSearchList(query: text, filters: options) { text, cursor in
+            // A sort or a filter picked starts the search over from its first page.
+            PagedSearchList(query: text, restartingOn: options) { text, cursor in
                 // A text too short for the server is left out: the sort alone orders.
                 let query = text.count >= Endpoint.clientSearchMinimumLength ? text : nil
                 return try await services.clients.searchClients(

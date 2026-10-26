@@ -33,17 +33,17 @@ import SwiftUI
 /// }
 /// ```
 ///
-/// A search with filters passes them too —
-/// `PagedSearchList(query: text, filters: filters) { … }` — and its `fetch`
-/// reads them.
+/// A search that depends on more than its text — a sort, filters — passes it
+/// too, `PagedSearchList(query: text, restartingOn: options) { … }`: a change
+/// of it starts the search over from its first page, as a new text does. Its
+/// `fetch` reads those options where the parent keeps them.
 struct PagedSearchList<Item: Identifiable, Row: View>: View {
     /// What the server is asked for, as it is sent: the parent trims it.
     let query: String
-    /// What else the search depends on — its filters, its sort: a change
-    /// starts it again from its first page, as a new query does. `fetch`
-    /// reads them where the parent keeps them. `nil` for a search on its
-    /// text alone.
-    var filters: AnyHashable? = nil
+    /// What else the search depends on — its sort, its filters: a change
+    /// starts it over from its first page, as a new query does. `nil` for a
+    /// search on its text alone.
+    var restartingOn: AnyHashable? = nil
     /// One page of matches from a cursor (`nil` for the first page), and
     /// where the next one starts — `nil` once there is none. On the main
     /// actor, like a `Button`'s action: it is the parent's code, reading the
@@ -55,11 +55,14 @@ struct PagedSearchList<Item: Identifiable, Row: View>: View {
     let onFailure: (PagedSearchFailure) -> Void
     @ViewBuilder let row: (Item) -> Row
 
+    /// The search as a whole: its query and what it restarts on. A change of
+    /// it is a new search (`SearchPages.start`).
+    var search: AnyHashable {
+        AnyHashable([AnyHashable(query), restartingOn])
+    }
+
     var body: some View {
         QueryPages(list: self)
-            // A new search — its query or its filters — a new list: nothing
-            // of the last one carries over.
-            .id([AnyHashable(query), filters])
     }
 }
 
@@ -84,8 +87,9 @@ struct PagedSearchFailure {
     let error: any Error
     /// Fetches the page that failed again, the pages above it kept. Does
     /// nothing once that page is on screen — the list fetches it again on its
-    /// own when it comes back on screen — or once its list is gone: a new
-    /// search built another, or its parent put something in its place.
+    /// own when it comes back on screen — once the search has changed or a
+    /// page further on is asked for (`SearchPages.retry(_:)`), or once its
+    /// parent put something else in the list's place.
     let retry: () -> Void
 
     /// "Search failed" with the error's message: "Try again" fetches the page
@@ -103,26 +107,29 @@ struct PagedSearchFailure {
 
 // MARK: - Pages
 
-/// The pages of one search. A view of its own, rebuilt for each search — a
-/// new query or new filters (`.id` in `PagedSearchList`) — so a new search
-/// starts from nothing: no page, cursor or retry of the last one carries
-/// over, and a page of the last one that lands late lands in a list no
-/// longer on screen.
+/// The pages of the search on screen. A view of its own because it holds
+/// their `@State`: in `PagedSearchList` itself, a private `@State` would make
+/// its memberwise init private too.
 ///
-/// The pages' rules are `SearchPages`', tested on their own; the view keeps
-/// what is SwiftUI's. One `.task(id:)` on the request the pages ask for:
-/// SwiftUI starts the fetch when it changes — the next page, or a retry —
-/// cancels it when the list goes away, and starts it again every time the
-/// list comes back on screen (a tab switch, a push), which `needsFetch` turns
-/// down for a page already there.
+/// The view is built once and lives across searches. A new search — a new
+/// query, or a change of what it restarts on — is declared by `.onChange`,
+/// which starts the pages over (`SearchPages.start`). The pages' rules are
+/// `SearchPages`', tested on their own; the view keeps what is SwiftUI's. One
+/// `.task(id:)` on the request the pages ask for: SwiftUI starts the fetch
+/// when it changes — a new search's first page, the next page, a retry —
+/// cancels the one under way, cancels it too when the list goes away, and
+/// starts it again every time the list comes back on screen (a tab switch, a
+/// push), which `needsFetch` turns down for a page already there.
 private struct QueryPages<Item: Identifiable, Row: View>: View {
     /// The query, and how to fetch a page, draw a row and report a failure.
     let list: PagedSearchList<Item, Row>
 
-    @State private var pages = SearchPages<Item>()
-    /// True from the start: a new list always begins by asking for its first
-    /// page — so its spinner shows at once, not after a frame of empty list.
-    @State private var isLoading = true
+    @State private var pages: SearchPages<Item>
+
+    init(list: PagedSearchList<Item, Row>) {
+        self.list = list
+        _pages = State(initialValue: SearchPages(search: list.search))
+    }
 
     /// How long the typing must pause before the first page is asked for.
     /// Computed: a generic type cannot store a static property.
@@ -137,7 +144,7 @@ private struct QueryPages<Item: Identifiable, Row: View>: View {
                         pages.requestNextPage()
                     }
             }
-            if isLoading, !pages.items.isEmpty {
+            if pages.isLoading, !pages.items.isEmpty {
                 ProgressView()
                     .frame(maxWidth: .infinity)
                     .listRowBackground(Color.clear)
@@ -145,6 +152,11 @@ private struct QueryPages<Item: Identifiable, Row: View>: View {
         }
         .cardList()
         .overlay { placeholder }
+        // A new search: the pages start over, which changes the request the
+        // task below runs on.
+        .onChange(of: list.search) {
+            pages.start(list.search)
+        }
         .task(id: pages.request) {
             await load(pages.request)
         }
@@ -156,7 +168,7 @@ private struct QueryPages<Item: Identifiable, Row: View>: View {
     @ViewBuilder
     private var placeholder: some View {
         if pages.items.isEmpty {
-            if isLoading {
+            if pages.isLoading {
                 ProgressView()
             } else if pages.loaded != nil {
                 ContentUnavailableView.search(text: list.query)
@@ -168,11 +180,17 @@ private struct QueryPages<Item: Identifiable, Row: View>: View {
 
     /// Fetches the page `request` asks for, unless it is already on screen
     /// (`SearchPages.needsFetch`), and lands it under the others. The first
-    /// waits for the typing to pause: a keystroke meanwhile builds a new
-    /// list, which cancels the wait — so that page is never sent.
+    /// waits for the typing to pause: a keystroke meanwhile is a new search,
+    /// whose new request cancels the wait — so that page is never sent.
+    ///
+    /// Whatever comes back for a request no longer asked for — the search
+    /// changed, or the answer came after a cancellation it did not heed — is
+    /// dropped: no page, no failure, nothing told to the parent. A late
+    /// failure of an earlier sort would otherwise send "My Clients" to the
+    /// device's list.
     private func load(_ request: SearchPages<Item>.Request) async {
         guard pages.needsFetch(request) else { return }
-        isLoading = true
+        pages.fetching(request)
         do {
             if request.isFirstPage {
                 try await Task.sleep(for: Self.debounce)
@@ -182,12 +200,12 @@ private struct QueryPages<Item: Identifiable, Row: View>: View {
         } catch {
             // Cancelled: the search changed, or the list left the screen and
             // asks again once it is back. Not a failure either way.
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled, request == pages.request else { return }
+            pages.fail(request)
             list.onFailure(PagedSearchFailure(
-                query: list.query, isFirstPage: request.isFirstPage, error: error, retry: { pages.retry() }
+                query: list.query, isFirstPage: request.isFirstPage, error: error, retry: { pages.retry(request) }
             ))
         }
-        isLoading = false
     }
 }
 
