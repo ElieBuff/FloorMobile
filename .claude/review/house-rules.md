@@ -105,6 +105,9 @@ comment that paraphrases the code, no history ("used to…"). In English, like t
   `AppBorder`, `AppSpacing.cardInset`). A number used once stays a literal in the view: `AppSpacing`'s own rule.
 - An `accessibilityLabel` on every icon button; empty, loading and error states (`ContentUnavailableView`,
   `EmptySectionCard`).
+- What only the screen shows — the rendering, a sheet's height, the larger text sizes — is the user's to look at, on
+  the simulator (the user's decision, 2026-10-28): neither a plan nor a review asks for it, and no finding rests on it.
+  The QA keeps the build and the unit tests, which run on a simulator nobody watches.
 
 **Severity here.** IMPORTANT when the problem has a concrete cost: a custom type duplicating a native API, a copied
 view or logic that will drift from its original, a model decoded straight from JSON, a dependency in the wrong

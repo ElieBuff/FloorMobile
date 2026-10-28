@@ -9,12 +9,12 @@ extension View {
     /// Voice to text: the action a page's own button triggers, whatever its
     /// shape. Setting `isPresented` opens the transcription sheet, which
     /// listens at once; `onText` gets the final text, once, when the associate
-    /// taps "Done" — never on "Cancel". What the page does with it (append,
-    /// replace) is the page's call.
+    /// taps "Done" — never on "Cancel". What the page does with it is the
+    /// page's call: `String.append(dictation:)` adds it after the text there.
     ///
     /// ```swift
     /// Button { isTranscribing = true } label: { Image(systemName: "mic") }
-    ///     .transcription(isPresented: $isTranscribing) { note += $0 }
+    ///     .transcription(isPresented: $isTranscribing) { note.append(dictation: $0) }
     /// ```
     func transcription(isPresented: Binding<Bool>, onText: @escaping (String) -> Void) -> some View {
         sheet(isPresented: isPresented) {
@@ -45,7 +45,7 @@ private struct TranscriptionUsagePreview: View {
         }
         .padding()
         .transcription(isPresented: $isTranscribing) { text in
-            note += note.isEmpty ? text : " " + text
+            note.append(dictation: text)
         }
     }
 }

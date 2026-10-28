@@ -14,6 +14,14 @@ import SwiftUI
 /// pushes a calendar (`ClientFilterDayPickerView`) and is ticked once a day
 /// is confirmed.
 ///
+/// Above them, pinned, the sentence: the clients wanted in the associate's
+/// own words, typed or dictated (`FormDictateButton`, `.transcription`), what
+/// is dictated added after what is there (`String.append(dictation:)`).
+/// Pinned on the whole sheet, so over "No filters yet" too: a sentence gives
+/// conditions of its own, outside the catalog. Not sent yet — the next step
+/// hands it to `POST /client/text-filters` —, so "Apply" and "Clear" leave it
+/// be, and it goes with the sheet.
+///
 /// The ticks go into a draft, a copy of the list's options made once, in
 /// `init` — `onAppear` would make it again on the way back from the
 /// calendar —, and only "Apply" writes them back, which starts the list's
@@ -33,10 +41,10 @@ import SwiftUI
 /// rare to be worth the code. "Apply" then goes without a number, and the
 /// list's search fails until the value gone is unticked or the app relaunched.
 ///
-/// Empty for a tenant whose filters were never written (FloorPlatform's
-/// `seed-client-filters.ts`). No loading or error state for the filters
-/// themselves: a local read of what `GET setup` saved before `RootView`
-/// shows the app.
+/// No filters, the sentence still above, for a tenant whose filters were
+/// never written (FloorPlatform's `seed-client-filters.ts`). No loading or
+/// error state for the filters themselves: a local read of what `GET setup`
+/// saved before `RootView` shows the app.
 ///
 /// The sections' native headers, not `SectionHeader`, which titles the
 /// content sections of a scroll view (Home, Agenda), not a list's.
@@ -58,6 +66,10 @@ struct ClientFilterPickerView: View {
     /// one calendar at a time, whatever the filter. A ref is unique across the
     /// tenant's filters: the sheet finds the filter and the value by it.
     @State private var calendarRef: String?
+    /// The clients wanted, in the associate's words: not sent yet.
+    @State private var sentence = ""
+    @State private var isDictating = false
+    @FocusState private var isSentenceFocused: Bool
 
     /// How long the ticks must pause before the total is asked for: the
     /// search's own pause (`PagedSearchList`).
@@ -104,10 +116,14 @@ struct ClientFilterPickerView: View {
                         }
                     }
                     .cardList()
+                    .scrollDismissesKeyboard(.immediately)
                     .safeAreaBar(edge: .bottom) {
                         applyButton
                     }
                 }
+            }
+            .safeAreaBar(edge: .top) {
+                sentenceField
             }
             .ambientBackground()
             .navigationTitle(Text("Filter"))
@@ -135,6 +151,36 @@ struct ClientFilterPickerView: View {
         // cancel it, and coming back start it again.
         .task(id: draft.filters) {
             await count()
+        }
+    }
+
+    // MARK: - Sentence
+
+    /// The sentence, in a card pinned above the filters, or "No filters yet":
+    /// up to four lines, so a dictated one reads whole, then the microphone. A
+    /// tap anywhere on the card puts the caret in the text, as in
+    /// `FormTitleRow`. Not `FormTitleRow` or `FormNoteRow`: a bar wants neither
+    /// a label nor a reserved height.
+    private var sentenceField: some View {
+        HStack(spacing: 9) {
+            TextField(String(localized: "Describe the clients you want"), text: $sentence, axis: .vertical)
+                .lineLimit(1...4)
+                .font(.body)
+                .foregroundStyle(Color(.OnSurface.textPrimary))
+                .focused($isSentenceFocused)
+            FormDictateButton {
+                isDictating = true
+            }
+        }
+        .padding(.horizontal, AppSpacing.cardInset)
+        .padding(.vertical, 10)
+        .cardStyle()
+        .contentShape(.rect)
+        .onTapGesture { isSentenceFocused = true }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
+        .transcription(isPresented: $isDictating) { text in
+            sentence.append(dictation: text)
         }
     }
 
