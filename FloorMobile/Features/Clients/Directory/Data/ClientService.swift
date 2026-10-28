@@ -20,6 +20,9 @@ import SwiftData
 @ModelActor
 actor ClientService {
 
+    /// Well under SQLite's limit on bound variables per statement.
+    private static let deleteBatchSize = 500
+
     /// Brings the store's clients up to date: pages through `client/sync` from
     /// the stored cursor (from zero without one), upserting each page as it
     /// arrives.
@@ -88,6 +91,22 @@ actor ClientService {
         return (page.items.map(ClientItem.init(wire:)), page.hasMore ? page.nextCursor : nil)
     }
 
+    /// How many clients `searchClients` would list for the same text, scope
+    /// and filters — "My Clients"' "Apply (n)". Straight from the server, like
+    /// a search. A refusal (409 `filters_changed`, 503 `search_timeout`) is
+    /// thrown as `AppError.server(statusCode:)`, its body dropped, and a
+    /// network failure as `AppError.network`, for the caller to show. See
+    /// `Endpoint.countClients`.
+    func countClients(
+        _ query: String?,
+        in scope: ClientSearchScope,
+        filters: [ClientFilterChoice] = [],
+        using client: APIClient
+    ) async throws -> Int {
+        let count: ClientWire.Count = try await client.send(.countClients(query, in: scope, filters: filters))
+        return count.total
+    }
+
     /// One client's profile, everything the server holds on them.
     ///
     /// Straight from the server and not stored, like a search result: any
@@ -123,7 +142,4 @@ actor ClientService {
     private func replaceRecent(with list: RecentClientWire.List) async throws {
         try await modelContext.refresh(from: { list.items }, make: RecentClient.init(wire:))
     }
-
-    /// Well under SQLite's limit on bound variables per statement.
-    private static let deleteBatchSize = 500
 }

@@ -3,19 +3,35 @@
 //  FloorMobile
 //
 
-import SwiftData
 import SwiftUI
 
 /// "Sort by" and "Filter" over "My Clients": each opens its sheet at half
 /// height, closed with a swipe down.
 ///
 /// The picks themselves live in `MyClientsList`, which sends them with the
-/// search. "Sort by" sets the sort through this binding; "Filter" will set the
-/// filters the same way once it lists them.
+/// search. "Sort by" sets the sort through this binding; "Filter" sets the
+/// filters the same way, on "Apply", counting in the list's `scope`; its
+/// button says how many values are applied.
 struct ClientSearchControls: View {
     @Binding var options: ClientSearchOptions
+    /// Whose clients the list shows: what "Filter" counts in.
+    let scope: ClientSearchScope
 
     @State private var presentedSheet: Sheet?
+
+    /// "Filter", and how many values are applied — until the applied filters
+    /// show as pills above the list.
+    private var filterTitle: String {
+        options.filters.isEmpty ? String(localized: "Filter") : String(localized: "Filter (\(options.filters.count))")
+    }
+
+    /// The sheet open over the list.
+    private enum Sheet: Identifiable {
+        case sort
+        case filter
+
+        var id: Self { self }
+    }
 
     var body: some View {
         HStack(spacing: 8) {
@@ -27,7 +43,7 @@ struct ClientSearchControls: View {
             Button {
                 presentedSheet = .filter
             } label: {
-                Label(String(localized: "Filter"), systemImage: "line.3.horizontal.decrease")
+                Label(filterTitle, systemImage: "line.3.horizontal.decrease")
             }
             Spacer(minLength: 0)
         }
@@ -38,30 +54,21 @@ struct ClientSearchControls: View {
             Group {
                 switch sheet {
                 case .sort: ClientSortPickerView(options: $options)
-                case .filter: ClientFilterPickerView()
+                case .filter: ClientFilterPickerView(options: $options, scope: scope)
                 }
             }
             .presentationDetents([.medium])
             .presentationDragIndicator(.visible)
         }
     }
-
-    /// The sheet open over the list.
-    private enum Sheet: Identifiable {
-        case sort
-        case filter
-
-        var id: Self { self }
-    }
 }
 
 // MARK: - Previews
 
-#Preview {
+// "Sort by" and "Filter" read the stored sorts and filters.
+#Preview(traits: .searchOptionsSampleData) {
     @Previewable @State var options = ClientSearchOptions()
 
-    ClientSearchControls(options: $options)
+    ClientSearchControls(options: $options, scope: .mine)
         .padding()
-        // "Sort by" reads the stored sorts.
-        .modelContainer(ClientSort.previewContainer())
 }

@@ -77,30 +77,3 @@ nonisolated extension ClientSort: ContentComparable {
             && isDefault == other.isDefault && rank == other.rank
     }
 }
-
-nonisolated extension ClientSort {
-
-    // MARK: - Previews
-
-    /// An in-memory store holding the sorts `GET setup` serves in dev, for the
-    /// previews that open "Sort by". Not under `#if DEBUG`: a `#Preview`
-    /// compiles in Release builds too.
-    @MainActor
-    static func previewContainer() -> ModelContainer {
-        let container = try! ModelContainer(
-            for: ClientSort.self,
-            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-        )
-        let sorts: [(String, String)] = [
-            ("name", "asc"), ("lastPurchase", "desc"), ("spent12M", "desc"),
-            ("spentLifetime", "desc"), ("createdDate", "desc"), ("contactedByMe", "desc"),
-        ]
-        for (rank, (value, direction)) in sorts.enumerated() {
-            container.mainContext.insert(ClientSort(
-                value: value, labelKey: "client.sort.\(value)", directionRaw: direction,
-                isDefault: rank == 0, rank: rank
-            ))
-        }
-        return container
-    }
-}

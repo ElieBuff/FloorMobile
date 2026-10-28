@@ -10,7 +10,7 @@ import SwiftUI
 /// the server (`ClientService.searchClients`, `.brand`), closest first, a page at a time
 /// (`PagedSearchList`).
 ///
-/// Below `Endpoint.clientSearchMinimumLength` characters, spaces around them
+/// Below `ClientsView.searchMinimumLength` characters, spaces around them
 /// aside, it asks for more: the server refuses fewer. A first page that fails
 /// gives way to its error, with "Try again"; a next one raises an alert whose
 /// "Try again" fetches that page again, the pages above it kept. The device
@@ -46,11 +46,11 @@ struct BrandClientsList: View {
     /// results, or the error of a first page it failed.
     @ViewBuilder
     private var content: some View {
-        if text.count < Endpoint.clientSearchMinimumLength {
+        if text.count < ClientsView.searchMinimumLength {
             ContentUnavailableView(
                 String(localized: "Search the whole brand"),
                 systemImage: "magnifyingglass",
-                // The "3" mirrors `Endpoint.clientSearchMinimumLength`.
+                // The "3" mirrors `ClientsView.searchMinimumLength`.
                 description: Text("Type at least 3 characters of a name, an email or a phone number.")
             )
         } else if let failedSearch, failedSearch.query == text {

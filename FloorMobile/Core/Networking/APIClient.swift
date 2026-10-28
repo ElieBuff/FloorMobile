@@ -19,6 +19,33 @@ nonisolated struct APIClient: Sendable {
     /// preview or a test can leave it out; in the app it is always there.
     private let expiry: SessionExpiry?
 
+    /// Inert client for SwiftUI previews — never makes real network calls.
+    static let preview = APIClient(
+        baseURL: URL(string: "https://preview.example.com")!,
+        tokens: TokenProviding(validToken: { "" }, refreshedToken: { "" })
+    )
+
+    /// How long an interactive call waits on a silent server before it fails:
+    /// an idle timeout, which every byte received starts again, taking
+    /// precedence over the session's for that request. Short, because the
+    /// screen has something else to show; to adjust on the round trips
+    /// measured in the stores.
+    private static let interactiveTimeout: TimeInterval = 3
+
+    // The dates `makeDecoder` reads, with fractional seconds or without.
+    // ISO8601DateFormatter is documented as thread-safe.
+    nonisolated(unsafe) private static let isoFractional: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+
+    nonisolated(unsafe) private static let iso: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter
+    }()
+
     init(
         baseURL: URL,
         tokens: TokenProviding,
@@ -31,12 +58,6 @@ nonisolated struct APIClient: Sendable {
         self.expiry = expiry
     }
 
-    /// Inert client for SwiftUI previews — never makes real network calls.
-    static let preview = APIClient(
-        baseURL: URL(string: "https://preview.example.com")!,
-        tokens: TokenProviding(validToken: { "" }, refreshedToken: { "" })
-    )
-
     /// The production session: reasonable timeout, waits for connectivity
     /// instead of failing immediately on a flaky store network — except for an
     /// interactive call (`Endpoint.interactive`), which fails fast instead.
@@ -46,13 +67,6 @@ nonisolated struct APIClient: Sendable {
         configuration.waitsForConnectivity = true
         return URLSession(configuration: configuration)
     }
-
-    /// How long an interactive call waits on a silent server before it fails:
-    /// an idle timeout, which every byte received starts again, taking
-    /// precedence over the session's for that request. Short, because the
-    /// screen has something else to show; to adjust on the round trips
-    /// measured in the stores.
-    private static let interactiveTimeout: TimeInterval = 3
 
     // MARK: - Public API
 
@@ -154,6 +168,13 @@ nonisolated struct APIClient: Sendable {
         )
         if !endpoint.query.isEmpty {
             components?.queryItems = endpoint.query
+            // `queryItems` leaves a "+" as is, which a query allows, and the BFF reads it as a
+            // space: a filter value's ref that carries a segment ("…:VIP+"), or an email typed
+            // in the search ("jean+test@…"), would reach it changed. Apple's advice for
+            // `queryItems`: percent-encode the plus sign yourself.
+            if let query = components?.percentEncodedQuery {
+                components?.percentEncodedQuery = query.replacingOccurrences(of: "+", with: "%2B")
+            }
         }
         guard let url = components?.url else {
             throw AppError.unexpected(description: "Unbuildable URL for endpoint '\(endpoint.path)'")
@@ -197,19 +218,6 @@ nonisolated struct APIClient: Sendable {
     }
 
     // MARK: - JSON configuration
-
-    // ISO8601DateFormatter is documented as thread-safe.
-    nonisolated(unsafe) private static let isoFractional: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter
-    }()
-
-    nonisolated(unsafe) private static let iso: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        return formatter
-    }()
 
     // Internal (not private) so decoding tests and fixtures use the exact
     // same JSON configuration as production calls.

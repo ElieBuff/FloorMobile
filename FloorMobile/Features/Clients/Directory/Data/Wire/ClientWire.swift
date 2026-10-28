@@ -65,6 +65,11 @@ nonisolated enum ClientWire {
         var storeCode: String
         var ids: [String]
     }
+
+    /// How many clients a search would list, as `client/count` serves it.
+    struct Count: Decodable, Sendable {
+        var total: Int
+    }
 }
 
 nonisolated extension Client {

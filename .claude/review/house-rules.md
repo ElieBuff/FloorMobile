@@ -79,6 +79,9 @@ a cursor or marker as a `StoredKey` owned by `LocalStore` and reset in `erase`. 
 **Clean, by Apple's and the industry's standards.**
 - One type per file, named for what it is (a tightly coupled companion type may share its file); protocol /
   implementation and test-double naming as `floor-dev` sets it.
+- A file only previews use (a `PreviewModifier` and its data) starts with `Preview_` (`Preview_SearchOptionsSampleData.swift`;
+  the user's decision, 2026-10-26). Its type keeps a Swift name without an underscore; a view's `#Preview`s stay at
+  the bottom of its own file.
 - Services injected through `init` (a struct of closures or a protocol), never a `.shared` singleton.
 - `async/await` only: no Combine, no `DispatchQueue`. Mark `nonisolated` or `actor` only what must leave the main
   actor (the default isolation is `MainActor`).
@@ -129,13 +132,20 @@ such cost. In both cases, the evidence is the existing code or the `floor-dev` r
   Fixtures are copied from real responses, never invented. A change that needs the server to change says so and
   names the change.
 - **Client search.** The server searches, typos and all. "My Clients" asks `client/search?scope=mine` from
-  `Endpoint.clientSearchMinimumLength` characters, interactive (`Endpoint.interactive`), and searches the device's copy
-  below that and when the server does not answer (`Client.matching`, a plain `localizedStandardContains` predicate,
-  `fetchLimit` grown by pages); "All Brand" asks `client/search`. Both server lists go through `PagedSearchList`. The
-  device does not reimplement the server's rules: a future search on the device follows them (`floor_search_fold`, the
-  shared vectors in `../FloorPlatform/floor/packages/domain/test/client-search.vectors.json`), never invents its own.
+  `ClientsView.searchMinimumLength` characters (the views' call, never the endpoint's) or once a sort or a filter is
+  picked, interactive (`Endpoint.interactive`). It searches the device's copy otherwise (`Client.matching`, a plain
+  `localizedStandardContains` predicate, `fetchLimit` grown by pages), and when the server does not answer, unless
+  filters are picked: the device cannot apply them, so the failure shows instead. "All Brand" asks `client/search`.
+  Both server lists go through `PagedSearchList`. The device does not reimplement the server's rules: a future search
+  on the device follows them (`floor_search_fold`, the shared vectors in
+  `../FloorPlatform/floor/packages/domain/test/client-search.vectors.json`), never invents its own.
 - **SPM dependencies** only with a real added value over the native APIs.
 - **Swift files live in `FloorMobile/`**, never at the root of the repository.
+- **A file's order** (the user's decision, 2026-10-26, the same as FloorPlatform's). Its constants sit at the top: a
+  type's `static let`s and stored properties first in its body, a file's private constants under the imports, never
+  between functions. Not a catalogue's entries: an `Endpoint` declared as a `static let` (`Endpoint.recentClients`)
+  is a route, kept next to the routes it goes with. New code and every file a change touches follow it; the rest
+  comes into line as it is touched.
 
 ## Plausible cases, not extreme ones
 

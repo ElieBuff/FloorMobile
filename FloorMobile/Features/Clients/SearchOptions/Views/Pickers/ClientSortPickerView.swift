@@ -68,7 +68,7 @@ struct ClientSortPickerView: View {
 
 // MARK: - Previews
 
-#Preview {
+#Preview(traits: .searchOptionsSampleData) {
     @Previewable @State var options = ClientSearchOptions()
 
     Color.clear
@@ -77,5 +77,4 @@ struct ClientSortPickerView: View {
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
         }
-        .modelContainer(ClientSort.previewContainer())
 }

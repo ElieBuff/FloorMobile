@@ -211,6 +211,82 @@ struct ClientServiceTests {
         #expect(plain == ["scope", "q"])
     }
 
+    // MARK: - Count
+
+    @Test("A count of my clients sends client/count with scope=mine, the text and the filters, and hands back the total")
+    func myClientsCountSendsAndMaps() async throws {
+        let requested = Mutex<URLComponents?>(nil)
+        let api = Self.makeClient { request in
+            requested.withLock { $0 = request.url.flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) } }
+            return (Self.response(request), Data(#"{"total":473245}"#.utf8))
+        }
+        let filters = [ClientFilterChoice(ref: "a"), ClientFilterChoice(ref: "b", parameters: ["since": "2026-07-01"])]
+
+        let total = try await ClientService(modelContainer: try Self.inMemoryContainer())
+            .countClients("aliette", in: .mine, filters: filters, using: api)
+
+        #expect(total == 473245)
+        let url = try #require(requested.withLock { $0 })
+        #expect(url.path.hasSuffix("client/count"))
+        #expect(url.queryItems?.first { $0.name == "scope" }?.value == "mine")
+        #expect(url.queryItems?.first { $0.name == "q" }?.value == "aliette")
+        let sent = try #require(url.queryItems?.first { $0.name == "filters" }?.value)
+        let decoded = try JSONDecoder().decode([SentFilterChoice].self, from: Data(sent.utf8))
+        #expect(decoded == [
+            SentFilterChoice(ref: "a", params: nil),
+            SentFilterChoice(ref: "b", params: ["since": "2026-07-01"]),
+        ])
+    }
+
+    @Test("A count sends the search's text, scope and filters, never its sort, direction or cursor")
+    func countSendsWhatTheSearchSendsButTheSort() {
+        let filters = [ClientFilterChoice(ref: "a")]
+        let options = ClientSearchOptions(sortBy: "lastPurchase", direction: .desc, filters: filters)
+
+        let count = Endpoint.countClients("aliette", in: .mine, filters: filters).query
+        let search = Endpoint.searchClients("aliette", in: .mine, options: options, after: "cursor-1").query
+
+        #expect(count.map(\.name) == ["scope", "q", "filters"])
+        #expect(search.filter { count.map(\.name).contains($0.name) } == count)
+    }
+
+    @Test("A count of the brand sends neither the scope nor the filters, which the server refuses there")
+    func brandCountNeverSendsFilters() {
+        let names = Endpoint.countClients("nina", in: .brand, filters: [ClientFilterChoice(ref: "a")]).query.map(\.name)
+
+        #expect(names == ["q"])
+    }
+
+    @Test("Without a text the count sends no q: the whole scope, on its filters")
+    func countWithoutText() {
+        let names = Endpoint.countClients(nil, in: .mine, filters: [ClientFilterChoice(ref: "a")]).query.map(\.name)
+
+        #expect(names == ["scope", "filters"])
+    }
+
+    @Test("A count fails fast in both scopes: the associate waits on it, and nothing on the device stands in")
+    func countIsInteractive() {
+        #expect(Endpoint.countClients("aliette", in: .mine).interactive)
+        #expect(Endpoint.countClients("aliette", in: .brand).interactive)
+    }
+
+    @Test("A count past the server's time limit fails with its 503: what leaves \"Apply\" without a number")
+    func countPastTheLimitFails() async throws {
+        let api = Self.makeClient { request in
+            (Self.response(request, statusCode: 503), Data(#"{"error":"search_timeout"}"#.utf8))
+        }
+
+        let error = await #expect(throws: AppError.self) {
+            try await ClientService(modelContainer: try Self.inMemoryContainer())
+                .countClients(nil, in: .mine, filters: [ClientFilterChoice(ref: "a")], using: api)
+        }
+
+        guard case .server(statusCode: 503)? = error else {
+            Issue.record("Expected AppError.server(503), got \(String(describing: error))")
+            return
+        }
+    }
+
     @Test(
         "A search of my clients that gets no answer fails as a network error: what makes the list fall back",
         arguments: [URLError.Code.timedOut, .cancelled]

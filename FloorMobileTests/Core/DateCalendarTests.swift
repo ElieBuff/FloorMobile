@@ -8,8 +8,10 @@ import Testing
 @testable import FloorMobile
 
 /// The two bounds every day-scoped `@Query` in the agenda is built from, so an
-/// error here shows up as a day that quietly holds the wrong rows.
-@Suite("Day bounds")
+/// error here shows up as a day that quietly holds the wrong rows — and the
+/// day a filter sends (`calendarDay`), which must be the associate's, never
+/// the UTC one.
+@Suite("Calendar days")
 struct DateCalendarTests {
 
     @Test("Any hour of a day answers the same midnight")
@@ -56,5 +58,38 @@ struct DateCalendarTests {
 
         #expect(calendar.component(.hour, from: next) == 0)
         #expect(next.timeIntervalSince(start) != 86_400)
+    }
+
+    // MARK: - The day a filter sends
+
+    /// 30 June 2026 at 14:00 UTC is already 1 July, 02:00, in Auckland (UTC+12
+    /// in winter): the day sent is the one the associate sees there.
+    @Test("A day is written in the given time zone, never in UTC")
+    func calendarDayIsTheLocalDay() throws {
+        let auckland = try #require(TimeZone(identifier: "Pacific/Auckland"))
+        let utc = try #require(TimeZone(identifier: "UTC"))
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = utc
+        let date = try #require(calendar.date(from: DateComponents(year: 2026, month: 6, day: 30, hour: 14)))
+
+        #expect(date.calendarDay(in: auckland) == "2026-07-01")
+        #expect(date.calendarDay(in: utc) == "2026-06-30")
+    }
+
+    @Test("A day read back is the start of that day in the same time zone, and writes the same text")
+    func calendarDayRoundTrip() throws {
+        let auckland = try #require(TimeZone(identifier: "Pacific/Auckland"))
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = auckland
+
+        let day = try #require(Date(calendarDay: "2026-07-01", in: auckland))
+
+        #expect(calendar.startOfDay(for: day) == day)
+        #expect(day.calendarDay(in: auckland) == "2026-07-01")
+    }
+
+    @Test("A text that is not a day reads as none", arguments: ["", "yesterday", "01/07/2026"])
+    func notADay(text: String) {
+        #expect(Date(calendarDay: text) == nil)
     }
 }

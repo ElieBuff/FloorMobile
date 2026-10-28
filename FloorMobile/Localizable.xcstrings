@@ -47,6 +47,12 @@
     "Allow the microphone in Settings to dictate." : {
 
     },
+    "Apply" : {
+
+    },
+    "Apply (%@)" : {
+
+    },
     "Appointment not booked" : {
 
     },
@@ -89,11 +95,101 @@
     "Choose a reason" : {
 
     },
+    "Choose this day" : {
+
+    },
+    "Clear" : {
+
+    },
     "Client" : {
 
     },
     "Client search arrives with the Clients tab." : {
 
+    },
+    "client.filter.created" : {
+      "comment" : "A \"My Clients\" filter, its key from GET setup.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Created"
+          }
+        }
+      }
+    },
+    "client.filter.lastPurchase" : {
+      "comment" : "A \"My Clients\" filter, its key from GET setup.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last purchase"
+          }
+        }
+      }
+    },
+    "client.filter.tier" : {
+      "comment" : "A \"My Clients\" filter, its key from GET setup.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tier"
+          }
+        }
+      }
+    },
+    "client.filter.value.last3Months" : {
+      "comment" : "A value of a \"My Clients\" filter, its key from GET setup.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last 3 months"
+          }
+        }
+      }
+    },
+    "client.filter.value.last6Months" : {
+      "comment" : "A value of a \"My Clients\" filter, its key from GET setup.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last 6 months"
+          }
+        }
+      }
+    },
+    "client.filter.value.last12Months" : {
+      "comment" : "A value of a \"My Clients\" filter, its key from GET setup.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last 12 months"
+          }
+        }
+      }
+    },
+    "client.filter.value.since" : {
+      "comment" : "A value of a \"My Clients\" filter, its key from GET setup.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Since a date"
+          }
+        }
+      }
     },
     "client.sort.contactedByMe" : {
       "comment" : "A \"My Clients\" sort, its key from GET setup.",
@@ -203,6 +299,9 @@
     "Couldn't start dictation" : {
 
     },
+    "Counting clients" : {
+
+    },
     "Created" : {
 
     },
@@ -246,6 +345,12 @@
 
     },
     "Filter" : {
+
+    },
+    "Filter (%lld)" : {
+
+    },
+    "Filters need a connection" : {
 
     },
     "FloorMobile" : {
@@ -327,6 +432,9 @@
 
     },
     "No clients yet" : {
+
+    },
+    "No filters yet" : {
 
     },
     "No recommendation yet" : {

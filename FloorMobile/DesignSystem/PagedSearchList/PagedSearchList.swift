@@ -75,8 +75,9 @@ struct PagedSearchList<Item: Identifiable, Row: View>: View {
 /// above it stay, and "Try again" fetches the one that failed. For a first
 /// page nothing of the search is on screen, and a closed alert would leave
 /// it empty: the parent puts something in the list's place — what the
-/// device holds ("My Clients"), or the error with a "Try again" that builds
-/// the list afresh ("All Brand").
+/// device holds ("My Clients" without filters), or the error with a "Try
+/// again" that builds the list afresh ("All Brand", and "My Clients" with
+/// filters).
 struct PagedSearchFailure {
     /// The query the page belongs to.
     let query: String

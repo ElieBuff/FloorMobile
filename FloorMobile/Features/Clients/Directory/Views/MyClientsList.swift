@@ -11,7 +11,7 @@ import SwiftUI
 ///
 /// Where the matches come from depends on the search, spaces around it aside,
 /// and on the sort and filters picked (`options`) — see `usesServer`:
-/// - below `Endpoint.clientSearchMinimumLength` characters with nothing
+/// - below `ClientsView.searchMinimumLength` characters with nothing
 ///   picked, the device: the store's clients as the startup sync keeps them,
 ///   by last name then first name, narrowed to those that match
 ///   (`Client.matching`) — instant, and all of them while nothing is typed;
@@ -22,18 +22,20 @@ import SwiftUI
 ///   sort's order;
 /// - when the server fails that first page — an error, no connection, a
 ///   server that stays silent — the device again, for the same text, under a
-///   notice that says so. The request is interactive (`Endpoint.interactive`):
-///   without a connection it fails as soon as the typing pauses, with a
-///   silent server once `APIClient`'s short timeout runs out.
+///   notice that says so; with filters picked, the failure itself
+///   (`LoadFailureView`), the device's clients being unfiltered. The request
+///   is interactive (`Endpoint.interactive`): without a connection it fails
+///   as soon as the typing pauses, with a silent server once `APIClient`'s
+///   short timeout runs out.
 ///
 /// The sort and the filters are picked in `ClientSearchControls`' sheets, over
 /// the list. They are this list's: a trip to "All Brand" rebuilds it, and
 /// starts them over.
 ///
-/// The fallback lasts one text: every new text asks the server first, and so
-/// does the notice's "Try again". A next page that fails keeps the server's
-/// pages on screen and raises the alert "All Brand" raises — the notice
-/// speaks of results from this device, which those are not.
+/// The fallback, or the failure, lasts one text: every new text asks the
+/// server first, and so does their "Try again". A next page that fails keeps
+/// the server's pages on screen and raises the alert "All Brand" raises — the
+/// notice speaks of results from this device, which those are not.
 ///
 /// The device's list is the store's, as the sync keeps it: it stands in for
 /// the server's "mine" only while "mine" is the store — a tenant that narrows
@@ -53,11 +55,12 @@ struct MyClientsList: View {
 
     /// How many of the device's matches to load, grown a page at a time.
     @State private var limit = Self.pageSize
-    /// The text whose first page the server failed: while it is still the
-    /// text, the device's matches stand in for the server's. A text rather
-    /// than a flag, so a failure reported late for an earlier text never
-    /// reaches a later one.
-    @State private var unansweredText: String?
+    /// The first page the server failed, while its text is still the search:
+    /// the device's matches stand in for the server's — or, with filters
+    /// picked, its error does. Its text, not a flag, says which search
+    /// failed, so a failure reported late for an earlier text never reaches
+    /// a later one.
+    @State private var failedSearch: PagedSearchFailure?
     @State private var alert: FloorAlert?
     /// Whether the store has any client at all — one row is enough to know.
     @Query(firstClientDescriptor) private var anyClient: [Client]
@@ -78,12 +81,12 @@ struct MyClientsList: View {
     /// Whether the server answers rather than the device: a text long enough
     /// for it, or a sort or a filter picked, which the device cannot apply.
     static func usesServer(text: String, options: ClientSearchOptions) -> Bool {
-        text.count >= Endpoint.clientSearchMinimumLength || !options.isDefault
+        text.count >= ClientsView.searchMinimumLength || !options.isDefault
     }
 
     var body: some View {
         VStack(spacing: 0) {
-            ClientSearchControls(options: $options)
+            ClientSearchControls(options: $options, scope: .mine)
                 .padding(.horizontal, 16)
                 .padding(.bottom, 8)
             content
@@ -98,13 +101,14 @@ struct MyClientsList: View {
     }
 
     private func reset() {
-        unansweredText = nil
+        failedSearch = nil
         limit = Self.pageSize
         alert = nil
     }
 
     /// The device's matches below the server's minimum, and under the notice
-    /// while they stand in for its results; the server's results otherwise.
+    /// while they stand in for its results — or, with filters picked, the
+    /// error of the first page it failed; the server's results otherwise.
     /// Separate branches, so moving between them builds the list afresh:
     /// falling back drops the server's list, and "Try again" builds a new one,
     /// which asks for the first page again.
@@ -112,26 +116,32 @@ struct MyClientsList: View {
     private var content: some View {
         if !Self.usesServer(text: text, options: options) {
             deviceMatches
-        } else if unansweredText == text {
-            // Above the list rather than over it: the card is translucent, and
-            // rows scrolling under it would bury its message.
-            VStack(spacing: 0) {
-                fallbackNotice
-                    .padding(.top, 8)
-                deviceMatches
+        } else if let failedSearch, failedSearch.query == text {
+            // The device cannot apply filters: its clients, unfiltered, would mislead.
+            if options.filters.isEmpty {
+                // Above the list rather than over it: the card is translucent,
+                // and rows scrolling under it would bury its message.
+                VStack(spacing: 0) {
+                    fallbackNotice
+                        .padding(.top, 8)
+                    deviceMatches
+                }
+            } else {
+                failedFirstPage(failedSearch)
             }
         } else {
             // A sort or a filter picked starts the search over from its first page.
             PagedSearchList(query: text, restartingOn: options) { text, cursor in
                 // A text too short for the server is left out: the sort alone orders.
-                let query = text.count >= Endpoint.clientSearchMinimumLength ? text : nil
+                let query = text.count >= ClientsView.searchMinimumLength ? text : nil
                 return try await services.clients.searchClients(
                     query, in: .mine, options: options, after: cursor, using: session.api
                 )
             } onFailure: { failure in
                 if failure.isFirstPage {
-                    // Nothing of the server's on screen yet: the device stands in.
-                    unansweredText = failure.query
+                    // Nothing of the server's on screen yet: the device stands
+                    // in, or the error does.
+                    failedSearch = failure
                 } else {
                     // The server's pages stay; the alert fetches the one that failed.
                     alert = failure.alert
@@ -174,13 +184,29 @@ struct MyClientsList: View {
             },
             message: String(localized: "Online search isn't responding. Showing results from this device."),
             action: EmptySectionAction(label: String(localized: "Try again")) {
-                unansweredText = nil
+                failedSearch = nil
             }
         )
         // One element for VoiceOver: the message, then its button, labelled by
         // its visible "Try again".
         .accessibilityElement(children: .combine)
         .padding(.horizontal, 16)
+    }
+
+    /// What went wrong with a first page searched with filters — "Filters
+    /// need a connection" for any network error: no connection, or a server
+    /// silent past `APIClient`'s short timeout, which `AppError.network` does
+    /// not tell apart — and "Try again", which builds the list afresh, so it
+    /// asks for that first page again.
+    private func failedFirstPage(_ failure: PagedSearchFailure) -> some View {
+        let title = if case .network? = failure.error as? AppError {
+            String(localized: "Filters need a connection")
+        } else {
+            String(localized: "Search failed")
+        }
+        return LoadFailureView(title: title, error: failure.error) {
+            failedSearch = nil
+        }
     }
 }
 
@@ -235,9 +261,9 @@ private struct MatchingClients: View {
 // root in the app — so the previews hand them over too, though they stay
 // below three characters and never ask.
 #Preview("On the device") {
-    // ClientSort too: "Sort by" reads it.
+    // ClientSort and ClientFilter too: "Sort by" and "Filter" read them.
     let container = try! ModelContainer(
-        for: Client.self, ClientSort.self,
+        for: Client.self, ClientSort.self, ClientFilter.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
     container.mainContext.insert(Client(
@@ -257,7 +283,7 @@ private struct MatchingClients: View {
 
 #Preview("No clients yet") {
     let container = try! ModelContainer(
-        for: Client.self, ClientSort.self,
+        for: Client.self, ClientSort.self, ClientFilter.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
     return MyClientsList(query: "")

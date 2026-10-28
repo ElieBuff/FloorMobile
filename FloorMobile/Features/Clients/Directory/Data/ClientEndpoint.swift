@@ -23,51 +23,50 @@ nonisolated extension Endpoint {
     /// the device prunes its copy against.
     static let storeClientIDs = Endpoint(path: "client/store-ids")
 
-    /// The fewest characters, spaces aside, a client search sends: the server
-    /// refuses fewer. Below it, "All Brand" asks for more and "My Clients"
-    /// searches the device.
-    static let clientSearchMinimumLength = 3
-
     /// A page of clients, 50 at most, from one route for both lists:
     /// - `.mine`, the associate's own clients, each with their email and
     ///   phone. Whose clients they are is the server's to set (their store
     ///   today, from the token): the app only says `scope=mine`. Interactive:
-    ///   the associate waits on it, so it fails fast and the list falls back on
-    ///   the device.
+    ///   the associate waits on it, so it fails fast, and the list falls back
+    ///   on the device — or, with filters picked, which the device cannot
+    ///   apply, shows the failure.
     /// - `.brand`, any client of the brand, as a card without contacts.
     ///
-    /// `query` matches a name, an email or a phone, the closest first; never
-    /// sent with fewer than `clientSearchMinimumLength` characters, which the
-    /// server refuses. Without it, the clients in the sort's order. The sort
-    /// goes with both scopes; the filters with `.mine` only — the server
-    /// refuses them otherwise — as a JSON list (`ClientFilterChoiceWire`).
+    /// The text, the scope and the filters as `scopeItems` sends them; then
+    /// the sort, which goes with both scopes, and the cursor. Without a text,
+    /// the clients in the sort's order.
     static func searchClients(
         _ query: String?,
         in scope: ClientSearchScope,
         options: ClientSearchOptions = ClientSearchOptions(),
         after cursor: String? = nil
     ) -> Endpoint {
-        var items: [URLQueryItem] = []
-        if scope == .mine {
-            items.append(URLQueryItem(name: "scope", value: "mine"))
-        }
-        if let query {
-            items.append(URLQueryItem(name: "q", value: query))
-        }
+        var items = scopeItems(query, in: scope, filters: options.filters)
         if let sortBy = options.sortBy {
             items.append(URLQueryItem(name: "orderBy", value: sortBy))
         }
         if let direction = options.direction {
             items.append(URLQueryItem(name: "direction", value: direction.rawValue))
         }
-        if scope == .mine, !options.filters.isEmpty,
-           let filters = URLQueryItem(
-               name: "filters",
-               json: options.filters.map(ClientFilterChoiceWire.Request.init(choice:))
-           ) {
-            items.append(filters)
-        }
         return Endpoint(path: "client/search", query: items + after(cursor), interactive: scope == .mine)
+    }
+
+    /// How many clients `searchClients` would list, page after page, for the
+    /// same text, scope and filters (`scopeItems`): the total of "My Clients"'
+    /// filters sheet, its "Apply (n)". Neither a sort nor a cursor: neither
+    /// changes a total.
+    ///
+    /// Asked once the associate pauses in their ticks, for the last state only:
+    /// a request given up on runs on, server side, until its time limit. A 503
+    /// (`search_timeout`) means a total too long to count — "Apply" without a
+    /// number. Interactive in both scopes: the associate waits on it, and a
+    /// count has no list on the device to fall back on.
+    static func countClients(
+        _ query: String?,
+        in scope: ClientSearchScope,
+        filters: [ClientFilterChoice] = []
+    ) -> Endpoint {
+        Endpoint(path: "client/count", query: scopeItems(query, in: scope, filters: filters), interactive: true)
     }
 
     /// Everything the server holds on one client of the brand: the profile
@@ -102,5 +101,33 @@ nonisolated extension Endpoint {
     /// `after` when there is a cursor to send, nothing otherwise.
     private static func after(_ cursor: String?) -> [URLQueryItem] {
         cursor.map { [URLQueryItem(name: "after", value: $0)] } ?? []
+    }
+
+    /// What a client search and its count share, so that a count reads what
+    /// the search lists — the BFF's `clientScopeQuery`, shared by
+    /// `/client/search` and `/client/count` (`client.route.ts`), to keep in
+    /// step with it: `scope=mine` for the associate's own clients, nothing
+    /// for the brand; `q`, matching a name, an email or a phone, the closest
+    /// first, sent as given — whether a text is long enough for the server is
+    /// the view's call (`ClientsView.searchMinimumLength`); and with `.mine`
+    /// only — the server refuses them otherwise — the filters picked, as a
+    /// JSON list (`ClientFilterChoiceWire`).
+    private static func scopeItems(
+        _ query: String?,
+        in scope: ClientSearchScope,
+        filters: [ClientFilterChoice]
+    ) -> [URLQueryItem] {
+        var items: [URLQueryItem] = []
+        if scope == .mine {
+            items.append(URLQueryItem(name: "scope", value: "mine"))
+        }
+        if let query {
+            items.append(URLQueryItem(name: "q", value: query))
+        }
+        if scope == .mine, !filters.isEmpty,
+           let json = URLQueryItem(name: "filters", json: filters.map(ClientFilterChoiceWire.Request.init(choice:))) {
+            items.append(json)
+        }
+        return items
     }
 }

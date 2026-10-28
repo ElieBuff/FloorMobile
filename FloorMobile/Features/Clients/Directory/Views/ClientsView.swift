@@ -8,10 +8,17 @@ import SwiftUI
 
 /// The Clients tab: one search field, and a choice of where to look — the
 /// associate's own clients, searched on the server from
-/// `Endpoint.clientSearchMinimumLength` characters and on the device below
-/// that or when the server does not answer; or the whole brand, on the
-/// server. The query is shared, so switching scope keeps what was typed.
+/// `searchMinimumLength` characters or once a sort or a filter is picked, and
+/// on the device otherwise, or when the server does not answer and no filter
+/// is picked (`MyClientsList`); or the whole brand, on the server. The query
+/// is shared, so switching scope keeps what was typed.
 struct ClientsView: View {
+    /// The fewest characters, spaces aside, a search sends to the server,
+    /// which refuses fewer: the lists' decision under this tab — below it,
+    /// "All Brand" asks for more, and "My Clients" searches the device, or,
+    /// with a sort or a filter picked, asks the server without the text.
+    static let searchMinimumLength = 3
+
     @State private var query = ""
     @State private var scope = ClientSearchScope.mine
 

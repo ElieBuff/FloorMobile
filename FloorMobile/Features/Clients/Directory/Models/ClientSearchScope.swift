@@ -5,8 +5,9 @@
 
 import Foundation
 
-/// Whose clients a search looks among: the Clients tab's two lists, and what
-/// `Endpoint.searchClients` asks the server for.
+/// Whose clients a search looks among: the Clients tab's two lists, what
+/// `Endpoint.searchClients` asks the server for, and what "Filter" counts in
+/// (`ClientFilterPickerView`, through `ClientService.countClients`).
 nonisolated enum ClientSearchScope: CaseIterable, Sendable {
     /// The associate's own clients — "My Clients", on the server or on the
     /// device (`MyClientsList`).

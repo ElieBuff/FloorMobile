@@ -29,13 +29,13 @@ struct ReasonPickerView: View {
     @Query private var options: [EnumValue]
     @Environment(\.dismiss) private var dismiss
 
+    private var reasons: [Reason] {
+        options.resolved(fallback: Reason.selectable)
+    }
+
     init(selection: Binding<Reason?>, key: EnumValue.Key) {
         _selection = selection
         _options = Query(EnumValue.descriptor(for: key))
-    }
-
-    private var reasons: [Reason] {
-        options.resolved(fallback: Reason.selectable)
     }
 
     var body: some View {
@@ -53,33 +53,15 @@ struct ReasonPickerView: View {
     }
 
     private func row(for reason: Reason) -> some View {
-        Button {
+        CheckmarkRow(isChecked: reason == selection) {
             selection = reason
             dismiss()
         } label: {
             HStack(spacing: 12) {
                 ReasonIcon(reason: reason)
-
                 Text(reason.displayLabel)
-                    .font(.body)
-                    .foregroundStyle(Color(.OnSurface.textPrimary))
-
-                Spacer(minLength: 12)
-
-                // The tick, not a tint on the row: the reason already owns a
-                // colour, and a selected-row fill would fight it.
-                if reason == selection {
-                    Image(systemName: "checkmark")
-                        .font(.body.weight(.semibold))
-                        .foregroundStyle(Color(.Base.ink))
-                }
             }
-            .frame(maxWidth: .infinity, minHeight: 36)
-            .contentShape(.rect)
         }
-        .buttonStyle(.plain)
-        .listRowInsets(.cardRow)
-        .accessibilityAddTraits(reason == selection ? [.isButton, .isSelected] : .isButton)
     }
 }
 

@@ -53,6 +53,28 @@ struct APIClientTests {
         #expect(request.bodyData == nil)
     }
 
+    @Test("A plus sign in a parameter leaves as %2B: the BFF reads a bare one as a space")
+    func plusSignIsPercentEncoded() async throws {
+        let captured = Mutex<URLRequest?>(nil)
+        let client = Self.makeClient { request in
+            captured.withLock { $0 = request }
+            return (Self.response(request, statusCode: 200), Data())
+        }
+
+        try await client.send(Endpoint(path: "clients", query: [
+            URLQueryItem(name: "q", value: "jean+test@example.com"),
+            URLQueryItem(name: "filters", value: #"[{"ref":"f1:VIP+"}]"#),
+        ]))
+
+        let url = try #require(captured.withLock { $0 }?.url)
+        let query = try #require(url.query(percentEncoded: true))
+        #expect(!query.contains("+"))
+        #expect(query.hasPrefix("q=jean%2Btest@example.com&"))
+        // Decoded, each value is back as sent.
+        #expect(URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.map(\.value)
+            == ["jean+test@example.com", #"[{"ref":"f1:VIP+"}]"#])
+    }
+
     @Test("A POST body is JSON-encoded with the right content type")
     func postEncodesJSONBody() async throws {
         let captured = Mutex<URLRequest?>(nil)
