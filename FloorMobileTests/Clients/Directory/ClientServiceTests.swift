@@ -15,6 +15,12 @@ struct ClientServiceTests {
 
     /// The sentence the real answer in `client_text_filters.json` was given for.
     private static let sentence = "VIP clients who spent over 10,000 this year, with no email opt-in"
+    /// A pill as a sentence's reading gives it: "no email opt-in", with the
+    /// condition `client_text_filters.json` holds for it.
+    private static let optOutPill = ClientFilterItem(
+        label: "Sans opt-in email",
+        condition: .object(["field": .string("client.optinEmail"), "op": .string("eq"), "value": .bool(false)])
+    )
 
     // MARK: - Sync
 
@@ -161,8 +167,10 @@ struct ClientServiceTests {
         #expect(!Endpoint.searchClients("aliette", in: .brand).interactive)
     }
 
-    /// A filter choice as the server reads it, decoded apart from the app's
-    /// own types.
+    /// A tenant value's entry, `{ ref, params }`, as the server reads it,
+    /// decoded apart from the app's own types. A pill's, `{ filter }`, is
+    /// compared whole through `JSONSerialization` (`pillIsSentWhole`), which
+    /// also sees a key too many.
     private struct SentFilterChoice: Decodable, Equatable {
         var ref: String
         var params: [String: String]?
@@ -174,8 +182,8 @@ struct ClientServiceTests {
             sortBy: "lastPurchase",
             direction: .desc,
             filters: [
-                ClientFilterChoice(ref: "a"),
-                ClientFilterChoice(ref: "b", parameters: ["since": "2026-07-01"]),
+                .value(ref: "a"),
+                .value(ref: "b", parameters: ["since": "2026-07-01"]),
             ]
         )
 
@@ -191,9 +199,23 @@ struct ClientServiceTests {
         ])
     }
 
+    @Test("A pill goes with the search as { filter } alone, its condition whole, beside a value's { ref }")
+    func pillIsSentWhole() throws {
+        let options = ClientSearchOptions(filters: [.value(ref: "a"), .filter(Self.optOutPill)])
+
+        let items = Endpoint.searchClients(nil, in: .mine, options: options).query
+
+        let sent = try #require(items.first { $0.name == "filters" }?.value)
+        let entries = try #require(JSONSerialization.jsonObject(with: Data(sent.utf8)) as? [NSDictionary])
+        #expect(entries == [
+            ["ref": "a"],
+            ["filter": ["field": "client.optinEmail", "op": "eq", "value": false] as [String: Any]],
+        ])
+    }
+
     @Test("A brand search takes the sort but never the filters, which the server refuses there")
     func brandSearchNeverSendsFilters() {
-        let options = ClientSearchOptions(sortBy: "name", direction: .asc, filters: [ClientFilterChoice(ref: "a")])
+        let options = ClientSearchOptions(sortBy: "name", direction: .asc, filters: [.value(ref: "a")])
 
         let names = Endpoint.searchClients("nina", in: .brand, options: options).query.map(\.name)
 
@@ -206,7 +228,7 @@ struct ClientServiceTests {
     @Test("Without a text the search sends no q; with nothing picked, nothing beside it")
     func noTextNoOptions() {
         let withoutText = Endpoint.searchClients(
-            nil, in: .mine, options: ClientSearchOptions(filters: [ClientFilterChoice(ref: "a")])
+            nil, in: .mine, options: ClientSearchOptions(filters: [.value(ref: "a")])
         )
         #expect(!withoutText.query.map(\.name).contains("q"))
 
@@ -223,7 +245,7 @@ struct ClientServiceTests {
             requested.withLock { $0 = request.url.flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) } }
             return (Self.response(request), Data(#"{"total":473245}"#.utf8))
         }
-        let filters = [ClientFilterChoice(ref: "a"), ClientFilterChoice(ref: "b", parameters: ["since": "2026-07-01"])]
+        let filters: [ClientFilterChoice] = [.value(ref: "a"), .value(ref: "b", parameters: ["since": "2026-07-01"])]
 
         let total = try await ClientService(modelContainer: try Self.inMemoryContainer())
             .countClients("aliette", in: .mine, filters: filters, using: api)
@@ -241,9 +263,9 @@ struct ClientServiceTests {
         ])
     }
 
-    @Test("A count sends the search's text, scope and filters, never its sort, direction or cursor")
+    @Test("A count sends the search's text, scope and filters, pills included, never its sort, direction or cursor")
     func countSendsWhatTheSearchSendsButTheSort() {
-        let filters = [ClientFilterChoice(ref: "a")]
+        let filters: [ClientFilterChoice] = [.value(ref: "a"), .filter(Self.optOutPill)]
         let options = ClientSearchOptions(sortBy: "lastPurchase", direction: .desc, filters: filters)
 
         let count = Endpoint.countClients("aliette", in: .mine, filters: filters).query
@@ -255,14 +277,14 @@ struct ClientServiceTests {
 
     @Test("A count of the brand sends neither the scope nor the filters, which the server refuses there")
     func brandCountNeverSendsFilters() {
-        let names = Endpoint.countClients("nina", in: .brand, filters: [ClientFilterChoice(ref: "a")]).query.map(\.name)
+        let names = Endpoint.countClients("nina", in: .brand, filters: [.value(ref: "a")]).query.map(\.name)
 
         #expect(names == ["q"])
     }
 
     @Test("Without a text the count sends no q: the whole scope, on its filters")
     func countWithoutText() {
-        let names = Endpoint.countClients(nil, in: .mine, filters: [ClientFilterChoice(ref: "a")]).query.map(\.name)
+        let names = Endpoint.countClients(nil, in: .mine, filters: [.value(ref: "a")]).query.map(\.name)
 
         #expect(names == ["scope", "filters"])
     }
@@ -281,7 +303,7 @@ struct ClientServiceTests {
 
         let error = await #expect(throws: AppError.self) {
             try await ClientService(modelContainer: try Self.inMemoryContainer())
-                .countClients(nil, in: .mine, filters: [ClientFilterChoice(ref: "a")], using: api)
+                .countClients(nil, in: .mine, filters: [.value(ref: "a")], using: api)
         }
 
         guard case .server(statusCode: 503)? = error else {

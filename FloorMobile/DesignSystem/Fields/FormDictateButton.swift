@@ -17,10 +17,9 @@ import SwiftUI
 struct FormDictateButton: View {
     let action: () -> Void
 
-    /// Apple's 44pt minimum, scaled with the text it sits beside. The row's
-    /// own inset absorbs the difference with the 32pt the mockup draws, so the
-    /// microphone does not move: only the invisible rectangle around it grows.
-    @ScaledMetric(relativeTo: .subheadline) private var target: CGFloat = 44
+    /// The microphone's size in the mockup. Its tap target is Apple's 44pt
+    /// (`tapTarget`), the row's own inset absorbing the difference, so the
+    /// microphone does not move.
     private static let drawnSize: CGFloat = 32
 
     var body: some View {
@@ -31,9 +30,7 @@ struct FormDictateButton: View {
             Image(systemName: "mic")
                 .font(.subheadline)
                 .foregroundStyle(Color(.OnSurface.textTertiary))
-                .frame(width: target, height: target)
-                .padding(-(target - Self.drawnSize) / 2)
-                .contentShape(.rect)
+                .tapTarget(drawnSize: Self.drawnSize)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(String(localized: "Dictate"))

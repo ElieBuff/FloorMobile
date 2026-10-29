@@ -21,7 +21,7 @@ struct MyClientsListTests {
     @Test("A sort or a filter picked asks the server, whatever the text")
     func pickAsksTheServer() {
         #expect(MyClientsList.usesServer(
-            text: "al", options: ClientSearchOptions(filters: [ClientFilterChoice(ref: "a")])
+            text: "al", options: ClientSearchOptions(filters: [.value(ref: "a")])
         ))
         #expect(MyClientsList.usesServer(text: "", options: ClientSearchOptions(sortBy: "lastPurchase")))
     }

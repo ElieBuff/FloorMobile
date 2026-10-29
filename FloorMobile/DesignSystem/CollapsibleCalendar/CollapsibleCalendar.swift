@@ -122,11 +122,13 @@ struct CollapsibleCalendar: View {
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(Color(.OnSurface.textPrimary))
                 // The word is a few points tall on an 8pt row; the target is
-                // the strip the handle owns — see `handleHitHeight`.
+                // the strip the handle owns — see `handleHitHeight`. The shape
+                // comes before the negative paddings: after them, it would
+                // cover the 8pt row only.
                 .frame(minWidth: CalendarMetrics.hitTarget, minHeight: CalendarMetrics.handleHitHeight)
+                .contentShape(.rect)
                 .padding(.top, -(CalendarMetrics.sectionSpacing - CalendarMetrics.rowSpacing))
                 .padding(.bottom, -CalendarMetrics.cardPaddingVertical)
-                .contentShape(.rect)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(String(localized: "Go to today"))
@@ -139,15 +141,10 @@ struct CollapsibleCalendar: View {
             Image(systemName: systemImage)
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(Color(.OnSurface.textSecondary))
-                // A 16pt glyph in a 19pt header, with a 44pt target: the frame
-                // grows, the negative padding hands the difference back, and
-                // the header stays exactly as drawn. The overflow lands on the
-                // card's padding and the title strip, neither of which answers
-                // a tap.
-                .frame(width: CalendarMetrics.hitTarget, height: CalendarMetrics.hitTarget)
-                .padding(.horizontal, -(CalendarMetrics.hitTarget - CalendarMetrics.arrowSize) / 2)
-                .padding(.vertical, -(CalendarMetrics.hitTarget - CalendarMetrics.headerHeight) / 2)
-                .contentShape(.rect)
+                // A 16pt glyph in a 19pt header, with a 44pt target: the header
+                // stays exactly as drawn. The overflow lands on the card's
+                // padding and the title strip, neither of which answers a tap.
+                .tapTarget(drawnSize: CGSize(width: CalendarMetrics.arrowSize, height: CalendarMetrics.headerHeight))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)
@@ -293,10 +290,12 @@ struct CollapsibleCalendar: View {
             .frame(height: CalendarMetrics.handleHeight, alignment: .bottom)
             // The strip the handle owns, not a 44pt square: the rows above
             // and the card's edge below are spoken for — see `handleHitHeight`.
+            // The shape comes before the negative paddings: after them, it
+            // would cover the 8pt row only.
             .frame(height: CalendarMetrics.handleHitHeight)
+            .contentShape(.rect)
             .padding(.top, -(CalendarMetrics.sectionSpacing - CalendarMetrics.rowSpacing))
             .padding(.bottom, -CalendarMetrics.cardPaddingVertical)
-            .contentShape(.rect)
             .onTapGesture { setExpanded(!expansion.isExpanded) }
             .accessibilityElement()
             .accessibilityAddTraits(.isButton)

@@ -42,10 +42,11 @@ struct CalendarDayCell: View {
             .frame(maxWidth: .infinity)
             // The row plus the gap under it, given back with the negative
             // padding so the grid keeps its 40pt rows: the finger gets 46pt,
-            // the eye sees nothing move.
+            // the eye sees nothing move. The shape comes before the padding:
+            // after it, it would cover the 40pt row only.
             .frame(height: CalendarMetrics.dayCellHitHeight, alignment: .top)
-            .padding(.bottom, -CalendarMetrics.rowSpacing)
             .contentShape(.rect)
+            .padding(.bottom, -CalendarMetrics.rowSpacing)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(date, format: .dateTime.weekday(.wide).day().month(.wide)))

@@ -11,7 +11,7 @@ import SwiftUI
 /// The picks themselves live in `MyClientsList`, which sends them with the
 /// search. "Sort by" sets the sort through this binding; "Filter" sets the
 /// filters the same way, on "Apply", counting in the list's `scope`; its
-/// button says how many values are applied.
+/// button says how many filters are applied, a sentence's pills included.
 struct ClientSearchControls: View {
     @Binding var options: ClientSearchOptions
     /// Whose clients the list shows: what "Filter" counts in.
@@ -19,8 +19,8 @@ struct ClientSearchControls: View {
 
     @State private var presentedSheet: Sheet?
 
-    /// "Filter", and how many values are applied — until the applied filters
-    /// show as pills above the list.
+    /// "Filter", and how many filters are applied, a sentence's pills
+    /// included — until the applied filters show as pills above the list.
     private var filterTitle: String {
         options.filters.isEmpty ? String(localized: "Filter") : String(localized: "Filter (\(options.filters.count))")
     }

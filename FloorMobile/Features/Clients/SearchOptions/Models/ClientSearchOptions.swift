@@ -6,8 +6,9 @@
 import Foundation
 
 /// What a client search asks for beside its text: a sort, its direction, and
-/// the tenant's filters picked — `nil` and an empty list leave each to the
-/// server's default (the sort `GET setup` marks `isDefault`, every client).
+/// the filters applied, the tenant's values picked and a sentence's pills
+/// alike — `nil` and an empty list leave each to the server's default (the
+/// sort `GET setup` marks `isDefault`, every client).
 ///
 /// "My Clients" keeps it whole, and its controls change it through one
 /// binding. Hashable so `PagedSearchList` starts the search over, without its
@@ -18,7 +19,8 @@ nonisolated struct ClientSearchOptions: Hashable, Sendable {
     var sortBy: String?
     /// `nil`, the sort's own (`ClientSort.direction`).
     var direction: ClientSort.Direction?
-    /// The filter values picked.
+    /// The filters applied, one list as `client/search` takes it: the
+    /// tenant's values picked (`.value`) and a sentence's pills (`.filter`).
     var filters: [ClientFilterChoice] = []
 
     /// Whether nothing is picked: the server's defaults all round.
@@ -54,7 +56,8 @@ nonisolated struct ClientSearchOptions: Hashable, Sendable {
     /// not picked or asks for no day.
     func day(pickedFor value: ClientFilterValue) -> Date? {
         guard let parameter = value.dateParameter,
-              let text = filters.first(where: { $0.ref == value.ref })?.parameters[parameter.name]
+              case .value(_, let parameters)? = filters.first(where: { $0.ref == value.ref }),
+              let text = parameters[parameter.name]
         else { return nil }
         return Date(calendarDay: text)
     }
@@ -67,15 +70,35 @@ nonisolated struct ClientSearchOptions: Hashable, Sendable {
     mutating func pick(_ value: ClientFilterValue, of filter: ClientFilter, parameters: [String: String] = [:]) {
         if filter.selection == .single {
             let siblings = Set(filter.values.map(\.ref))
-            filters.removeAll { siblings.contains($0.ref) }
+            filters.removeAll { $0.ref.map(siblings.contains) == true }
         } else {
             filters.removeAll { $0.ref == value.ref }
         }
-        filters.append(ClientFilterChoice(ref: value.ref, parameters: parameters))
+        filters.append(.value(ref: value.ref, parameters: parameters))
     }
 
     /// Lets go of `value`.
     mutating func unpick(_ value: ClientFilterValue) {
         filters.removeAll { $0.ref == value.ref }
+    }
+
+    // MARK: - Filter items
+
+    /// The pills of the sentence applied, in their order: the filters it
+    /// described (`client/text-filters`), beside the values picked.
+    var filterItems: [ClientFilterItem] {
+        filters.compactMap(\.item)
+    }
+
+    /// Puts `items` in place of the sentence's pills, the values picked left
+    /// as they are: a sentence read again replaces what it gave before.
+    mutating func replaceFilterItems(with items: [ClientFilterItem]) {
+        filters.removeAll { $0.item != nil }
+        filters.append(contentsOf: items.map(ClientFilterChoice.filter))
+    }
+
+    /// Lets go of the pill `item`, by its `id`: two pills may read alike.
+    mutating func remove(_ item: ClientFilterItem) {
+        filters.removeAll { $0.item?.id == item.id }
     }
 }

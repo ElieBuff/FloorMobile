@@ -12,7 +12,7 @@ import Foundation
 ///
 /// Not `Data`: an `Encodable` cannot write raw JSON into the list of filters a
 /// search sends (`ClientFilterChoiceWire`). Not `JSONSerialization`'s `Any`:
-/// neither `Sendable` nor `Hashable`, which the search options that will hold a
+/// neither `Sendable` nor `Hashable`, which the search options that hold a
 /// condition are (`ClientSearchOptions`). One type both ways, no `Request` and
 /// `Response`: the value goes back as it came. A model may hold one — the one
 /// exception to wire → model → view (floor-dev) — because the app never reads

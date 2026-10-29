@@ -21,7 +21,7 @@ nonisolated struct ClientFilterItems: Hashable, Sendable {
 /// One filter a sentence describes, as the screen shows it — a pill —: its
 /// words and its condition together, so removing it removes its condition.
 /// The sentence's counterpart of a catalog value (`ClientFilterValue`); once
-/// applied, it will go to the search as a case of `ClientFilterChoice`.
+/// applied, it goes to the search as `ClientFilterChoice.filter`.
 nonisolated struct ClientFilterItem: Identifiable, Hashable, Sendable {
     /// The app's own, given at decoding: the server gives none, and an item
     /// must be found again to be removed.

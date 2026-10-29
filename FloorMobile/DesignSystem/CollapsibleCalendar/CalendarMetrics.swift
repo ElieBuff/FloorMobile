@@ -30,11 +30,13 @@ nonisolated enum CalendarMetrics {
     static let headerInset: CGFloat = 6
     static let arrowSize: CGFloat = 16
 
-    /// Apple's minimum hit target. The header, the handle and the arrows are
-    /// all drawn smaller than this, so each one takes a `hitTarget` frame and
-    /// gives the difference back with a negative padding: the layout keeps the
-    /// Figma geometry, only the invisible rectangle that answers the finger
-    /// grows. The same trick the system's own small toolbar glyphs use.
+    /// Apple's minimum hit target: the least width "Today" answers over. The
+    /// arrows, the handle, "Today" and the day cells all answer over more than
+    /// they draw: each takes a larger frame, sets its shape, then gives the
+    /// difference back with a negative padding, so the layout keeps the Figma
+    /// geometry and only the invisible rectangle that answers the finger
+    /// grows. The shape before the padding, as `TapTarget` does — the arrows
+    /// take it —: set after, it would cover the drawn size only.
     static let hitTarget: CGFloat = 44
 
     /// What the handle and the "Today" button can answer to: the whitespace

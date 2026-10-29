@@ -15,20 +15,21 @@ struct ClientSearchOptionsTests {
         #expect(ClientSearchOptions().isDefault)
         #expect(!ClientSearchOptions(sortBy: "name").isDefault)
         #expect(!ClientSearchOptions(direction: .desc).isDefault)
-        #expect(!ClientSearchOptions(filters: [ClientFilterChoice(ref: "a")]).isDefault)
+        #expect(!ClientSearchOptions(filters: [.value(ref: "a")]).isDefault)
+        #expect(!ClientSearchOptions(filters: [.filter(Self.pill("Clients VIP"))]).isDefault)
     }
 
     // MARK: - Sort
 
     @Test("Picking a sort takes its value and its stored direction, and leaves the filters")
     func pickTakesValueAndDirection() {
-        var options = ClientSearchOptions(filters: [ClientFilterChoice(ref: "a")])
+        var options = ClientSearchOptions(filters: [.value(ref: "a")])
 
         options.pick(Self.lastPurchase)
 
         #expect(options.sortBy == "lastPurchase")
         #expect(options.direction == .desc)
-        #expect(options.filters == [ClientFilterChoice(ref: "a")])
+        #expect(options.filters == [.value(ref: "a")])
     }
 
     @Test("The server's default sort is sent as picked too: which one is the default is the server's call")
@@ -126,7 +127,7 @@ struct ClientSearchOptionsTests {
         options.pick(since, of: created, parameters: ["since": "2026-07-01"])
         options.pick(since, of: created, parameters: ["since": "2026-08-15"])
 
-        #expect(options.filters == [ClientFilterChoice(ref: "created-since", parameters: ["since": "2026-08-15"])])
+        #expect(options.filters == [.value(ref: "created-since", parameters: ["since": "2026-08-15"])])
     }
 
     @Test("The day picked for a value is read back from its parameter; none for a value not picked or asking for none")
@@ -141,6 +142,60 @@ struct ClientSearchOptionsTests {
         let day = try #require(options.day(pickedFor: since))
         #expect(day.calendarDay() == "2026-07-01")
         #expect(options.day(pickedFor: created.values[0]) == nil)
+    }
+
+    // MARK: - Filter items
+
+    @Test("A sentence read again puts its pills in place of the last one's, and leaves the ticks")
+    func replaceFilterItemsKeepsTheTicks() {
+        let tier = Self.tier
+        let vip = Self.pill("Clients VIP")
+        let optOut = Self.pill("Sans opt-in email")
+        var options = ClientSearchOptions()
+        options.pick(tier.values[0], of: tier)
+        options.replaceFilterItems(with: [vip])
+
+        options.replaceFilterItems(with: [optOut])
+
+        #expect(options.filterItems == [optOut])
+        #expect(options.isPicked(tier.values[0]))
+    }
+
+    @Test("Removing a pill takes off that one only, found by its id: two pills may read alike")
+    func removeTakesOffThatPillOnly() {
+        let first = Self.pill("Clients VIP")
+        let twin = Self.pill("Clients VIP")
+        var options = ClientSearchOptions()
+        options.replaceFilterItems(with: [first, twin])
+
+        options.remove(first)
+
+        #expect(options.filterItems == [twin])
+    }
+
+    @Test("A pill is never taken for a value of the tenant's filters")
+    func pillIsNeverAPickedValue() {
+        let tier = Self.tier
+        var options = ClientSearchOptions()
+
+        options.replaceFilterItems(with: [Self.pill("VIC")])
+
+        #expect(!options.isPicked(tier.values[0]))
+        #expect(!options.isPicked(tier.values[1]))
+    }
+
+    @Test("Ticking a value of a single filter lets go of the one it had, never of a pill")
+    func singleKeepsThePills() {
+        let created = Self.created
+        let vip = Self.pill("Clients VIP")
+        var options = ClientSearchOptions()
+        options.pick(created.values[0], of: created)
+        options.replaceFilterItems(with: [vip])
+
+        options.pick(created.values[1], of: created)
+
+        #expect(options.filterItems == [vip])
+        #expect(options.filters.compactMap(\.ref) == ["created-last6Months"])
     }
 
     // MARK: - Helpers
@@ -177,5 +232,11 @@ struct ClientSearchOptionsTests {
                 parameters: [ClientFilterValue.Parameter(name: "since", typeRaw: "date")]
             ),
         ])
+    }
+
+    /// A pill as a sentence's reading gives it, a new one at each call; its
+    /// condition is never read here.
+    private static func pill(_ label: String) -> ClientFilterItem {
+        ClientFilterItem(label: label, condition: .object(["field": .string("client.segment")]))
     }
 }

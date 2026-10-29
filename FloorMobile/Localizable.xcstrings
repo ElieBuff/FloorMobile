@@ -296,6 +296,9 @@
     "Couldn't load this client" : {
 
     },
+    "Couldn't read the sentence. Try again." : {
+
+    },
     "Couldn't start dictation" : {
 
     },
@@ -458,6 +461,9 @@
     "Not now" : {
 
     },
+    "Not understood: %@" : {
+
+    },
     "Note" : {
 
     },
@@ -494,6 +500,12 @@
     "Profile" : {
 
     },
+    "Reading a sentence needs a connection" : {
+
+    },
+    "Reading the sentence" : {
+
+    },
     "Reason" : {
 
     },
@@ -501,6 +513,9 @@
 
     },
     "Reminder" : {
+
+    },
+    "Remove %@" : {
 
     },
     "Sales associate" : {
@@ -522,6 +537,9 @@
 
     },
     "Search the whole brand" : {
+
+    },
+    "Send" : {
 
     },
     "Show the month" : {

@@ -37,7 +37,10 @@ struct TaskCheckbox: View {
             mark
                 // 44 × 44 for the finger, 22 for the eye. The row trims its
                 // trailing padding by the same 11 points this frame adds on
-                // each side, so the ring stays exactly where it was drawn.
+                // each side, so the ring stays exactly where it was drawn. In
+                // the layout, not `tapTarget`'s negative padding: a task with
+                // no client takes its row's height from this frame, the
+                // reason's icon being 36pt.
                 .frame(width: 44, height: 44)
                 .contentShape(.rect)
         }
