@@ -48,10 +48,14 @@ struct CheckmarkRow<Label: View, Accessory: View>: View {
             }
             .font(.body)
             .frame(maxWidth: .infinity, minHeight: 36)
+            // The row's insets inside the button, not around it: with `.plain`,
+            // a list row's insets belong to the list, which does nothing with a
+            // tap there, so a tap near an edge of the row would pick nothing.
+            .padding(.cardRow)
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        .listRowInsets(.cardRow)
+        .listRowInsets(EdgeInsets())
         .accessibilityAddTraits(isChecked ? [.isButton, .isSelected] : .isButton)
     }
 }
