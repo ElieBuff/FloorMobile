@@ -43,12 +43,14 @@ provide (`TaskActions` documents why it does). Copying the closest precedent is 
 model the feature owns: that suffix is for extending a type defined elsewhere (`Date+NextHour`). A plain struct (a
 value, a summary, a wire type) keeps its computed properties in its own body.
 
-**Wire → model → view, no exception.** Server JSON is decoded into a wire type in `Data/Wire/`, converted by
+**Wire → model → view, one exception.** Server JSON is decoded into a wire type in `Data/Wire/`, converted by
 `init(wire:)`, and views see only the model. One `<Model>Wire.swift` per local model, an `enum` namespace holding
 `Response` and, if the app writes, `Request` — two types, never one shared `Codable`. A model built from another
 model's `Response` has no wire file: its `init(wire:)` lives in its own file, as for a shared fragment
 (`ClientItem.init(wire:)` reads `ClientWire.Response`). A search result that is not stored is converted to a value
-(`ClientItem`). A service returns models or values, never a page of wire types.
+(`ClientItem`). A service returns models or values, never a page of wire types. The exception: a value the app
+carries without ever reading it — a filter's condition from a sentence (`client/text-filters`), kept as `JSONValue`
+(`Core/Networking/JSONValue.swift`) until the search — stays as it came, in the model too (`ClientFilterItem.condition`).
 
 **Reuse.** Before anything new, inventory `DesignSystem/`, `Core/Extensions/`, `Core/Models/`,
 `Features/*/Views/Components/` and the models' extensions, and start from what the app already does.

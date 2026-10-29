@@ -1,0 +1,36 @@
+{
+    "filters": [
+        {
+            "label": "Clients VIP",
+            "filter": {
+                "field": "client.segment",
+                "op": "eq",
+                "value": "VIP"
+            }
+        },
+        {
+            "label": "Plus de 10 000 € dépensés en 2026",
+            "filter": {
+                "sum": "client.purchases",
+                "of": "purchase.totalAmountEur",
+                "where": {
+                    "field": "purchase.orderDate",
+                    "op": "between",
+                    "from": "2026-01-01",
+                    "to": "2026-12-31"
+                },
+                "op": "gt",
+                "value": 10000
+            }
+        },
+        {
+            "label": "Sans opt-in email",
+            "filter": {
+                "field": "client.optinEmail",
+                "op": "eq",
+                "value": false
+            }
+        }
+    ],
+    "notUnderstood": []
+}

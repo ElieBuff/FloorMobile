@@ -29,7 +29,8 @@ nonisolated struct APIClient: Sendable {
     /// an idle timeout, which every byte received starts again, taking
     /// precedence over the session's for that request. Short, because the
     /// screen has something else to show; to adjust on the round trips
-    /// measured in the stores.
+    /// measured in the stores. An endpoint's own `timeout` takes precedence
+    /// over it.
     private static let interactiveTimeout: TimeInterval = 3
 
     // The dates `makeDecoder` reads, with fractional seconds or without.
@@ -182,7 +183,11 @@ nonisolated struct APIClient: Sendable {
 
         var request = URLRequest(url: url)
         request.httpMethod = endpoint.method.rawValue
-        if endpoint.interactive {
+        // The delay only: an interactive call keeps its offline canceller
+        // (`execute`), whatever its delay.
+        if let timeout = endpoint.timeout {
+            request.timeoutInterval = timeout
+        } else if endpoint.interactive {
             request.timeoutInterval = Self.interactiveTimeout
         }
         if let body = endpoint.body {

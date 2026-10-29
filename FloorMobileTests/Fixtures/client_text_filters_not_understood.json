@@ -1,0 +1,15 @@
+{
+    "filters": [
+        {
+            "label": "Clients VIP",
+            "filter": {
+                "field": "client.segment",
+                "op": "eq",
+                "value": "VIP"
+            }
+        }
+    ],
+    "notUnderstood": [
+        "like K-Way"
+    ]
+}

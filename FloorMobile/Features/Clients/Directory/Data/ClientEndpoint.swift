@@ -69,6 +69,30 @@ nonisolated extension Endpoint {
         Endpoint(path: "client/count", query: scopeItems(query, in: scope, filters: filters), interactive: true)
     }
 
+    /// The filters a sentence the associate typed or dictated describes
+    /// (`ClientFilterItemsWire`), read by intelligence's client-query through
+    /// the BFF. Interactive — the associate waits on it, so it fails at once
+    /// without a connection — but with a wait of its own: an LLM takes its
+    /// time, and the server's waits are chained. Intelligence gives ai_engine
+    /// `AI_ENGINE_TIMEOUT_MS` (75 s, `client-query.steps.ts`), the BFF gives
+    /// intelligence `TIMEOUT_MS` (80 s, `client-text-filters.service.ts`) and
+    /// answers 502 past it. 90 s stays above both, so the app never cuts a
+    /// sentence the BFF is still reading: raise it with them.
+    ///
+    /// The body is a dictionary rather than a request type, as for
+    /// `updateTaskStatus`: one field, written in one place. A sentence outside
+    /// 1 to 500 characters once trimmed is the BFF's 400
+    /// (`clientTextFiltersRequestSchema`).
+    static func clientTextFilters(_ sentence: String) -> Endpoint {
+        Endpoint(
+            path: "client/text-filters",
+            method: .post,
+            body: ["text": sentence],
+            interactive: true,
+            timeout: 90
+        )
+    }
+
     /// Everything the server holds on one client of the brand: the profile
     /// page's source (`ClientProfileWire`). Interactive: the associate waits on
     /// it, so without a connection it fails at once and the page offers to try

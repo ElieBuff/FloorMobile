@@ -249,6 +249,25 @@ struct APIClientTests {
         #expect(timeouts.withLock { $0 } == [3, untouched])
     }
 
+    @Test("An endpoint's own timeout replaces the interactive one, which keeps its offline canceller")
+    func endpointTimeoutTakesPrecedence() async throws {
+        let timeouts = Mutex<[TimeInterval?]>([])
+        let handed = Mutex<[String]>([])
+        let client = Self.makeClient(session: MockURLProtocol.session(taskHandler: { request, task in
+            timeouts.withLock { $0.append(task?.originalRequest?.timeoutInterval) }
+            let delegate = task?.delegate.map { String(describing: type(of: $0)) } ?? "none"
+            handed.withLock { $0.append(delegate) }
+            return (Self.response(request, statusCode: 200), Data())
+        }))
+
+        try await client.send(Endpoint(path: "client/text-filters", method: .post, interactive: true, timeout: 90))
+        try await client.send(Endpoint(path: "client/count", timeout: 90))
+
+        #expect(timeouts.withLock { $0 } == [90, 90])
+        // The interactive call still fails at once without a connection; the ordinary one waits for it.
+        #expect(handed.withLock { $0 } == ["OfflineCanceller", "none"])
+    }
+
     @Test("The offline canceller cancels a task waiting for a connection")
     func offlineCancellerCancelsTheTask() {
         let session = URLSession(configuration: .ephemeral)

@@ -13,6 +13,9 @@ import Testing
 @MainActor
 struct ClientServiceTests {
 
+    /// The sentence the real answer in `client_text_filters.json` was given for.
+    private static let sentence = "VIP clients who spent over 10,000 this year, with no email opt-in"
+
     // MARK: - Sync
 
     @Test("A first sync pages through everything and keeps the last page's cursor")
@@ -321,6 +324,86 @@ struct ClientServiceTests {
             Issue.record("Expected AppError.server(400), got \(String(describing: error))")
             return
         }
+    }
+
+    // MARK: - Text filters
+
+    @Test("A sentence goes to client/text-filters as { text }, and the real answer gives its three filters in order")
+    func textFiltersSendsAndMaps() async throws {
+        let sent = Mutex<URLRequest?>(nil)
+        let api = Self.makeClient { request in
+            sent.withLock { $0 = request }
+            return (Self.response(request), try Fixture.data("client_text_filters"))
+        }
+
+        let answer = try await ClientService(modelContainer: try Self.inMemoryContainer())
+            .filterItems(from: Self.sentence, using: api)
+
+        #expect(answer.items.map(\.label) == ["Clients VIP", "Plus de 10 000 € dépensés en 2026", "Sans opt-in email"])
+        #expect(answer.notUnderstood.isEmpty)
+        let request = try #require(sent.withLock { $0 })
+        #expect(request.httpMethod == "POST")
+        #expect(request.url?.path.hasSuffix("client/text-filters") == true)
+        let body = try #require(request.bodyData)
+        #expect(try JSONDecoder().decode([String: String].self, from: body) == ["text": Self.sentence])
+    }
+
+    @Test("Each condition goes back as it came: encoded again, the JSON the server sent")
+    func textFiltersKeepConditionsWhole() async throws {
+        let fixture = try Fixture.data("client_text_filters")
+        let api = Self.makeClient { request in (Self.response(request), fixture) }
+
+        let answer = try await ClientService(modelContainer: try Self.inMemoryContainer())
+            .filterItems(from: Self.sentence, using: api)
+
+        let received = try #require(JSONSerialization.jsonObject(with: fixture) as? [String: Any])
+        let filters = try #require(received["filters"] as? [[String: Any]])
+        #expect(answer.items.count == filters.count)
+        for (item, filter) in zip(answer.items, filters) {
+            let encoded = try JSONEncoder().encode(item.condition)
+            #expect(try JSONSerialization.jsonObject(with: encoded) as? NSDictionary == filter["filter"] as? NSDictionary)
+        }
+    }
+
+    @Test("A sentence partly understood gives the filters it describes, and the words no filter covers")
+    func textFiltersKeepWhatIsNotUnderstood() async throws {
+        let api = Self.makeClient { request in
+            (Self.response(request), try Fixture.data("client_text_filters_not_understood"))
+        }
+
+        // The sentence this real answer was given for.
+        let answer = try await ClientService(modelContainer: try Self.inMemoryContainer())
+            .filterItems(from: "VIP clients who like K-Way", using: api)
+
+        #expect(answer.items.map(\.label) == ["Clients VIP"])
+        #expect(answer.notUnderstood == ["like K-Way"])
+    }
+
+    @Test("A failure of intelligence, whatever the sentence, fails with the BFF's 502")
+    func intelligenceFailureFails() async throws {
+        let api = Self.makeClient { request in
+            (Self.response(request, statusCode: 502), Data(#"{"error":"Failed to read the sentence"}"#.utf8))
+        }
+
+        let error = await #expect(throws: AppError.self) {
+            try await ClientService(modelContainer: try Self.inMemoryContainer())
+                .filterItems(from: Self.sentence, using: api)
+        }
+
+        guard case .server(statusCode: 502)? = error else {
+            Issue.record("Expected AppError.server(502), got \(String(describing: error))")
+            return
+        }
+    }
+
+    @Test("A sentence goes as a POST, interactive, with 90 s for the LLM to answer")
+    func textFiltersEndpoint() {
+        let endpoint = Endpoint.clientTextFilters(Self.sentence)
+
+        #expect(endpoint.path == "client/text-filters")
+        #expect(endpoint.method == .post)
+        #expect(endpoint.interactive)
+        #expect(endpoint.timeout == 90)
     }
 
     // MARK: - Brand search

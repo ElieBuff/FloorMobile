@@ -107,6 +107,18 @@ actor ClientService {
         return count.total
     }
 
+    /// The filters a sentence describes, as the server reads it — the sentence
+    /// of "Filter"'s field. Straight from the server, kept nowhere: the caller
+    /// shows the items, and sends back with the search the ones still there.
+    /// A failure — 502, intelligence failed or did not answer within the BFF's
+    /// 80 s, whatever the sentence; 400, a sentence out of bounds — is thrown
+    /// as `AppError.server(statusCode:)`, a network failure as
+    /// `AppError.network`. See `Endpoint.clientTextFilters`.
+    func filterItems(from sentence: String, using client: APIClient) async throws -> ClientFilterItems {
+        let wire: ClientFilterItemsWire.Response = try await client.send(.clientTextFilters(sentence))
+        return ClientFilterItems(wire: wire)
+    }
+
     /// One client's profile, everything the server holds on them.
     ///
     /// Straight from the server and not stored, like a search result: any

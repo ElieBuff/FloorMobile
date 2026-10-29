@@ -5,8 +5,8 @@
 
 import Foundation
 
-/// Describes an API endpoint: path, HTTP method, query parameters, body, and
-/// whether a person is waiting on it.
+/// Describes an API endpoint: path, HTTP method, query parameters, body,
+/// whether a person is waiting on it, and how long the server may stay silent.
 ///
 /// Separates the "what to call" from the "how to call it" (authentication,
 /// retries, decoding) — all endpoints flow through `APIClient.send(_:)`.
@@ -25,22 +25,30 @@ nonisolated struct Endpoint: Sendable {
     let body: (any Encodable & Sendable)?
     /// A call a person is waiting on, such as a search while they type: it
     /// fails at once without a connection instead of waiting for one, and
-    /// after a few seconds of silence from the server, so the screen can fall
-    /// back on what the device holds. Every other call waits, as the session
-    /// is set up to.
+    /// after a few seconds of silence from the server — unless `timeout` sets
+    /// its own —, so the screen can fall back on what the device holds. Every
+    /// other call waits, as the session is set up to.
     let interactive: Bool
+    /// How long the server may stay silent before the call fails, for a call
+    /// that neither the session's wait nor an interactive call's suits — a
+    /// sentence an LLM reads (`clientTextFilters`). `nil` keeps those. Never
+    /// exactly 60 s: `URLSession` takes a request at 60 s for one without a
+    /// timeout, and gives it the session's.
+    let timeout: TimeInterval?
 
     init(
         path: String,
         method: Method = .get,
         query: [URLQueryItem] = [],
         body: (any Encodable & Sendable)? = nil,
-        interactive: Bool = false
+        interactive: Bool = false,
+        timeout: TimeInterval? = nil
     ) {
         self.path = path
         self.method = method
         self.query = query
         self.body = body
         self.interactive = interactive
+        self.timeout = timeout
     }
 }
