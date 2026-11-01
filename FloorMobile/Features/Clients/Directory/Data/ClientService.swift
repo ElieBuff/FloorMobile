@@ -92,11 +92,11 @@ actor ClientService {
     }
 
     /// How many clients `searchClients` would list for the same text, scope
-    /// and filters — "My Clients"' "Apply (n)". Straight from the server, like
-    /// a search. A refusal (409 `filters_changed`, 503 `search_timeout`) is
-    /// thrown as `AppError.server(statusCode:)`, its body dropped, and a
-    /// network failure as `AppError.network`, for the caller to show. See
-    /// `Endpoint.countClients`.
+    /// and filters — the total "Filter" shows under its sentence. Straight
+    /// from the server, like a search. A refusal (409 `filters_changed`, 503
+    /// `search_timeout`) is thrown as `AppError.server(statusCode:)`, its
+    /// body dropped, and a network failure as `AppError.network`, for the
+    /// caller to show. See `Endpoint.countClients`.
     func countClients(
         _ query: String?,
         in scope: ClientSearchScope,

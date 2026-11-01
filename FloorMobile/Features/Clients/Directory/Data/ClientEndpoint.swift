@@ -52,15 +52,15 @@ nonisolated extension Endpoint {
     }
 
     /// How many clients `searchClients` would list, page after page, for the
-    /// same text, scope and filters (`scopeItems`): the total of "My Clients"'
-    /// filters sheet, its "Apply (n)". Neither a sort nor a cursor: neither
-    /// changes a total.
+    /// same text, scope and filters (`scopeItems`): the total "My Clients"'
+    /// filters sheet shows under its sentence. Neither a sort nor a cursor:
+    /// neither changes a total.
     ///
     /// Asked once the associate pauses in their ticks, for the last state only:
     /// a request given up on runs on, server side, until its time limit. A 503
-    /// (`search_timeout`) means a total too long to count — "Apply" without a
-    /// number. Interactive in both scopes: the associate waits on it, and a
-    /// count has no list on the device to fall back on.
+    /// (`search_timeout`) means a total too long to count: none is shown.
+    /// Interactive in both scopes: the associate waits on it, and a count has
+    /// no list on the device to fall back on.
     static func countClients(
         _ query: String?,
         in scope: ClientSearchScope,

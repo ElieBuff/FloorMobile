@@ -7,6 +7,28 @@
     "%@ before" : {
 
     },
+    "%lld clients" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld client"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld clients"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld task completed" : {
       "localizations" : {
         "en" : {
@@ -50,9 +72,6 @@
     "Apply" : {
 
     },
-    "Apply (%@)" : {
-
-    },
     "Appointment not booked" : {
 
     },
@@ -72,6 +91,9 @@
 
     },
     "Birthday" : {
+
+    },
+    "Calculating…" : {
 
     },
     "Call" : {
@@ -300,9 +322,6 @@
 
     },
     "Couldn't start dictation" : {
-
-    },
-    "Counting clients" : {
 
     },
     "Created" : {

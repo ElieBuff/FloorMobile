@@ -17,9 +17,9 @@ import SwiftUI
 /// purchase with their four values. `MyClientsList`'s previews keep their own
 /// store: they insert clients, which a shared one would show to every preview.
 /// The previews that apply it also get the session and the services "Filter"
-/// reads for its total — the previews' own, which no server answers: "Apply"
-/// goes without a number. Not under `#if DEBUG`: a `#Preview` compiles in
-/// Release builds too.
+/// reads for its total — the previews' own, which no server answers: no
+/// total shows. Not under `#if DEBUG`: a `#Preview` compiles in Release
+/// builds too.
 struct SearchOptionsSampleData: PreviewModifier {
     static func makeSharedContext() throws -> ModelContainer {
         let container = try ModelContainer(

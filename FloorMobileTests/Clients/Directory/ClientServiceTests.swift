@@ -295,7 +295,7 @@ struct ClientServiceTests {
         #expect(Endpoint.countClients("aliette", in: .brand).interactive)
     }
 
-    @Test("A count past the server's time limit fails with its 503: what leaves \"Apply\" without a number")
+    @Test("A count past the server's time limit fails with its 503: what leaves \"Filter\" without a total")
     func countPastTheLimitFails() async throws {
         let api = Self.makeClient { request in
             (Self.response(request, statusCode: 503), Data(#"{"error":"search_timeout"}"#.utf8))

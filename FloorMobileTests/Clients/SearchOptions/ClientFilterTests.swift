@@ -51,6 +51,22 @@ struct ClientFilterTests {
         #expect(String(localized: filter.title) == Self.translation(of: "client.filter.lastPurchase"))
     }
 
+    // MARK: - Lookup
+
+    @Test("The filter offering a ref is found among the tenant's; none for an unknown ref")
+    func offeringFindsTheFilter() {
+        let tier = ClientFilter(id: "tier", titleKey: "k", selectionRaw: "MULTIPLE", rank: 0, values: [
+            ClientFilterValue(ref: "tier-VIC", labelKey: nil, label: "VIC", parameters: []),
+        ])
+        let created = ClientFilter(id: "created", titleKey: "k", selectionRaw: "SINGLE", rank: 1, values: [
+            ClientFilterValue(ref: "created-since", labelKey: nil, label: "Since", parameters: []),
+        ])
+
+        #expect(ClientFilter.offering("created-since", in: [tier, created])?.id == "created")
+        #expect(ClientFilter.offering("tier-VIC", in: [tier, created])?.id == "tier")
+        #expect(ClientFilter.offering("gone", in: [tier, created]) == nil)
+    }
+
     // MARK: - Typed views
 
     @Test("SINGLE and MULTIPLE read as their selection; a value this app does not know, as none", arguments: zip(

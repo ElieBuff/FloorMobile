@@ -12,8 +12,9 @@ import SwiftData
 /// What a filter offers, not what an associate picked: the server owns the
 /// list, its order and each value's meaning. "Filter"
 /// (`ClientFilterPickerView`) lists them in `rank` order, each with its
-/// values; a value picked goes into `ClientSearchOptions`, which sends its
-/// `ref` back in `client/search`'s `filters`. Tied to the tenant like
+/// values; a value picked goes into the sheet's draft (`ClientFilterDraft`),
+/// then, applied, into `ClientSearchOptions`, which sends its `ref` back in
+/// `client/search`'s `filters`. Tied to the tenant like
 /// everything stored: `LocalStore.erase` wipes it.
 ///
 /// Not `Syncable`, like `EnumValue`: the block lands whole, so
@@ -25,7 +26,7 @@ nonisolated final class ClientFilter {
     var titleKey: String
     /// `"SINGLE"` or `"MULTIPLE"` (the Tier): how many of its values the
     /// associate may pick — the app's rule (`selection`, applied by
-    /// `ClientSearchOptions.pick`), never the server's, which ORs a filter's
+    /// `ClientFilterDraft.pick`), never the server's, which ORs a filter's
     /// picked values either way. Kept raw, like `statusRaw` elsewhere.
     var selectionRaw: String
     /// The position the server listed it at: the order the screen shows.
@@ -67,6 +68,15 @@ nonisolated extension ClientFilter: ContentComparable {
     /// that names a filter reads the same.
     var title: LocalizedStringResource {
         LocalizedStringResource(stringLiteral: titleKey)
+    }
+
+    // MARK: - Lookup
+
+    /// The filter among `filters` that offers the value `ref`, or `nil`. The
+    /// first one found is the one: a ref is unique across the tenant's
+    /// filters.
+    static func offering(_ ref: String, in filters: [ClientFilter]) -> ClientFilter? {
+        filters.first { $0.values.contains { $0.ref == ref } }
     }
 
     // MARK: - Sync
