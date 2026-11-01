@@ -134,11 +134,11 @@ In this order:
    IMPORTANT: Xcode Cloud reports them.
 6. **Apple's practices and the project's rules.** Apple's current guidance for what the change touches (SwiftUI,
    SwiftData, Swift Testing, Swift concurrency; WebFetch the documentation page when you cite it); `CLAUDE.md`;
-   `floor-dev`; `swiftui-testing`; the house rules; the screen (localized strings FR and EN, colours and tokens as the
-   app has them, Dynamic Type, accessibility labels, empty / loading / error states).
+   `floor-dev`; `swiftui-testing`; the house rules; the screen (localized strings, English only as the house rules
+   say, colours and tokens as the app has them, Dynamic Type, accessibility labels, empty / loading / error states).
 7. **Release.** How existing installs (TestFlight Staging included) open the store after this change; a BFF change
-   the app needs, and whether it must ship first; strings complete in `Localizable.xcstrings` for both languages;
-   nothing specific to one `.xcconfig` environment hard-coded in the code.
+   the app needs, and whether it must ship first; strings complete in `Localizable.xcstrings`; nothing specific to
+   one `.xcconfig` environment hard-coded in the code.
 
 ## Severity
 

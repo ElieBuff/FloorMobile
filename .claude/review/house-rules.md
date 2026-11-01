@@ -101,7 +101,8 @@ is named (a list mirrored in a test, a rule mirrored from the BFF). A comment th
 comment that paraphrases the code, no history ("used to…"). In English, like the code and the names.
 
 **The screen.**
-- Every user-facing string in `Localizable.xcstrings`, FR and EN; never hard-coded.
+- Every user-facing string in `Localizable.xcstrings`, never hard-coded. English only until the app ships French
+  (`knownRegions` holds `en` alone): one French string would switch a French device's app to French for it alone.
 - Colours from the asset catalog's generated symbols (`Color(.Base.ink)`, `Color(.OnSurface.textSecondary)`…), fonts
   as SwiftUI text styles (Dynamic Type), and the `DesignSystem/Tokens/` values (`AppRadius`, `AppShadow`,
   `AppBorder`, `AppSpacing.cardInset`). A number used once stays a literal in the view: `AppSpacing`'s own rule.
