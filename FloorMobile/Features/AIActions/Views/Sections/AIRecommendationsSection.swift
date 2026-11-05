@@ -70,7 +70,7 @@ struct AIRecommendationsSection: View {
             id: "0\(i)", agentKey: "contact-radar", type: "ANNIVERSARY_TRAVEL_WISHES",
             title: "Recommendation \(i)", reason: "A short reason explaining why this action matters.",
             statusRaw: "PENDING", createdAt: now.addingTimeInterval(Double(-i)),
-            client: ClientSummary(firstName: "Elie", lastName: "Buff")
+            client: ClientSnapshot(firstName: "Elie", lastName: "Buff")
         ))
     }
     return AIRecommendationsSection()

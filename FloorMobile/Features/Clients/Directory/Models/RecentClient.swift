@@ -30,9 +30,9 @@ nonisolated final class RecentClient: Syncable {
     /// When the associate last opened this client's profile, by the server's
     /// clock.
     var lastViewedAt: Date
-    var client: ClientSummary
+    var client: ClientSnapshot
 
-    init(id: String, lastViewedAt: Date, client: ClientSummary) {
+    init(id: String, lastViewedAt: Date, client: ClientSnapshot) {
         self.id = id
         self.lastViewedAt = lastViewedAt
         self.client = client

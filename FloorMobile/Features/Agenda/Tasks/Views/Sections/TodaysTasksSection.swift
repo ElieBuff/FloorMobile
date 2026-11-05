@@ -53,7 +53,7 @@ struct TodaysTasksSection: View {
             id: "0\(i)", statusRaw: "TO_DO", reasonRaw: "FOLLOW_UP", title: "Task \(i)",
             startDate: Date().addingTimeInterval(Double(i) * 3600),
             createdAt: .now, updatedAt: .now,
-            client: ClientSummary(firstName: "Elie", lastName: "Buff")
+            client: ClientSnapshot(firstName: "Elie", lastName: "Buff")
         ))
     }
     return TodaysTasksSection()

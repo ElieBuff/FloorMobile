@@ -1,5 +1,5 @@
 //
-//  StoreWire.swift
+//  StoreSnapshotWire.swift
 //  FloorMobile
 //
 
@@ -9,8 +9,9 @@ import Foundation
 /// only. A plain struct rather than a `Response`/`Request` pair: no endpoint
 /// serves it on its own. Reused by any response that embeds a store in this
 /// exact shape; an endpoint serving a richer store object gets its own nested
-/// type instead of growing this one.
-nonisolated struct StoreWire: Decodable {
+/// type instead of growing this one. Mapped to `StoreSnapshot` by
+/// `init(wire:)`.
+nonisolated struct StoreSnapshotWire: Decodable {
     var id: String?
     var name: String?
     var storeCode: String?

@@ -27,9 +27,9 @@ nonisolated enum EventWire {
         var reminderDate: Date?
         var createdAt: Date
         var updatedAt: Date
-        var client: ClientSummaryWire?
-        var store: StoreWire?
-        var salesAssociate: SalesAssociateWire?
+        var client: ClientSnapshotWire?
+        var store: StoreSnapshotWire?
+        var salesAssociate: SalesAssociateSnapshotWire?
     }
 
     /// What the app sends to book or replace an appointment. Its own type rather
@@ -89,9 +89,9 @@ nonisolated extension AgendaEvent {
             reminderDate: wire.reminderDate,
             createdAt: wire.createdAt,
             updatedAt: wire.updatedAt,
-            client: wire.client.map(ClientSummary.init(wire:)),
-            store: wire.store.map(StoreSummary.init(wire:)),
-            salesAssociate: wire.salesAssociate.map(SalesAssociateSummary.init(wire:))
+            client: wire.client.map(ClientSnapshot.init(wire:)),
+            store: wire.store.map(StoreSnapshot.init(wire:)),
+            salesAssociate: wire.salesAssociate.map(SalesAssociateSnapshot.init(wire:))
         )
     }
 }

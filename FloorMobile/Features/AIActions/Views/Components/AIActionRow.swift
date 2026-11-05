@@ -205,7 +205,7 @@ extension AIAction {
             reason: "The client asked a question three days ago and has had no reply yet.",
             statusRaw: "PENDING",
             createdAt: .now,
-            client: ClientSummary(firstName: "Inès", lastName: "Haddad"),
+            client: ClientSnapshot(firstName: "Inès", lastName: "Haddad"),
             categoryLabel: "Awaiting your reply"
         )
     }
@@ -219,7 +219,7 @@ extension AIAction {
             reason: "The item she tried on is back in stock in her size.",
             statusRaw: "PENDING",
             createdAt: .now,
-            client: ClientSummary(firstName: "Salomé", lastName: "Kaliny", segment: "Gold"),
+            client: ClientSnapshot(firstName: "Salomé", lastName: "Kaliny", segment: "Gold"),
             categoryLabel: "Back in stock",
             productName: "Beaded cream dress",
             productSize: "38",

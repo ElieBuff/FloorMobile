@@ -29,10 +29,11 @@ provide (`TaskActions` documents why it does). Copying the closest precedent is 
   `Models/Enums/` and `Models/Drafts/` past half a dozen files); `Views/` the views (`Components/`, `Sections/`,
   `Details/`, `Pickers/`). Two entities with distinct vocabularies in one feature get a sub-folder each, as
   `Agenda/{Events,Tasks}` does — or the second one alone, beside the first at the feature's root, as
-  `Clients/SearchOptions/` does for the sorts and filters of "My Clients" — never one folder per screen. Tests
+  `Clients/SearchOptions/` does for the sorts and filters of "My Clients", and `Clients/Profile/` for a client's
+  profile — never one folder per screen. Tests
   follow the same tree in `FloorMobileTests/`.
 - Shared foundations go in `Core/`: `Networking/` (with `Networking/Wire/` for wire fragments several responses
-  embed), `Models/` (shared value snapshots: `ClientSummary`, `StoreSummary`…), `Extensions/`, `Auth/`,
+  embed), `Models/` (shared value snapshots: `ClientSnapshot`, `StoreSnapshot`…), `Extensions/`, `Auth/`,
   `Persistence/`, `Enums/`, `Sync/`. Components that speak no feature's vocabulary go in `DesignSystem/<Component>/`,
   one folder per component named after it; the only family folders are `Tokens/`, `Fields/` and `Motion/`.
 - A rule that judges one object, or chooses among objects of the same type, lives in that model's
@@ -125,7 +126,7 @@ such cost. In both cases, the evidence is the existing code or the `floor-dev` r
 - **The store's shape and existing installs.** The container is built from `FloorSchemaV1` and a migration plan with
   no stage, and a container that fails to open ends in `fatalError` (`FloorMobileApp.swift`): no wipe-and-retry. Any
   change to the on-disk shape — a `@Model` stored property (added, removed, renamed, retyped, made unique), the
-  `FloorSchemaV1.models` list, the fields of a composite snapshot stored in a model (`ClientSummary`…), a `StoredKey`
+  `FloorSchemaV1.models` list, the fields of a composite snapshot stored in a model (`ClientSnapshot`…), a `StoredKey`
   raw value — must say how an existing install (TestFlight Staging included) opens the new store: a change SwiftData
   migrates on its own, or a new `VersionedSchema` with a migration stage, or an explicit wipe. Silence is a finding.
 - **Secrets.** No token, password or auth response body in code or logs. `Logger` with `privacy: .private` on any

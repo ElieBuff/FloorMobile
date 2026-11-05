@@ -21,12 +21,11 @@ struct ClientFilterEditorTests {
     func countShowsTheTotal() async throws {
         let world = try World { _ in (200, Data(#"{"total":664}"#.utf8)) }
         let editor = ClientFilterEditor(filters: [.value(ref: "a")], debounce: .zero)
-        #expect(editor.isCounting)
+        #expect(editor.total.isLoading)
 
         await editor.count(in: .mine, session: world.session, services: world.services)
 
-        #expect(!editor.isCounting)
-        #expect(editor.total == 664)
+        #expect(editor.total.value == 664)
     }
 
     @Test("A count that fails takes the last total away")
@@ -38,8 +37,8 @@ struct ClientFilterEditorTests {
 
         await editor.count(in: .mine, session: pastTheLimit.session, services: pastTheLimit.services)
 
-        #expect(!editor.isCounting)
-        #expect(editor.total == nil)
+        #expect(editor.total.error != nil)
+        #expect(editor.total.value == nil)
     }
 
     // MARK: - Sentence

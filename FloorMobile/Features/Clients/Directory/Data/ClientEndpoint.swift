@@ -75,7 +75,7 @@ nonisolated extension Endpoint {
     /// without a connection — but with a wait of its own: an LLM takes its
     /// time, and the server's waits are chained. Intelligence gives ai_engine
     /// `AI_ENGINE_TIMEOUT_MS` (75 s, `client-query.steps.ts`), the BFF gives
-    /// intelligence `TIMEOUT_MS` (80 s, `client-text-filters.service.ts`) and
+    /// intelligence `TEXT_FILTERS_TIMEOUT_MS` (80 s, `intelligence.service.ts`) and
     /// answers 502 past it. 90 s stays above both, so the app never cuts a
     /// sentence the BFF is still reading: raise it with them.
     ///
@@ -93,12 +93,32 @@ nonisolated extension Endpoint {
         )
     }
 
-    /// Everything the server holds on one client of the brand: the profile
-    /// page's source (`ClientProfileWire`). Interactive: the associate waits on
-    /// it, so without a connection it fails at once and the page offers to try
-    /// again.
-    static func clientProfile(id: String) -> Endpoint {
+    /// Who one client of the brand is (`ClientDetailsWire`): their contacts
+    /// and consents, language, associate, store and main address — bounded,
+    /// their purchases and messages are `clientTimeline`'s. One of the three
+    /// parts of their profile (`ClientProfile`). Interactive: the associate
+    /// waits on it, so without a connection it fails at once and the page
+    /// offers to try again.
+    static func clientDetails(id: String) -> Endpoint {
         Endpoint(path: "client/\(id)", interactive: true)
+    }
+
+    /// One client's AI summary (`ClientSummaryWire`): the stored one while it
+    /// is fresh, at once, else a new one, computed now. Interactive, but with
+    /// a wait of its own: the BFF gives a new summary `SUMMARY_TIMEOUT_MS`
+    /// (40 s, `intelligence.service.ts`) and answers 502 past it. 50 s stays
+    /// above, so the app never cuts a summary the BFF is still computing —
+    /// one it gives up on is finished and stored server-side anyway: raise it
+    /// with them.
+    static func clientSummary(id: String) -> Endpoint {
+        Endpoint(path: "client/\(id)/summary", interactive: true, timeout: 50)
+    }
+
+    /// One client's timeline (`ClientTimelineWire`): what is planned with
+    /// them and what happened, every type at once — the app picks. Interactive:
+    /// the associate waits on it.
+    static func clientTimeline(id: String) -> Endpoint {
+        Endpoint(path: "client/\(id)/timeline", interactive: true)
     }
 
     /// Records that the connected associate opened this client's profile: one

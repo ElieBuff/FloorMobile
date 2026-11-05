@@ -43,8 +43,8 @@ nonisolated final class AIAction: Syncable {
     var confidence: Double?
     /// The client and sales associate this action concerns, as embedded
     /// display snapshots.
-    var client: ClientSummary?
-    var salesAssociate: SalesAssociateSummary?
+    var client: ClientSnapshot?
+    var salesAssociate: SalesAssociateSnapshot?
     /// The uppercase tag shown on the Home card ("BACK IN STOCK", "AWAITING
     /// YOUR REPLY"). Falls back to `type` in the view when the server
     /// hasn't started sending it.
@@ -72,8 +72,8 @@ nonisolated final class AIAction: Syncable {
         rejectedAt: Date? = nil,
         rejectReason: String? = nil,
         confidence: Double? = nil,
-        client: ClientSummary? = nil,
-        salesAssociate: SalesAssociateSummary? = nil,
+        client: ClientSnapshot? = nil,
+        salesAssociate: SalesAssociateSnapshot? = nil,
         categoryLabel: String? = nil,
         productName: String? = nil,
         productSize: String? = nil,

@@ -7,9 +7,10 @@ import Foundation
 import SwiftData
 
 /// The Clients feature's data service: keeps the connected associate's store
-/// clients and their recent clients in SwiftData, and asks for a client's
-/// profile without keeping it. A `@ModelActor` so the import runs off the main
-/// actor on a private, actor-owned context.
+/// clients and their recent clients in SwiftData, and asks for the three parts
+/// of a client's profile — their details, their AI summary, their timeline —
+/// without keeping them. A `@ModelActor` so the import runs off the main actor
+/// on a private, actor-owned context.
 ///
 /// The store's clients are not refreshed in full like the agenda's: a store
 /// holds thousands of them, so they are loaded in full once, then only what
@@ -119,14 +120,35 @@ actor ClientService {
         return ClientFilterItems(wire: wire)
     }
 
-    /// One client's profile, everything the server holds on them.
+    /// Who one client is: the first part of their profile (`ClientProfile`),
+    /// bounded — their purchases and messages are `timeline(id:using:)`'s.
     ///
     /// Straight from the server and not stored, like a search result: any
     /// client of the brand can be opened, while the device keeps only its
-    /// store's.
-    func profile(id: String, using client: APIClient) async throws -> ClientProfile {
-        let wire: ClientProfileWire.Response = try await client.send(.clientProfile(id: id))
-        return ClientProfile(wire: wire)
+    /// store's. So are the two other parts. A client the tenant does not have
+    /// is thrown as `AppError.server(statusCode: 404)`, a network failure as
+    /// `AppError.network`. See `Endpoint.clientDetails`.
+    func details(id: String, using client: APIClient) async throws -> ClientDetails {
+        let wire: ClientDetailsWire.Response = try await client.send(.clientDetails(id: id))
+        return ClientDetails(wire: wire)
+    }
+
+    /// One client's AI summary, as the server has it or computes it now — a
+    /// few seconds then, 40 s at most. A summary that could not be computed is
+    /// thrown as `AppError.server(statusCode: 502)`, an unknown client as a
+    /// 404, a network failure as `AppError.network`. See
+    /// `Endpoint.clientSummary`.
+    func summary(id: String, using client: APIClient) async throws -> ClientSummary {
+        let wire: ClientSummaryWire.Response = try await client.send(.clientSummary(id: id))
+        return ClientSummary(wire: wire)
+    }
+
+    /// One client's timeline: what is planned with them, then what happened.
+    /// An unknown client is thrown as `AppError.server(statusCode: 404)`, a
+    /// network failure as `AppError.network`. See `Endpoint.clientTimeline`.
+    func timeline(id: String, using client: APIClient) async throws -> ClientTimeline {
+        let wire: ClientTimelineWire.Response = try await client.send(.clientTimeline(id: id))
+        return ClientTimeline(wire: wire)
     }
 
     /// Asks for the associate's recent clients and keeps them, at launch.

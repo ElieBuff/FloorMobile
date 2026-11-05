@@ -428,6 +428,51 @@ struct ClientServiceTests {
         #expect(endpoint.timeout == 90)
     }
 
+    // MARK: - Profile parts
+
+    @Test("A client's details, AI summary and timeline each have their path, interactive")
+    func profilePartEndpoints() {
+        let details = Endpoint.clientDetails(id: "c1")
+        let summary = Endpoint.clientSummary(id: "c1")
+        let timeline = Endpoint.clientTimeline(id: "c1")
+
+        #expect(details.path == "client/c1")
+        #expect(summary.path == "client/c1/summary")
+        #expect(timeline.path == "client/c1/timeline")
+        #expect(details.interactive && summary.interactive && timeline.interactive)
+    }
+
+    @Test("The AI summary waits 50 s, above the BFF's 40 s; the two other parts keep the interactive wait")
+    func summaryWaitsForTheAI() {
+        #expect(Endpoint.clientSummary(id: "c1").timeout == 50)
+        #expect(Endpoint.clientDetails(id: "c1").timeout == nil)
+        #expect(Endpoint.clientTimeline(id: "c1").timeout == nil)
+    }
+
+    @Test(
+        "A client the tenant does not have fails each part with the BFF's 404",
+        arguments: ["details", "summary", "timeline"]
+    )
+    func unknownClientFails(part: String) async throws {
+        let api = Self.makeClient { request in
+            (Self.response(request, statusCode: 404), Data(#"{"error":"Client not found"}"#.utf8))
+        }
+        let service = ClientService(modelContainer: try Self.inMemoryContainer())
+
+        let error = await #expect(throws: AppError.self) {
+            switch part {
+            case "details": _ = try await service.details(id: "gone", using: api)
+            case "summary": _ = try await service.summary(id: "gone", using: api)
+            default: _ = try await service.timeline(id: "gone", using: api)
+            }
+        }
+
+        guard case .server(statusCode: 404)? = error else {
+            Issue.record("Expected AppError.server(404), got \(String(describing: error))")
+            return
+        }
+    }
+
     // MARK: - Brand search
 
     @Test("A brand search sends the query and cursor, and hands back clients and where to go on")

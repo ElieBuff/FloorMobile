@@ -46,7 +46,7 @@ struct LocalStoreTests {
         context.insert(ClientFilter(id: "f", titleKey: "client.filter.f", selectionRaw: "SINGLE", rank: 0, values: []))
         context.insert(ClientSort(value: "name", labelKey: "client.sort.name", directionRaw: "asc", isDefault: true, rank: 0))
         context.insert(EnumValue(entityName: "task", field: "reason", value: "CALL", rank: 0))
-        context.insert(RecentClient(id: "c", lastViewedAt: epoch, client: ClientSummary(id: "c")))
+        context.insert(RecentClient(id: "c", lastViewedAt: epoch, client: ClientSnapshot(id: "c")))
         try context.save()
         return context
     }

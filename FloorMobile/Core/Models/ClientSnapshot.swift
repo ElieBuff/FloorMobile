@@ -1,17 +1,18 @@
 //
-//  ClientSummary.swift
+//  ClientSnapshot.swift
 //  FloorMobile
 //
 
 import Foundation
 
-/// A client embedded in a `@Model` for display: a value snapshot stored as a
-/// SwiftData composite attribute (hence `Codable` — for the store, not the
-/// network: it comes off the wire as a `ClientSummaryWire`). Richer than
-/// `SalesAssociateSummary` (loyalty segment, external id, spend metrics). Its
+/// A client embedded in a `@Model` for display: a few of their fields, copied
+/// as they were at the last sync — they do not follow the client — and stored
+/// as a SwiftData composite attribute (hence `Codable` — for the store, not
+/// the network: it comes off the wire as a `ClientSnapshotWire`). Richer than
+/// `SalesAssociateSnapshot` (loyalty segment, external id, spend metrics). Its
 /// members can't be used in a `@Query` predicate — hoist a field to the model's
 /// top level to filter or sort on it.
-nonisolated struct ClientSummary: Codable, Sendable, Equatable {
+nonisolated struct ClientSnapshot: Codable, Sendable, Equatable {
     var id: String?
     var externalId: String?
     var firstName: String?
@@ -45,7 +46,7 @@ nonisolated struct ClientSummary: Codable, Sendable, Equatable {
         self.metrics = metrics
     }
 
-    init(wire: ClientSummaryWire) {
+    init(wire: ClientSnapshotWire) {
         self.init(
             id: wire.id,
             externalId: wire.externalId,

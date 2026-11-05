@@ -75,9 +75,9 @@ struct ClientItemTests {
         let client = Client(
             id: "1", externalId: "seed-client-1", firstName: "Alice", lastName: "Martinez",
             primaryEmail: "alice.martinez@example.com", primaryPhone: "+33 6 12 34 56 78", segment: "VIC",
-            storeCode: "90917634296", store: StoreSummary(name: "Shop location", storeCode: "90917634296"),
+            storeCode: "90917634296", store: StoreSnapshot(name: "Shop location", storeCode: "90917634296"),
             salesAssociateExternalId: "378970372512460673",
-            salesAssociate: SalesAssociateSummary(firstName: "Elie", lastName: "Buff")
+            salesAssociate: SalesAssociateSnapshot(firstName: "Elie", lastName: "Buff")
         )
         container.mainContext.insert(client)
 

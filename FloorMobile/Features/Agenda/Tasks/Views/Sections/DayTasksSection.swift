@@ -200,7 +200,7 @@ struct DayTasksSection: View {
             id: "0\(i)", statusRaw: status, reasonRaw: "FOLLOW_UP", title: "Task \(i + 1)",
             startDate: Date().addingTimeInterval(Double(i + 1) * 3600),
             createdAt: .now, updatedAt: .now,
-            client: ClientSummary(firstName: "Elie", lastName: "Buff")
+            client: ClientSnapshot(firstName: "Elie", lastName: "Buff")
         ))
     }
     return DayTasksSection(date: .now)

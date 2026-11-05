@@ -102,8 +102,8 @@ struct NextAppointmentCard: View {
             title: "Essayage collection automne",
             startDate: Date(timeIntervalSince1970: 1_788_377_164).addingTimeInterval(25 * 60),
             duration: 45, createdAt: .now, updatedAt: .now,
-            client: ClientSummary(firstName: "Marie", lastName: "Dupont"),
-            store: StoreSummary(storeCode: "VIC")
+            client: ClientSnapshot(firstName: "Marie", lastName: "Dupont"),
+            store: StoreSnapshot(storeCode: "VIC")
         ),
         now: Date(timeIntervalSince1970: 1_788_377_164)
     )
@@ -117,7 +117,7 @@ struct NextAppointmentCard: View {
             id: "2", statusRaw: "PLANNED", reasonRaw: "VIDEO_CALL",
             title: "Point collection",
             startDate: .now, duration: 30, createdAt: .now, updatedAt: .now,
-            client: ClientSummary(firstName: "Raphaël", lastName: "Van den Berg")
+            client: ClientSnapshot(firstName: "Raphaël", lastName: "Van den Berg")
         )
     )
     .padding()

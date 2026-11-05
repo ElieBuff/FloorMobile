@@ -17,9 +17,9 @@ import Foundation
 ///
 /// Not the sheet's own `@State`: there, the calls and the choice of failure
 /// message would sit in the view, untested, and the bar would take the
-/// draft's binding, its total and whether it is counting. Not a `Service`
-/// either: a service is built once and shared by the whole app, while this
-/// state belongs to one open sheet.
+/// draft's binding and its total. Not a `Service` either: a service is built
+/// once and shared by the whole app, while this state belongs to one open
+/// sheet.
 ///
 /// The sheet's `.task(id:)` runs each request: a newer tick or sentence, or
 /// the sheet closing, cancels the one running, and what comes back for it is
@@ -28,13 +28,9 @@ import Foundation
 final class ClientFilterEditor {
     /// The picks being made, and the sentence.
     var draft: ClientFilterDraft
-    /// The draft's total once counted; `nil` before the first, and after a
-    /// count that failed.
-    private(set) var total: Int?
-    /// Whether the draft's total is on its way, from a tick to its answer:
-    /// `total` is then an older draft's, and not shown. On from the start,
-    /// for the first count.
-    private(set) var isCounting = true
+    /// The draft's total: on its way from a tick to its answer — and from the
+    /// start, for the first count —, then counted, or failed.
+    private(set) var total: Loadable<Int> = .loading
 
     /// How long the ticks must pause before the total is asked for: the
     /// search's own pause (`PagedSearchList`). Injectable so a test need not
@@ -59,19 +55,18 @@ final class ClientFilterEditor {
     /// `filters_changed`, the tenant's filters changed since the app's launch,
     /// is deliberately not handled: too rare to be worth the code.
     func count(in scope: ClientSearchScope, session: AppSession, services: AppServices) async {
-        isCounting = true
+        total = .loading
         do {
             try await Task.sleep(for: debounce)
             let count = try await services.clients.countClients(
                 nil, in: scope, filters: draft.filters, using: session.api
             )
             guard !Task.isCancelled else { return }
-            total = count
+            total = .loaded(count)
         } catch {
             guard !Task.isCancelled else { return }
-            total = nil
+            total = .failed(error)
         }
-        isCounting = false
     }
 
     /// Fetches the filters of the sentence sent, for up to 80 s, for the

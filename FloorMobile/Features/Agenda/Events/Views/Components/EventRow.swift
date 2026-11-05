@@ -159,7 +159,7 @@ private func previewEvent(
         startDate: Calendar.current.date(bySettingHour: hour, minute: 0, second: 0, of: .now) ?? .now,
         duration: duration, createdAt: .now, updatedAt: .now,
         client: name.map {
-            ClientSummary(
+            ClientSnapshot(
                 firstName: String($0.split(separator: " ").first ?? ""),
                 lastName: String($0.split(separator: " ").last ?? ""),
                 segment: "Gold"

@@ -116,7 +116,7 @@ struct DayEventsSection: View {
             id: id, statusRaw: status, reasonRaw: reason, meetingTypeRaw: "IN_PERSON",
             title: title, startDate: start, duration: duration,
             createdAt: .now, updatedAt: .now,
-            client: ClientSummary(firstName: first, lastName: last, segment: "Gold")
+            client: ClientSnapshot(firstName: first, lastName: last, segment: "Gold")
         ))
     }
     return ScrollView {

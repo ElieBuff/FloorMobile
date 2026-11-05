@@ -7,7 +7,7 @@ import Foundation
 
 /// A client as a list shows them, wherever they come from: a card the server
 /// found (`client/search`), or a client the device keeps (`Client`) — and the
-/// card a client's profile shows (`ClientProfile`).
+/// card a client's details carry (`ClientDetails`, `client/{id}`).
 ///
 /// A plain value, never stored: it lives as long as the list, or the profile
 /// page, that shows it. In a list, the email and the phone are there only for
@@ -17,7 +17,7 @@ import Foundation
 /// what a list mixing the brand's clients and the associate's own will read
 /// to show each one its way. No view reads them yet.
 ///
-/// Not a `ClientSummary`: that one is stored as a composite in shipped models
+/// Not a `ClientSnapshot`: that one is stored as a composite in shipped models
 /// (`AgendaEvent`, `AgendaTask`, `AIAction`), so growing it with the email and
 /// the phone would change their store's shape.
 nonisolated struct ClientItem: Identifiable, Sendable, Equatable {
@@ -63,7 +63,7 @@ nonisolated extension ClientItem {
     /// flattened into display names. Here rather than in `ClientWire.swift`,
     /// which converts the card for its own model, `Client`: a second model
     /// built from the same card converts it in its own file, as one built
-    /// from a shared wire fragment does (`StoreSummary.init(wire:)`).
+    /// from a shared wire fragment does (`StoreSnapshot.init(wire:)`).
     init(wire: ClientWire.Response) {
         self.init(
             id: wire.id,
@@ -77,6 +77,26 @@ nonisolated extension ClientItem {
             },
             primaryEmail: wire.primaryEmail,
             primaryPhone: wire.primaryPhone
+        )
+    }
+
+    /// The card of a client's details (`client/{id}`): the same flattening as
+    /// a list's card, from the details' own shape — the email and the phone
+    /// under their names there, the store's code and the associate's
+    /// external id inside the projections they come in.
+    init(wire: ClientDetailsWire.Response) {
+        self.init(
+            id: wire.id,
+            displayName: PersonName.display(first: wire.firstName, last: wire.lastName),
+            segment: wire.segment,
+            storeCode: wire.store?.storeCode,
+            storeName: wire.store?.name,
+            salesAssociateExternalId: wire.salesAssociate?.externalId,
+            salesAssociateName: wire.salesAssociate.flatMap {
+                PersonName.display(first: $0.firstName, last: $0.lastName)
+            },
+            primaryEmail: wire.email,
+            primaryPhone: wire.mobile
         )
     }
 }

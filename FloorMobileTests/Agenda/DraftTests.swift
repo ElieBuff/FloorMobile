@@ -78,7 +78,7 @@ struct DraftTests {
             taskDescription: "She asked for the ivory one",
             startDate: due, reminderDate: reminder,
             createdAt: .now, updatedAt: .now,
-            client: ClientSummary(firstName: "Léa", lastName: "Bonnet")
+            client: ClientSnapshot(firstName: "Léa", lastName: "Bonnet")
         ))
 
         #expect(draft.id == "t1")
@@ -123,7 +123,7 @@ struct DraftTests {
             startDate: start, duration: 90,
             reminderDate: start.addingTimeInterval(-15 * 60),
             createdAt: .now, updatedAt: .now,
-            client: ClientSummary(firstName: "Salomé", lastName: "Kaliny")
+            client: ClientSnapshot(firstName: "Salomé", lastName: "Kaliny")
         ))
 
         #expect(draft.id == "e1")

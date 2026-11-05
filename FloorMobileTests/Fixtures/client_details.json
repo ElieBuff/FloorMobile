@@ -1,0 +1,34 @@
+{
+  "id": "001cfde7-0c26-48ae-990c-68bbd710211b",
+  "externalId": "seed-client-000289",
+  "salutation": null,
+  "firstName": "Kimberly",
+  "lastName": "Robinson",
+  "email": "kimberly.robinson1971@outlook.com",
+  "mobile": null,
+  "mainAddress": null,
+  "preferredLanguage": null,
+  "salesAssociate": {
+    "id": "0e8a5207-0a8a-4716-beb4-ea3865123899",
+    "externalId": "seed-sa-102",
+    "firstName": "Oliver",
+    "lastName": "Rossi",
+    "preferredLanguage": null
+  },
+  "store": {
+    "id": "b3befef8-4148-4d84-a2f7-eea47d9671ba",
+    "externalId": "seed-store-28",
+    "storeCode": "seed-store-28",
+    "name": "Emeria Lisbon"
+  },
+  "optins": {
+    "email": true,
+    "directMessage": true,
+    "call": true,
+    "wechat": false,
+    "line": false
+  },
+  "importantDates": [],
+  "household": [],
+  "preferences": []
+}

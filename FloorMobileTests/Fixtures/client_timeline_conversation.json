@@ -1,0 +1,216 @@
+{
+  "upcoming": [],
+  "past": [
+    {
+      "type": "transaction",
+      "id": "4e0857b8-f712-4542-bc94-ec009b0818d6",
+      "date": "2026-07-09T07:00:00.000Z",
+      "status": "PAID",
+      "title": "T-SHIRT CANDICE · T-SHIRT CASSIS · VESTE ALLURE",
+      "subtitle": [
+        {
+          "type": "itemCount",
+          "count": 3
+        },
+        {
+          "type": "amount",
+          "amount": 197,
+          "currency": "CAD"
+        }
+      ]
+    },
+    {
+      "type": "conversation",
+      "id": "a9f4dc72-4052-4295-8cc4-1885d2cd0842",
+      "date": "2026-06-12T14:35:04.000Z",
+      "status": "ACTIVE",
+      "title": "Henry Clark",
+      "subtitle": [
+        {
+          "type": "text",
+          "text": "Perfect, thank you"
+        }
+      ]
+    },
+    {
+      "type": "transaction",
+      "id": "d375a3e5-b957-4b0e-8a9e-7801ccf2ab69",
+      "date": "2026-03-17T03:00:00.000Z",
+      "status": "PAID",
+      "title": "POLO CAYAK · Suspension \"New York\" · CIRÉ BANDOL KIDS UNISEXE",
+      "subtitle": [
+        {
+          "type": "itemCount",
+          "count": 4
+        },
+        {
+          "type": "amount",
+          "amount": 547,
+          "currency": "CAD"
+        }
+      ]
+    },
+    {
+      "type": "transaction",
+      "id": "4434bbee-a583-4613-b19a-01ce737ce2d7",
+      "date": "2025-12-14T01:00:00.000Z",
+      "status": "PAID",
+      "title": "CIRÉ BELLE · T-SHIRT CAITLIN",
+      "subtitle": [
+        {
+          "type": "itemCount",
+          "count": 2
+        },
+        {
+          "type": "amount",
+          "amount": 138,
+          "currency": "USD"
+        }
+      ]
+    },
+    {
+      "type": "transaction",
+      "id": "1b4f597a-aab0-4abb-876d-3cacee2eade0",
+      "date": "2025-11-18T01:00:00.000Z",
+      "status": "PAID",
+      "title": "POLO CONWAY",
+      "subtitle": [
+        {
+          "type": "itemCount",
+          "count": 1
+        },
+        {
+          "type": "amount",
+          "amount": 67,
+          "currency": "CAD"
+        }
+      ]
+    },
+    {
+      "type": "transaction",
+      "id": "fb03c671-75c4-46b7-901e-cda5bf3112b8",
+      "date": "2025-10-22T05:00:00.000Z",
+      "status": "PAID",
+      "title": "ROBE CLEOPATRE · DOUDOUNE ASPEN · T-SHIRT CASCADE",
+      "subtitle": [
+        {
+          "type": "itemCount",
+          "count": 3
+        },
+        {
+          "type": "amount",
+          "amount": 173,
+          "currency": "USD"
+        }
+      ]
+    },
+    {
+      "type": "transaction",
+      "id": "f38e17d0-df1c-4e9d-b4dd-acbe22d55938",
+      "date": "2025-09-07T02:00:00.000Z",
+      "status": "PAID",
+      "title": "T-SHIRT CICERRON · DOUDOUNE ACHILLE",
+      "subtitle": [
+        {
+          "type": "itemCount",
+          "count": 2
+        },
+        {
+          "type": "amount",
+          "amount": 176,
+          "currency": "CAD"
+        }
+      ]
+    },
+    {
+      "type": "transaction",
+      "id": "7156f0a1-a893-4368-bd22-f5e99f33ea49",
+      "date": "2025-06-25T05:00:00.000Z",
+      "status": "PAID",
+      "title": "VESTE ALLURE",
+      "subtitle": [
+        {
+          "type": "itemCount",
+          "count": 1
+        },
+        {
+          "type": "amount",
+          "amount": 95,
+          "currency": "CAD"
+        }
+      ]
+    },
+    {
+      "type": "transaction",
+      "id": "56284724-beb5-484e-9632-3fa52dab63db",
+      "date": "2025-04-09T09:00:00.000Z",
+      "status": "PAID",
+      "title": "POLO CAYAK",
+      "subtitle": [
+        {
+          "type": "itemCount",
+          "count": 1
+        },
+        {
+          "type": "amount",
+          "amount": 49,
+          "currency": "USD"
+        }
+      ]
+    },
+    {
+      "type": "transaction",
+      "id": "bab1075e-1f3b-4f93-888f-ef967c073f04",
+      "date": "2024-06-03T04:00:00.000Z",
+      "status": "PAID",
+      "title": "T-SHIRT CAITLIN",
+      "subtitle": [
+        {
+          "type": "itemCount",
+          "count": 1
+        },
+        {
+          "type": "amount",
+          "amount": 19,
+          "currency": "USD"
+        }
+      ]
+    },
+    {
+      "type": "transaction",
+      "id": "82532c0a-e055-42e5-bcb4-60cb6fa649af",
+      "date": "2024-01-11T12:00:00.000Z",
+      "status": "PAID",
+      "title": "PULL PATRIMONIO · VESTE ACACIA",
+      "subtitle": [
+        {
+          "type": "itemCount",
+          "count": 2
+        },
+        {
+          "type": "amount",
+          "amount": 178,
+          "currency": "USD"
+        }
+      ]
+    },
+    {
+      "type": "transaction",
+      "id": "cd139001-145b-4e02-b04a-a587e02e9d39",
+      "date": "2023-08-14T11:00:00.000Z",
+      "status": "PAID",
+      "title": "SHORT SUNNY · DEBARDEUR CALIFORNIE · POLO COLETTE",
+      "subtitle": [
+        {
+          "type": "itemCount",
+          "count": 3
+        },
+        {
+          "type": "amount",
+          "amount": 113,
+          "currency": "USD"
+        }
+      ]
+    }
+  ]
+}

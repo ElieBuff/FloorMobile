@@ -37,10 +37,13 @@ struct ClientFilterBar: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             textField
-            if editor.isCounting {
+            switch editor.total {
+            case .loading:
                 note(Text("Calculating…"))
-            } else if let total = editor.total {
+            case .loaded(let total):
                 note(Text("\(total) clients"))
+            case .failed:
+                EmptyView()
             }
             if !editor.draft.filterItems.isEmpty {
                 pills

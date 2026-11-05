@@ -51,6 +51,9 @@
         }
       }
     },
+    "Activity" : {
+
+    },
     "Add" : {
 
     },
@@ -330,6 +333,9 @@
     "Describe the clients you want" : {
 
     },
+    "Details" : {
+
+    },
     "Dictate" : {
 
     },
@@ -393,6 +399,12 @@
     "Home" : {
 
     },
+    "Household" : {
+
+    },
+    "Important dates" : {
+
+    },
     "In %lld h" : {
 
     },
@@ -409,6 +421,9 @@
 
     },
     "Keep editing" : {
+
+    },
+    "Key figures" : {
 
     },
     "Language" : {
@@ -504,6 +519,9 @@
     "Phone" : {
 
     },
+    "Preferences" : {
+
+    },
     "Prepare" : {
 
     },
@@ -519,6 +537,9 @@
     "Profile" : {
 
     },
+    "Purchases" : {
+
+    },
     "Reading a sentence needs a connection" : {
 
     },
@@ -526,6 +547,9 @@
 
     },
     "Reason" : {
+
+    },
+    "Recent activity" : {
 
     },
     "Réessayer" : {
@@ -556,6 +580,9 @@
 
     },
     "Search the whole brand" : {
+
+    },
+    "Section" : {
 
     },
     "Send" : {
@@ -598,6 +625,9 @@
 
     },
     "Store" : {
+
+    },
+    "Summary" : {
 
     },
     "Synchronizing data…" : {
@@ -651,6 +681,9 @@
     "Unnamed client" : {
 
     },
+    "Upcoming" : {
+
+    },
     "Video call" : {
 
     },
@@ -663,7 +696,13 @@
     "VIP event" : {
 
     },
+    "Waitlist" : {
+
+    },
     "What you typed will not be kept." : {
+
+    },
+    "Wishlist" : {
 
     },
     "Wishlist available" : {

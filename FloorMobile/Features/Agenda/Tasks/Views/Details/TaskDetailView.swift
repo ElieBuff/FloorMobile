@@ -134,7 +134,7 @@ struct TaskDetailView: View {
         startDate: .now,
         createdAt: .now.addingTimeInterval(-2 * 86_400),
         updatedAt: .now,
-        client: ClientSummary(firstName: "Salomé", lastName: "Kaliny", segment: "Gold")
+        client: ClientSnapshot(firstName: "Salomé", lastName: "Kaliny", segment: "Gold")
     ))
 
     return NavigationStack {

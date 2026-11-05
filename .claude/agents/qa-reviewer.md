@@ -2,7 +2,7 @@
 name: qa-reviewer
 description: "Reviews the code of a FloorMobile change (iOS, SwiftUI, SwiftData, Swift 6) once its plan is implemented, before the user decides to commit: conformity to the plan, right place and reuse, correctness, clean and documented code, tests, Apple's and the project's practices, release. Builds and runs the unit tests itself; its shell is limited by its own hook to one isolated xcodebuild, result reading, git reads and simulator listing. Launched by the qa-review skill (simple mode) or the qa-deep workflow (enhanced mode)."
 tools: Read, Grep, Glob, Bash, WebFetch, WebSearch
-model: opus
+model: sonnet
 hooks:
   PreToolUse:
     - matcher: "Bash"

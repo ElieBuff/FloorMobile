@@ -28,8 +28,8 @@ nonisolated enum AIActionWire {
         var confidence: Double?
         /// The uppercase tag shown on the Home card; not sent by every agent.
         var categoryLabel: String?
-        var client: ClientSummaryWire?
-        var salesAssociate: SalesAssociateWire?
+        var client: ClientSnapshotWire?
+        var salesAssociate: SalesAssociateSnapshotWire?
         /// The product a recommendation concerns, when it concerns one.
         var product: Product?
 
@@ -61,8 +61,8 @@ nonisolated extension AIAction {
             rejectedAt: wire.rejectedAt,
             rejectReason: wire.rejectReason,
             confidence: wire.confidence,
-            client: wire.client.map(ClientSummary.init(wire:)),
-            salesAssociate: wire.salesAssociate.map(SalesAssociateSummary.init(wire:)),
+            client: wire.client.map(ClientSnapshot.init(wire:)),
+            salesAssociate: wire.salesAssociate.map(SalesAssociateSnapshot.init(wire:)),
             categoryLabel: wire.categoryLabel,
             productName: wire.product?.name,
             productSize: wire.product?.size,

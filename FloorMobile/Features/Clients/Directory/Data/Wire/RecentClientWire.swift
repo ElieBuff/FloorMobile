@@ -17,12 +17,12 @@ nonisolated enum RecentClientWire {
 
     /// One recent client: which client, when the associate last opened their
     /// profile, and the client embedded as an agenda item embeds them
-    /// (`ClientSummaryWire`). `clientId` is the row's own column: the key,
+    /// (`ClientSnapshotWire`). `clientId` is the row's own column: the key,
     /// which the embedded client's optional `id` cannot be.
     struct Response: Decodable, Sendable {
         var clientId: String
         var lastViewedAt: Date
-        var client: ClientSummaryWire
+        var client: ClientSnapshotWire
     }
 }
 
@@ -33,7 +33,7 @@ nonisolated extension RecentClient {
         self.init(
             id: wire.clientId,
             lastViewedAt: wire.lastViewedAt,
-            client: ClientSummary(wire: wire.client)
+            client: ClientSnapshot(wire: wire.client)
         )
     }
 }

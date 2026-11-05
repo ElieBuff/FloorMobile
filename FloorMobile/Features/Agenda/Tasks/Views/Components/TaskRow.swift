@@ -121,7 +121,7 @@ private func previewTask(
     AgendaTask(
         id: id, statusRaw: status.rawValue, reasonRaw: reason.rawValue, title: title,
         startDate: .now, createdAt: .now, updatedAt: .now,
-        client: ClientSummary(firstName: "Léa", lastName: "Bonnet")
+        client: ClientSnapshot(firstName: "Léa", lastName: "Bonnet")
     )
 }
 

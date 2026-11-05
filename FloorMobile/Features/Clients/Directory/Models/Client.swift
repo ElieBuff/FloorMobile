@@ -28,14 +28,14 @@ nonisolated final class Client {
     var storeCode: String?
     /// That store as a display snapshot, for its name. A rename reaches the
     /// device with the client's next change.
-    var store: StoreSummary?
+    var store: StoreSnapshot?
 
     /// The associate the client is assigned to, by the external id the
     /// server keys them on — `salesAssociate` carries the internal one, hence
     /// a field of its own.
     var salesAssociateExternalId: String?
     /// That associate's name, as a display snapshot.
-    var salesAssociate: SalesAssociateSummary?
+    var salesAssociate: SalesAssociateSnapshot?
 
     /// The words the server finds the client by (first name, last name, the
     /// email before its @ — folded, each multi-word value also glued), kept as
@@ -55,9 +55,9 @@ nonisolated final class Client {
         primaryPhone: String? = nil,
         segment: String? = nil,
         storeCode: String? = nil,
-        store: StoreSummary? = nil,
+        store: StoreSnapshot? = nil,
         salesAssociateExternalId: String? = nil,
-        salesAssociate: SalesAssociateSummary? = nil,
+        salesAssociate: SalesAssociateSnapshot? = nil,
         searchWords: [String] = [],
         searchPhones: [String] = []
     ) {

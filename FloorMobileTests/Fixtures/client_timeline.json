@@ -1,0 +1,498 @@
+{
+  "upcoming": [
+    {
+      "type": "task",
+      "id": "01M2MTG42H3T3HDNXWDD0NT5QX",
+      "date": "2026-09-16T10:00:00.000Z",
+      "status": "TO_DO",
+      "title": "Rappeler Mme Dupont",
+      "subtitle": [
+        {
+          "type": "text",
+          "text": "Relance suite essayage"
+        }
+      ]
+    },
+    {
+      "type": "task",
+      "id": "01M2MTHJY2XQWEJTRSF3D76A0W",
+      "date": "2026-09-16T10:00:00.000Z",
+      "status": "TO_DO",
+      "title": "Rappeler Mme Dupont",
+      "subtitle": [
+        {
+          "type": "reason",
+          "reason": "BIRTHDAY"
+        },
+        {
+          "type": "text",
+          "text": "Relance suite essayage"
+        }
+      ]
+    },
+    {
+      "type": "task",
+      "id": "01M2QQ08YN5T2TYYEJPEGTTHQ1",
+      "date": "2026-09-17T10:00:00.000Z",
+      "status": "TO_DO",
+      "title": "Rappeler Mme Dupont",
+      "subtitle": [
+        {
+          "type": "reason",
+          "reason": "BIRTHDAY"
+        },
+        {
+          "type": "text",
+          "text": "Relance suite essayage"
+        }
+      ]
+    },
+    {
+      "type": "task",
+      "id": "01M2QQ09VK9G42SC3FCYZEDG7B",
+      "date": "2026-09-17T10:00:00.000Z",
+      "status": "TO_DO",
+      "title": "Rappeler Mme Dupont",
+      "subtitle": [
+        {
+          "type": "reason",
+          "reason": "BIRTHDAY"
+        },
+        {
+          "type": "text",
+          "text": "Relance suite essayage"
+        }
+      ]
+    },
+    {
+      "type": "task",
+      "id": "01M2QQ0B1656S2C2M5MF1P1KH9",
+      "date": "2026-09-17T10:00:00.000Z",
+      "status": "TO_DO",
+      "title": "Rappeler Mme Dupont",
+      "subtitle": [
+        {
+          "type": "reason",
+          "reason": "BIRTHDAY"
+        },
+        {
+          "type": "text",
+          "text": "Relance suite essayage"
+        }
+      ]
+    },
+    {
+      "type": "task",
+      "id": "01M344FDTQ545D95223YX64K4X",
+      "date": "2026-09-17T10:00:00.000Z",
+      "status": "TO_DO",
+      "title": "Rappeler Mme Dupont",
+      "subtitle": [
+        {
+          "type": "reason",
+          "reason": "BACK_IN_STOCK"
+        },
+        {
+          "type": "text",
+          "text": "Relance suite essayage"
+        }
+      ]
+    },
+    {
+      "type": "task",
+      "id": "01M344FT2ESBR0YZCYH6PXF97M",
+      "date": "2026-09-17T10:00:00.000Z",
+      "status": "TO_DO",
+      "title": "Rappeler Mme Dupont",
+      "subtitle": [
+        {
+          "type": "reason",
+          "reason": "BIRTHDAY"
+        },
+        {
+          "type": "text",
+          "text": "Relance suite essayage"
+        }
+      ]
+    },
+    {
+      "type": "task",
+      "id": "01M2FVMQ0HZN3Y1JMCMYD4PS3M",
+      "date": "2026-09-20T10:00:00.000Z",
+      "status": "TO_DO",
+      "title": "Acheter cadeau anniversaire",
+      "subtitle": [
+        {
+          "type": "reason",
+          "reason": "BIRTHDAY"
+        },
+        {
+          "type": "text",
+          "text": "Relance suite essayage"
+        }
+      ]
+    }
+  ],
+  "past": [
+    {
+      "type": "event",
+      "id": "01M2FVFVTEVQW4QEKX2KPVMW64",
+      "date": "2026-09-22T14:30:00.000Z",
+      "status": "PLANNED",
+      "title": "Essayage collection automne1",
+      "subtitle": [
+        {
+          "type": "text",
+          "text": "RDV essayage"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "id": "01M2FQ9RQ3YDYMKV8T58C5KBB1",
+      "date": "2026-09-22T14:30:00.000Z",
+      "status": "PLANNED",
+      "title": "Essayage collection automne",
+      "subtitle": [
+        {
+          "type": "text",
+          "text": "RDV essayage"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "id": "01M2FQ54RZ39T1TDG4E8YJWCS0",
+      "date": "2026-09-22T10:08:00.000Z",
+      "status": "PLANNED",
+      "title": "Essayage collection automne",
+      "subtitle": [
+        {
+          "type": "reason",
+          "reason": "BACK_IN_STOCK"
+        },
+        {
+          "type": "meetingType",
+          "meetingType": "IN_PERSON"
+        },
+        {
+          "type": "text",
+          "text": "RDV essayage"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "id": "01M34319KFXBNQ9SJ4V089JZY3",
+      "date": "2026-09-17T20:30:00.000Z",
+      "status": "PLANNED",
+      "title": "Essayage collection automne",
+      "subtitle": [
+        {
+          "type": "reason",
+          "reason": "BACK_IN_STOCK"
+        },
+        {
+          "type": "meetingType",
+          "meetingType": "IN_PERSON"
+        },
+        {
+          "type": "text",
+          "text": "RDV essayage"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "id": "01M342H89TQ43G8WGFXSR1PRSD",
+      "date": "2026-09-17T20:30:00.000Z",
+      "status": "PLANNED",
+      "title": "Essayage collection automne",
+      "subtitle": [
+        {
+          "type": "reason",
+          "reason": "BACK_IN_STOCK"
+        },
+        {
+          "type": "meetingType",
+          "meetingType": "IN_PERSON"
+        },
+        {
+          "type": "text",
+          "text": "RDV essayage"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "id": "01M342GX1R77G0AH4BJ69895CC",
+      "date": "2026-09-17T20:30:00.000Z",
+      "status": "PLANNED",
+      "title": "Essayage collection automne",
+      "subtitle": [
+        {
+          "type": "reason",
+          "reason": "BACK_IN_STOCK"
+        },
+        {
+          "type": "meetingType",
+          "meetingType": "IN_PERSON"
+        },
+        {
+          "type": "text",
+          "text": "RDV essayage"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "id": "01M342BPYSH9QAX7NKQPNZFNN1",
+      "date": "2026-09-17T20:30:00.000Z",
+      "status": "PLANNED",
+      "title": "Essayage collection automne",
+      "subtitle": [
+        {
+          "type": "meetingType",
+          "meetingType": "IN_PERSON"
+        },
+        {
+          "type": "text",
+          "text": "RDV essayage"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "id": "01M341E8WFFZWRBH3N9SB13Y3X",
+      "date": "2026-09-17T20:30:00.000Z",
+      "status": "PLANNED",
+      "title": "Essayage collection automne",
+      "subtitle": [
+        {
+          "type": "meetingType",
+          "meetingType": "IN_PERSON"
+        },
+        {
+          "type": "text",
+          "text": "RDV essayage"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "id": "01M2QQ01665Z1SA8322KXCGY1H",
+      "date": "2026-09-17T20:30:00.000Z",
+      "status": "PLANNED",
+      "title": "Essayage collection automne",
+      "subtitle": [
+        {
+          "type": "meetingType",
+          "meetingType": "IN_PERSON"
+        },
+        {
+          "type": "text",
+          "text": "RDV essayage"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "id": "01M2QQ00BNYQD7W8JYQYN8Y6VP",
+      "date": "2026-09-17T20:30:00.000Z",
+      "status": "PLANNED",
+      "title": "Essayage collection automne",
+      "subtitle": [
+        {
+          "type": "meetingType",
+          "meetingType": "IN_PERSON"
+        },
+        {
+          "type": "text",
+          "text": "RDV essayage"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "id": "01M2QPZYZ28QHBKQ9HC93PKV0J",
+      "date": "2026-09-17T20:30:00.000Z",
+      "status": "PLANNED",
+      "title": "Essayage collection automne",
+      "subtitle": [
+        {
+          "type": "meetingType",
+          "meetingType": "IN_PERSON"
+        },
+        {
+          "type": "text",
+          "text": "RDV essayage"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "id": "01M2MDCZ3TG996Z25EVZT42A1D",
+      "date": "2026-09-16T20:30:00.000Z",
+      "status": "PLANNED",
+      "title": "Essayage collection automne",
+      "subtitle": [
+        {
+          "type": "meetingType",
+          "meetingType": "IN_PERSON"
+        },
+        {
+          "type": "text",
+          "text": "RDV essayage"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "id": "01M2JDP1F6F74KXZM90H2KQMVH",
+      "date": "2026-09-15T23:30:00.000Z",
+      "status": "PLANNED",
+      "title": "Essayage collection automne",
+      "subtitle": [
+        {
+          "type": "text",
+          "text": "RDV essayage"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "id": "01M2K75WFMNQ0Z2FM4WSCCHXQ8",
+      "date": "2026-09-15T20:30:00.000Z",
+      "status": "PLANNED",
+      "title": "Essayage collection automne",
+      "subtitle": [
+        {
+          "type": "meetingType",
+          "meetingType": "IN_PERSON"
+        },
+        {
+          "type": "text",
+          "text": "RDV essayage"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "id": "01M2K64546NDK4W47CW82WFCGC",
+      "date": "2026-09-15T20:30:00.000Z",
+      "status": "PLANNED",
+      "title": "Essayage collection automne",
+      "subtitle": [
+        {
+          "type": "meetingType",
+          "meetingType": "IN_PERSON"
+        },
+        {
+          "type": "text",
+          "text": "RDV essayage"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "id": "01M2K62MEZXJCJZ7JC204M7XAK",
+      "date": "2026-09-15T20:30:00.000Z",
+      "status": "PLANNED",
+      "title": "Essayage collection automne",
+      "subtitle": [
+        {
+          "type": "text",
+          "text": "RDV essayage"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "id": "01M2K6266307QFFX38C6ZN3VEC",
+      "date": "2026-09-15T20:30:00.000Z",
+      "status": "PLANNED",
+      "title": "Essayage collection automne",
+      "subtitle": [
+        {
+          "type": "text",
+          "text": "RDV essayage"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "id": "01M2K6202AK5D7417ZWKKRY0RE",
+      "date": "2026-09-15T20:30:00.000Z",
+      "status": "PLANNED",
+      "title": "Essayage collection automne",
+      "subtitle": [
+        {
+          "type": "text",
+          "text": "RDV essayage"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "id": "01M2K60BRXNMGQESGQXTB5EF1T",
+      "date": "2026-09-15T20:30:00.000Z",
+      "status": "PLANNED",
+      "title": "Essayage collection automne",
+      "subtitle": [
+        {
+          "type": "text",
+          "text": "RDV essayage"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "id": "01M2JEJYNKTSA5AXEHRB6GKC31",
+      "date": "2026-09-15T20:30:00.000Z",
+      "status": "PLANNED",
+      "title": "Essayage collection automne",
+      "subtitle": [
+        {
+          "type": "text",
+          "text": "RDV essayage"
+        }
+      ]
+    },
+    {
+      "type": "transaction",
+      "id": "15760008-61b3-481e-aedb-b5a60f0e0e95",
+      "date": "2024-07-01T02:00:00.000Z",
+      "status": "PAID",
+      "title": "VESTE ACACIA · Selling Plans Ski Wax · T-SHIRT CESAR",
+      "subtitle": [
+        {
+          "type": "itemCount",
+          "count": 4
+        },
+        {
+          "type": "amount",
+          "amount": 237.9,
+          "currency": "USD"
+        }
+      ]
+    },
+    {
+      "type": "transaction",
+      "id": "2f918af5-64cf-4eba-bfdf-ef06de0acf4f",
+      "date": "2024-05-13T02:00:00.000Z",
+      "status": "PAID",
+      "title": "POLO CLIFF · DOUDOUNE ATAMI · VESTE AMIGO",
+      "subtitle": [
+        {
+          "type": "itemCount",
+          "count": 4
+        },
+        {
+          "type": "amount",
+          "amount": 406,
+          "currency": "USD"
+        }
+      ]
+    }
+  ]
+}

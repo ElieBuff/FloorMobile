@@ -138,7 +138,7 @@ struct AgendaView: View {
             title: "Essayage",
             startDate: calendar.date(bySettingHour: hour, minute: minute, second: 0, of: .now) ?? .now,
             duration: 45, createdAt: .now, updatedAt: .now,
-            client: ClientSummary(firstName: first, lastName: last, segment: "Gold")
+            client: ClientSnapshot(firstName: first, lastName: last, segment: "Gold")
         ))
     }
     // A few other days, only so the calendar has dots to show.
@@ -148,7 +148,7 @@ struct AgendaView: View {
             title: "Rendez-vous",
             startDate: calendar.date(byAdding: .day, value: offset, to: .now) ?? .now,
             duration: 30, createdAt: .now, updatedAt: .now,
-            client: ClientSummary(firstName: "Salomé", lastName: "Kaliny")
+            client: ClientSnapshot(firstName: "Salomé", lastName: "Kaliny")
         ))
     }
     for i in 1...3 {
@@ -156,7 +156,7 @@ struct AgendaView: View {
             id: "task-\(i)", statusRaw: "TO_DO", reasonRaw: "FOLLOW_UP", title: "Task \(i)",
             startDate: Date().addingTimeInterval(Double(i) * 3600),
             createdAt: .now, updatedAt: .now,
-            client: ClientSummary(firstName: "Elie", lastName: "Buff")
+            client: ClientSnapshot(firstName: "Elie", lastName: "Buff")
         ))
     }
     return NavigationStack {

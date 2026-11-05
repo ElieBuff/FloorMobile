@@ -1,5 +1,5 @@
 //
-//  ClientSummaryTests.swift
+//  ClientSnapshotTests.swift
 //  FloorMobileTests
 //
 
@@ -10,12 +10,12 @@ import Testing
 /// `displayName` is what every task row, every appointment row and both detail
 /// screens put in front of the advisor, and the API fills neither name
 /// reliably. What it returns for a half-filled client is not a detail.
-@Suite("Client summary")
-struct ClientSummaryTests {
+@Suite("Client snapshot")
+struct ClientSnapshotTests {
 
     @Test("Both names join with a single space")
     func bothNamesJoin() {
-        let client = ClientSummary(firstName: "Raphaël", lastName: "Van den Berg")
+        let client = ClientSnapshot(firstName: "Raphaël", lastName: "Van den Berg")
         #expect(client.displayName == "Raphaël Van den Berg")
     }
 
@@ -28,29 +28,29 @@ struct ClientSummaryTests {
 
     @Test("One name alone is a name", arguments: halfNames)
     func oneNameIsEnough(first: String?, last: String?, expected: String) {
-        #expect(ClientSummary(firstName: first, lastName: last).displayName == expected)
+        #expect(ClientSnapshot(firstName: first, lastName: last).displayName == expected)
     }
 
     @Test("No name at all is `nil`, not an empty string")
     func noNameIsNil() {
         // `nil` so a caller can fall back — an empty string would draw a row
         // with a blank where the client goes.
-        #expect(ClientSummary().displayName == nil)
+        #expect(ClientSnapshot().displayName == nil)
     }
 
     @Test("A name that is only whitespace counts as no name", arguments: ["", " ", "   "])
     func blankNamesAreNoName(blank: String) {
-        #expect(ClientSummary(firstName: blank, lastName: blank).displayName == nil)
+        #expect(ClientSnapshot(firstName: blank, lastName: blank).displayName == nil)
     }
 
     @Test("Surrounding whitespace is trimmed rather than joined")
     func surroundingWhitespaceIsTrimmed() {
-        let client = ClientSummary(firstName: "  Inès ", lastName: " Haddad  ")
+        let client = ClientSnapshot(firstName: "  Inès ", lastName: " Haddad  ")
         #expect(client.displayName == "Inès Haddad")
     }
 
     @Test("A blank first name does not leave a leading space on the last")
     func blankFirstNameLeavesNoGap() {
-        #expect(ClientSummary(firstName: "  ", lastName: "Kaliny").displayName == "Kaliny")
+        #expect(ClientSnapshot(firstName: "  ", lastName: "Kaliny").displayName == "Kaliny")
     }
 }

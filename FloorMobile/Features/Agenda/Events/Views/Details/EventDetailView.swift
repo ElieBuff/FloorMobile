@@ -128,7 +128,7 @@ struct EventDetailView: View {
         duration: 60,
         reminderDate: start.addingTimeInterval(-30 * 60),
         createdAt: .now, updatedAt: .now,
-        client: ClientSummary(firstName: "Salomé", lastName: "Kaliny", segment: "Gold")
+        client: ClientSnapshot(firstName: "Salomé", lastName: "Kaliny", segment: "Gold")
     ))
 
     return NavigationStack {

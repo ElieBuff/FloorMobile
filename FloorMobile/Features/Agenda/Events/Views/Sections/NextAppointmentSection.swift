@@ -88,7 +88,7 @@ struct NextAppointmentSection: View {
         title: "Essayage collection automne",
         startDate: Date().addingTimeInterval(3600), duration: 45,
         createdAt: .now, updatedAt: .now,
-        client: ClientSummary(firstName: "Raphaël", lastName: "Van den Berg")
+        client: ClientSnapshot(firstName: "Raphaël", lastName: "Van den Berg")
     ))
     return NextAppointmentSection()
         .modelContainer(container)

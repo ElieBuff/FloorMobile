@@ -8,27 +8,23 @@ import Foundation
 /// Wire format of a client: the one card the server sends for every client
 /// list — the store's clients the device keeps (`client/sync`), the
 /// associate's own clients a search finds (`client/search?scope=mine`), and
-/// any client of the brand (`client/search`) — and that a client's profile
-/// (`client/{id}`) holds among its columns. Read-only: the app does not write
-/// clients yet, so there is no `Request`.
+/// any client of the brand (`client/search`). Read-only: the app does not
+/// write clients yet, so there is no `Request`.
 ///
-/// One card for three readers, to keep in step with it: `Client` keeps it
+/// One card for two readers, to keep in step with it: `Client` keeps it
 /// (`init(wire:)`, below), `ClientItem` shows it (`ClientItem.init(wire:)`,
-/// in its own file), and `ClientProfileWire` reads it from a profile. Not the
-/// recent clients: theirs comes embedded, as `ClientSummaryWire`.
+/// in its own file). Not a client's details (`client/{id}`), which have their
+/// own shape (`ClientDetailsWire`), nor the recent clients: theirs comes
+/// embedded, as `ClientSnapshotWire`.
 nonisolated enum ClientWire {
-    /// One client card: of a page — the page itself decodes as a `CursorPage`
-    /// (the sync's `storeCode` on it is not needed) — or of a profile
-    /// (`ClientProfileWire`). In a list, the store and the associate come as
-    /// the shared projections an agenda item embeds them with; a profile's
-    /// store carries only `storeCode` and `name`.
+    /// One client card of a page — the page itself decodes as a `CursorPage`
+    /// (the sync's `storeCode` on it is not needed). The store and the
+    /// associate come as the shared projections an agenda item embeds them
+    /// with.
     ///
-    /// What a card carries depends on where it comes from. In a list, the
-    /// email, the phone and the search's words — drawn from the name, the
+    /// The email, the phone and the search's words — drawn from the name, the
     /// email and the phone — come only for the associate's own clients (the
-    /// sync, "My Clients"), never for a client of the brand. A profile
-    /// (`client/{id}`) carries the email and the phone of any client it
-    /// opens, but never the search's words.
+    /// sync, "My Clients"), never for a client of the brand.
     struct Response: Decodable, Sendable {
         var id: String
         var externalId: String
@@ -38,9 +34,9 @@ nonisolated enum ClientWire {
         var storeCode: String?
         /// The client's store, for its name. Absent from a BFF that does not
         /// send it yet.
-        var store: StoreWire?
+        var store: StoreSnapshotWire?
         var salesAssociateExternalId: String?
-        var salesAssociate: SalesAssociateWire?
+        var salesAssociate: SalesAssociateSnapshotWire?
         var primaryEmail: String?
         var primaryPhone: String?
         /// The words the server finds the client by — the first name's, the
@@ -86,9 +82,9 @@ nonisolated extension Client {
             primaryPhone: wire.primaryPhone,
             segment: wire.segment,
             storeCode: wire.storeCode,
-            store: wire.store.map(StoreSummary.init(wire:)),
+            store: wire.store.map(StoreSnapshot.init(wire:)),
             salesAssociateExternalId: wire.salesAssociateExternalId,
-            salesAssociate: wire.salesAssociate.map(SalesAssociateSummary.init(wire:)),
+            salesAssociate: wire.salesAssociate.map(SalesAssociateSnapshot.init(wire:)),
             searchWords: wire.searchWords ?? [],
             searchPhones: wire.searchPhones ?? []
         )

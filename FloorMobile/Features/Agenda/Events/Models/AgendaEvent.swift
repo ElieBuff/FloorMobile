@@ -34,9 +34,9 @@ nonisolated final class AgendaEvent: Syncable {
     var updatedAt: Date
     /// The client, store and sales associate this event concerns, as embedded
     /// display snapshots.
-    var client: ClientSummary?
-    var store: StoreSummary?
-    var salesAssociate: SalesAssociateSummary?
+    var client: ClientSnapshot?
+    var store: StoreSnapshot?
+    var salesAssociate: SalesAssociateSnapshot?
 
     init(
         id: String,
@@ -50,9 +50,9 @@ nonisolated final class AgendaEvent: Syncable {
         reminderDate: Date? = nil,
         createdAt: Date,
         updatedAt: Date,
-        client: ClientSummary? = nil,
-        store: StoreSummary? = nil,
-        salesAssociate: SalesAssociateSummary? = nil
+        client: ClientSnapshot? = nil,
+        store: StoreSnapshot? = nil,
+        salesAssociate: SalesAssociateSnapshot? = nil
     ) {
         self.id = id
         self.statusRaw = statusRaw
