@@ -19,7 +19,7 @@ nonisolated enum ClientDetailsWire {
     struct Response: Decodable, Sendable {
         var id: String
         var externalId: String
-        /// The server's own value (`MR`, `MRS`…), an open set.
+        /// The server's own value (`mister`, `misses`, `miss`), an open set.
         var salutation: String?
         var firstName: String?
         var lastName: String?

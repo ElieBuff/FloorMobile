@@ -28,8 +28,9 @@ nonisolated enum ClientTimelineWire {
         var type: String
         var id: String
         var date: Date
-        /// The raw value, translated by the app as `<type>.status.<value>`;
-        /// `null` for a transaction without one.
+        /// The raw value, translated by the app
+        /// (`ClientTimelineItem.statusLabel`); `null` for a transaction
+        /// without one.
         var status: String?
         /// Shown as is; `null` for a transaction naming no product or a
         /// conversation without an associate.

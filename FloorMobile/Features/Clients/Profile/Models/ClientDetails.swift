@@ -16,7 +16,8 @@ import Foundation
 nonisolated struct ClientDetails: Identifiable, Sendable, Equatable {
     /// The client's card: who they are, where they belong, how to reach them.
     let client: ClientItem
-    /// The server's own value (`MR`, `MRS`…), an open set, as received.
+    /// The server's own value (`mister`, `misses`, `miss`), an open set, as
+    /// received.
     let salutation: String?
     /// Their main address, `nil` when the server has none.
     let address: Address?
@@ -47,5 +48,49 @@ nonisolated struct ClientDetails: Identifiable, Sendable, Equatable {
         let call: Bool
         let wechat: Bool
         let line: Bool
+    }
+}
+
+nonisolated extension ClientDetails {
+
+    // MARK: - Display
+
+    /// "Mr", "Mrs" or "Miss"; `nil` without a salutation, or for one this
+    /// build does not know — nothing rather than a raw code.
+    var salutationLabel: String? {
+        switch salutation {
+        case "mister": String(localized: "Mr")
+        case "misses": String(localized: "Mrs")
+        case "miss": String(localized: "Miss")
+        default: nil
+        }
+    }
+
+    /// The language's name in the device's ("French" for "fr"); the code
+    /// itself when the system does not know it.
+    var languageName: String? {
+        preferredLanguage.map { Locale.current.localizedString(forLanguageCode: $0) ?? $0 }
+    }
+}
+
+nonisolated extension ClientDetails.Address {
+
+    // MARK: - Display
+
+    /// The address as written on an envelope: the street, the postal code and
+    /// the city, the state, the country — named in the device's language when
+    /// the source gave a two-letter code. A line the source left empty is left
+    /// out.
+    var lines: [String] {
+        let place = [postalCode, city]
+            .compactMap { $0 }
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+        let countryName = country.map { country in
+            country.count == 2 ? Locale.current.localizedString(forRegionCode: country) ?? country : country
+        }
+        return [street, place, state, countryName]
+            .compactMap { $0 }
+            .filter { !$0.isEmpty }
     }
 }

@@ -9,11 +9,13 @@ import Foundation
 /// pushes one of these, and the Clients `NavigationStack` maps it to a view in
 /// its `navigationDestination(for: ClientsRoute.self)` (`MainTabView`).
 ///
-/// A route carries identifiers only — never a model object, nor the value a
-/// list built — so it survives a relaunch, a sync or a search that moves on,
-/// and stays `Codable` for state restoration and deep links, like `HomeRoute`.
+/// A route carries identifiers — never a model object — so it survives a
+/// relaunch, a sync or a search that moves on, and stays `Codable` for state
+/// restoration and deep links, like `HomeRoute`. The one exception is a value
+/// to show while waiting, optional, which the screen never relies on.
 nonisolated enum ClientsRoute: Hashable, Codable {
     /// A client's profile, by the server's id: any client of the brand,
-    /// whichever list it was opened from.
-    case profile(id: String)
+    /// whichever list it was opened from. `card` is the row the list showed,
+    /// on screen until the client's details replace it; a deep link has none.
+    case profile(id: String, card: ClientItem? = nil)
 }

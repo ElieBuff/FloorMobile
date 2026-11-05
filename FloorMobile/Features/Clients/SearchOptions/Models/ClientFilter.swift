@@ -104,20 +104,6 @@ nonisolated struct ClientFilterValue: Codable, Sendable, Equatable {
     /// What the associate fills in when picking it, e.g. a `since` date.
     var parameters: [Parameter]
 
-    /// The value's name on screen: its `label` as is — a segment's name is
-    /// never looked up in the string catalog, where it could match a key —
-    /// else its `labelKey`'s translation, the key itself while the catalog
-    /// has no entry for it. The server sends one or the other (`catalogueOf`,
-    /// FloorPlatform's filter engine); the `ref` stands in for a value with
-    /// neither, so its row is never blank. A `String`, not a
-    /// `LocalizedStringResource` like `ClientFilter.title`: a label has
-    /// nothing to look up.
-    var title: String {
-        if let label { return label }
-        guard let labelKey else { return ref }
-        return String(localized: LocalizedStringResource(stringLiteral: labelKey))
-    }
-
     /// The day this value asks the associate for — "Since a date"'s `since` —
     /// or `nil` for a value picked as is. Only a value whose one parameter is
     /// a date is drawn with a calendar: the one shape the tenants' filters
@@ -140,5 +126,24 @@ nonisolated struct ClientFilterValue: Codable, Sendable, Equatable {
             /// A calendar day, sent as `YYYY-MM-DD` (`Date.calendarDay(in:)`).
             case date
         }
+    }
+}
+
+nonisolated extension ClientFilterValue {
+
+    // MARK: - Display
+
+    /// The value's name on screen: its `label` as is — a segment's name is
+    /// never looked up in the string catalog, where it could match a key —
+    /// else its `labelKey`'s translation, the key itself while the catalog
+    /// has no entry for it. The server sends one or the other (`catalogueOf`,
+    /// FloorPlatform's filter engine); the `ref` stands in for a value with
+    /// neither, so its row is never blank. A `String`, not a
+    /// `LocalizedStringResource` like `ClientFilter.title`: a label has
+    /// nothing to look up.
+    var title: String {
+        if let label { return label }
+        guard let labelKey else { return ref }
+        return String(localized: LocalizedStringResource(stringLiteral: labelKey))
     }
 }

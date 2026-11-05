@@ -25,3 +25,20 @@ nonisolated enum EventStatus: String, CaseIterable, Sendable {
         self = EventStatus(rawValue: raw) ?? .other
     }
 }
+
+nonisolated extension EventStatus {
+
+    // MARK: - Display
+
+    /// How the booking reads where an event is listed by its status — a
+    /// client's timeline.
+    var displayLabel: String {
+        switch self {
+        case .planned: String(localized: "Planned")
+        case .confirmed: String(localized: "Confirmed")
+        case .completed: String(localized: "Completed")
+        case .cancelled: String(localized: "Cancelled")
+        case .other: String(localized: "Other")
+        }
+    }
+}

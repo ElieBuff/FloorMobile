@@ -67,7 +67,7 @@ struct BrandClientsList: View {
                     alert = failure.alert
                 }
             } row: { client in
-                NavigationLink(value: ClientsRoute.profile(id: client.id)) {
+                NavigationLink(value: ClientsRoute.profile(id: client.id, card: client)) {
                     ClientRow(client: client, display: .brand)
                 }
             }

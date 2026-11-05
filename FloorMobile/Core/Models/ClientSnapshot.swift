@@ -25,11 +25,6 @@ nonisolated struct ClientSnapshot: Codable, Sendable, Equatable {
         var totalSpentLifetime: Decimal?
     }
 
-    /// "Raphaël Van den Berg", "Raphaël", "Van den Berg", or `nil`.
-    var displayName: String? {
-        PersonName.display(first: firstName, last: lastName)
-    }
-
     init(
         id: String? = nil,
         externalId: String? = nil,
@@ -57,5 +52,15 @@ nonisolated struct ClientSnapshot: Codable, Sendable, Equatable {
                 Metrics(totalSpent12M: $0.totalSpent12M, totalSpentLifetime: $0.totalSpentLifetime)
             }
         )
+    }
+}
+
+nonisolated extension ClientSnapshot {
+
+    // MARK: - Display
+
+    /// "Raphaël Van den Berg", "Raphaël", "Van den Berg", or `nil`.
+    var displayName: String? {
+        PersonName.display(first: firstName, last: lastName)
     }
 }

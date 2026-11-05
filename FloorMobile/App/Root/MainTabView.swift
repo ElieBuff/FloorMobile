@@ -50,8 +50,8 @@ struct MainTabView: View {
                         // never register.
                         .navigationDestination(for: ClientsRoute.self) { route in
                             switch route {
-                            case .profile(let id):
-                                ClientProfileView(clientID: id)
+                            case .profile(let id, let card):
+                                ClientProfileView(clientID: id, card: card)
                             }
                         }
                 }

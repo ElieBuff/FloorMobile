@@ -147,7 +147,7 @@ struct MyClientsList: View {
                     alert = failure.alert
                 }
             } row: { client in
-                NavigationLink(value: ClientsRoute.profile(id: client.id)) {
+                NavigationLink(value: ClientsRoute.profile(id: client.id, card: client)) {
                     ClientRow(client: client, display: .mine)
                 }
             }
@@ -235,8 +235,9 @@ private struct MatchingClients: View {
 
     var body: some View {
         List(clients) { client in
-            NavigationLink(value: ClientsRoute.profile(id: client.id)) {
-                ClientRow(client: ClientItem(client: client), display: .mine)
+            let card = ClientItem(client: client)
+            NavigationLink(value: ClientsRoute.profile(id: client.id, card: card)) {
+                ClientRow(client: card, display: .mine)
             }
             .listRowInsets(.cardRow)
             .onAppearNearEnd(of: clients, item: client) {

@@ -23,6 +23,15 @@ struct EventStatusTests {
         #expect(EventStatus(raw: "CANCELLED") == .cancelled)
     }
 
+    @Test("Each status reads as its booking's word")
+    func displayLabels() {
+        #expect(EventStatus.planned.displayLabel == "Planned")
+        #expect(EventStatus.confirmed.displayLabel == "Confirmed")
+        #expect(EventStatus.completed.displayLabel == "Completed")
+        #expect(EventStatus.cancelled.displayLabel == "Cancelled")
+        #expect(EventStatus.other.displayLabel == "Other")
+    }
+
     @Test("An unknown status falls back instead of breaking decoding", arguments: [
         "RESCHEDULED", "", "NO_SHOW", "planned",
     ])

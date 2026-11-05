@@ -36,4 +36,49 @@ struct ClientProfileTests {
         #expect(profile.summary.value == summary)
         #expect(profile.timeline.error != nil)
     }
+
+    // MARK: - Failures
+
+    @Test("No part failed: no error for the page's notice")
+    func noFailureNoError() {
+        var profile = ClientProfile(clientID: "c1")
+        profile.summary = .loaded(ClientSummary(title: "", brief: "", prose: "", nextStep: "", mood: nil))
+
+        #expect(profile.firstError == nil)
+    }
+
+    @Test("The notice's error is the details', else the summary's, else the timeline's")
+    func firstErrorInOrder() {
+        var profile = ClientProfile(clientID: "c1")
+        profile.timeline = .failed(AppError.server(statusCode: 404))
+        profile.summary = .failed(AppError.server(statusCode: 502))
+
+        guard case .server(statusCode: 502)? = profile.firstError as? AppError else {
+            Issue.record("Expected the summary's AppError.server(502), got \(String(describing: profile.firstError))")
+            return
+        }
+
+        profile.details = .failed(AppError.network(underlying: nil))
+
+        guard case .network? = profile.firstError as? AppError else {
+            Issue.record("Expected the details' AppError.network, got \(String(describing: profile.firstError))")
+            return
+        }
+    }
+
+    @Test("Trying again puts back on their way only the parts that failed")
+    func retryFailedOnly() {
+        let summary = ClientSummary(title: "", brief: "Brief.", prose: "", nextStep: "", mood: nil)
+        var profile = ClientProfile(clientID: "c1")
+        profile.summary = .loaded(summary)
+        profile.details = .failed(AppError.network(underlying: nil))
+        profile.timeline = .failed(AppError.network(underlying: nil))
+
+        profile.retryFailed()
+
+        #expect(profile.details.isLoading)
+        #expect(profile.timeline.isLoading)
+        #expect(profile.summary.value == summary)
+        #expect(profile.firstError == nil)
+    }
 }

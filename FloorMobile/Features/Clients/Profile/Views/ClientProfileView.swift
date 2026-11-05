@@ -6,15 +6,19 @@
 import SwiftUI
 import os
 
-/// A client's profile — the 360 view — pushed from any client list: what the
-/// server holds on them, asked for each time the page opens.
+/// A client's profile — the 360 view — pushed from any client list: its three
+/// parts (`ClientProfile`) — who the client is, their AI summary, their
+/// timeline — asked for at once each time the page opens, each shown as soon
+/// as it is in.
 ///
-/// Takes an id, because a route carries ids and never a list's value
-/// (`ClientsRoute`). Under the client's name, two tabs of sections
-/// (`Sections/`): "Profile", who the client is, and "Activity", what happens
-/// with them. Only the details show real data today, loaded alone; each other
-/// section will come from a part of `ClientProfile` — its AI summary or its
-/// timeline — once the page adopts it.
+/// Takes an id, and the row the list showed when there is one
+/// (`ClientsRoute.profile`): the page shows that card at once, under the
+/// client's name, until the details replace it. Without a card — a deep link —
+/// a spinner waits for the details, and their failure takes the page. Under
+/// the name, two tabs of sections (`Sections/`): "Profile", who the client
+/// is, and "Activity", what happens with them. A part on its way shows grey
+/// bars; a part that failed hides its sections, and one notice above the tabs
+/// says so and asks again.
 ///
 /// Opening the page also records the view, for the associate's recent
 /// clients, by the route's rules: once per navigation — a pushed page is a new
@@ -24,57 +28,81 @@ import os
 /// interactive (`Endpoint.recordClientView`).
 struct ClientProfileView: View {
     let clientID: String
+    /// The row the list showed, on screen until the details are in; `nil`
+    /// from a deep link.
+    let card: ClientItem?
 
     @Environment(AppSession.self) private var session
     @Environment(AppServices.self) private var services
 
-    @State private var profile: ClientDetails?
-    /// Why the profile could not be loaded; its error stands in for the page.
-    @State private var failure: (any Error)?
+    @State private var profile: ClientProfile
     /// Whether this navigation already recorded its view.
     @State private var viewRecorded = false
+
+    init(clientID: String, card: ClientItem? = nil) {
+        self.clientID = clientID
+        self.card = card
+        _profile = State(initialValue: ClientProfile(clientID: clientID))
+    }
 
     var body: some View {
         content
             .ambientBackground()
-            .navigationTitle(title)
+            .navigationTitle(client?.displayLabel ?? "")
             .navigationBarTitleDisplayMode(.inline)
             .onAppear(perform: recordViewOnce)
+            // Here, on a view that never changes, and not on `content`: the
+            // spinner giving way to the profile would cancel the loads under
+            // way. Each restarts when its part goes back to `.loading`.
+            .task(id: profile.details.isLoading) {
+                await load(\.details) { try await services.clients.details(id: clientID, using: session.api) }
+            }
+            .task(id: profile.summary.isLoading) {
+                await load(\.summary) { try await services.clients.summary(id: clientID, using: session.api) }
+            }
+            .task(id: profile.timeline.isLoading) {
+                await load(\.timeline) { try await services.clients.timeline(id: clientID, using: session.api) }
+            }
     }
 
-    /// The profile once loaded; until then a spinner that loads it, or the
-    /// error of a load that failed. Separate branches, so "Try again" — which
-    /// clears the error — brings the spinner back, and with it a new load.
-    /// A profile already loaded is not asked for again when the page
-    /// reappears.
+    /// The card shown: the details' once in, else the list's.
+    private var client: ClientItem? {
+        profile.details.value?.client ?? card
+    }
+
+    /// The profile as soon as there is a card to show; until then a spinner,
+    /// or the error of details that failed — whose "Try again" asks for them
+    /// again.
     @ViewBuilder
     private var content: some View {
-        if let profile {
-            ClientProfileContent(profile: profile)
-        } else if let failure {
-            LoadFailureView(title: String(localized: "Couldn't load this client"), error: failure) {
-                self.failure = nil
+        if let client {
+            ClientProfileContent(client: client, profile: $profile)
+        } else if let error = profile.details.error {
+            LoadFailureView(title: String(localized: "Couldn't load this client"), error: error) {
+                profile.details = .loading
             }
         } else {
             ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .task { await load() }
         }
     }
 
-    /// The client's name once the profile is in, empty until then.
-    private var title: String {
-        profile?.client.displayLabel ?? ""
-    }
-
-    private func load() async {
+    /// Asks for one part while it is on its way, and puts in what comes back.
+    /// A part loaded or failed is left as it is: a page coming back does not
+    /// ask again for what it has.
+    private func load<Value>(
+        _ part: WritableKeyPath<ClientProfile, Loadable<Value>>,
+        _ fetch: () async throws -> Value
+    ) async {
+        guard profile[keyPath: part].isLoading else { return }
         do {
-            profile = try await services.clients.details(id: clientID, using: session.api)
+            profile[keyPath: part] = .loaded(try await fetch())
         } catch {
             // Leaving the tab cancels the load, which `APIClient` reports as a
-            // network error: not a failure to show when the page comes back.
+            // network error: not a failure — the part stays on its way, asked
+            // for again when the page comes back.
             guard !Task.isCancelled else { return }
-            failure = error
+            profile[keyPath: part] = .failed(error)
         }
     }
 
@@ -100,16 +128,18 @@ struct ClientProfileView: View {
     }
 }
 
-/// What the profile shows once loaded: who the client is, the tabs, then the
-/// sections of the tab picked. A view of its own so a preview can show it on
-/// a made-up profile, without a server.
+/// What the profile shows once there is a card: who the client is, the notice
+/// of a part that failed, the tabs, then the sections of the tab picked. A
+/// view of its own so a preview can show it on a made-up profile, without a
+/// server.
 private struct ClientProfileContent: View {
-    let profile: ClientDetails
+    let client: ClientItem
+    @Binding var profile: ClientProfile
 
     /// The two halves of the profile.
     private enum Tab: Hashable {
-        /// Who the client is: summary, details, dates, household, tastes,
-        /// lists, purchases and notes.
+        /// Who the client is: summary, details, consents, dates, household,
+        /// tastes, lists, purchases and notes.
         case profile
         /// What happens with them: key figures, what is planned, what
         /// happened.
@@ -119,11 +149,13 @@ private struct ClientProfileContent: View {
     /// The tab shown; "Profile" when the page opens.
     @State private var tab = Tab.profile
 
-    private var client: ClientItem { profile.client }
-
     var body: some View {
         List {
             header
+
+            if let error = profile.firstError {
+                failureNotice(error)
+            }
 
             Section {
                 Picker(String(localized: "Section"), selection: $tab) {
@@ -138,8 +170,11 @@ private struct ClientProfileContent: View {
 
             switch tab {
             case .profile:
-                ProfileSummarySection()
-                ProfileDetailsSection(client: client)
+                ProfileSummarySection(summary: profile.summary)
+                ProfileDetailsSection(client: client, details: profile.details)
+                if let details = profile.details.value {
+                    ProfileConsentsSection(optIns: details.optIns)
+                }
                 ProfileImportantDatesSection()
                 ProfileHouseholdSection()
                 ProfilePreferencesSection()
@@ -149,8 +184,14 @@ private struct ClientProfileContent: View {
                 ProfileNotesSection()
             case .activity:
                 ProfileMetricsSection()
-                ProfileUpcomingActivitiesSection()
-                ProfileTimelineSection()
+                ProfileTimelineSection(
+                    title: String(localized: "Upcoming"), timeline: profile.timeline, lines: \.upcoming,
+                    emptyMessage: String(localized: "Nothing planned")
+                )
+                ProfileTimelineSection(
+                    title: String(localized: "Recent activity"), timeline: profile.timeline, lines: \.past,
+                    emptyMessage: String(localized: "No activity yet")
+                )
             }
         }
         .cardList()
@@ -182,29 +223,103 @@ private struct ClientProfileContent: View {
             .listRowInsets(.cardRow)
         }
     }
+
+    /// The one notice for every part that failed — their sections hidden —
+    /// with why, and "Try again", which asks for all of them again. An
+    /// `EmptySectionCard` on the background like the tabs, mounted as
+    /// `MyClientsList.fallbackNotice` mounts it for a silent server: keep the
+    /// two alike.
+    private func failureNotice(_ error: any Error) -> some View {
+        Section {
+            EmptySectionCard(
+                icon: {
+                    Image(systemName: "exclamationmark.triangle")
+                        .foregroundStyle(Color(.OnCanvas.textPrimary))
+                        .accessibilityHidden(true)
+                },
+                message: String(localized: "Part of this profile couldn't be loaded. \(error.localizedDescription)"),
+                action: EmptySectionAction(label: String(localized: "Try again")) {
+                    profile.retryFailed()
+                }
+            )
+            // One element for VoiceOver: the message, then its button.
+            .accessibilityElement(children: .combine)
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets())
+        }
+    }
 }
 
 // MARK: - Previews
 
+private let previewClient = ClientItem(
+    id: "1", displayName: "Alice Martinez", segment: "VIC",
+    storeCode: "90917634296", storeName: "Regent Street",
+    salesAssociateExternalId: "378970372512460673", salesAssociateName: "Elie Buff",
+    primaryEmail: "alice.martinez@example.com", primaryPhone: "+33 6 12 34 56 78"
+)
+
 #Preview("Loaded") {
-    NavigationStack {
-        ClientProfileContent(profile: ClientDetails(
-            client: ClientItem(
-                id: "1", displayName: "Alice Martinez", segment: "VIC",
-                storeCode: "90917634296", storeName: "Regent Street",
-                salesAssociateExternalId: "378970372512460673", salesAssociateName: "Elie Buff",
-                primaryEmail: "alice.martinez@example.com", primaryPhone: "+33 6 12 34 56 78"
-            ),
-            salutation: "MRS",
+    @Previewable @State var profile = ClientProfile(
+        clientID: "1",
+        details: .loaded(ClientDetails(
+            client: previewClient,
+            salutation: "misses",
             address: ClientDetails.Address(
                 street: "12 Rue du Faubourg Saint-Honoré", postalCode: "75008",
                 city: "Paris", state: nil, country: "FR"
             ),
             preferredLanguage: "fr",
             optIns: ClientDetails.OptIns(email: true, directMessage: true, call: false, wechat: false, line: false)
+        )),
+        summary: .loaded(ClientSummary(
+            title: "A loyal outerwear client",
+            brief: "With the house since 2022, Alice buys outerwear each season and came for a fitting last week.",
+            prose: "",
+            nextStep: "Call her about the new coats arriving on Friday.",
+            mood: .positive
+        )),
+        timeline: .loaded(ClientTimeline(
+            upcoming: [
+                ClientTimelineItem(
+                    id: "e1", kind: .event, date: .now.addingTimeInterval(86_400), status: "PLANNED",
+                    title: "Fitting", subtitle: [.reason("BACK_IN_STOCK"), .meetingType("IN_PERSON")]
+                ),
+            ],
+            past: [
+                ClientTimelineItem(
+                    id: "t1", kind: .transaction, date: .now.addingTimeInterval(-604_800), status: "PAID",
+                    title: "VESTE ACACIA", subtitle: [.itemCount(1), .amount(890, currency: "EUR")]
+                ),
+            ]
         ))
-        .ambientBackground()
-        .navigationTitle("Alice Martinez")
-        .navigationBarTitleDisplayMode(.inline)
+    )
+    NavigationStack {
+        ClientProfileContent(client: previewClient, profile: $profile)
+            .ambientBackground()
+            .navigationTitle("Alice Martinez")
+            .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+#Preview("Loading from a list") {
+    @Previewable @State var profile = ClientProfile(clientID: "1")
+    NavigationStack {
+        ClientProfileContent(client: previewClient, profile: $profile)
+            .ambientBackground()
+            .navigationTitle("Alice Martinez")
+            .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+#Preview("Summary failed") {
+    @Previewable @State var profile = ClientProfile(
+        clientID: "1", summary: .failed(AppError.server(statusCode: 502))
+    )
+    NavigationStack {
+        ClientProfileContent(client: previewClient, profile: $profile)
+            .ambientBackground()
+            .navigationTitle("Alice Martinez")
+            .navigationBarTitleDisplayMode(.inline)
     }
 }

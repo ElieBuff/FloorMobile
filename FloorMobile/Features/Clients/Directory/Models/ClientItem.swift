@@ -20,7 +20,11 @@ import Foundation
 /// Not a `ClientSnapshot`: that one is stored as a composite in shipped models
 /// (`AgendaEvent`, `AgendaTask`, `AIAction`), so growing it with the email and
 /// the phone would change their store's shape.
-nonisolated struct ClientItem: Identifiable, Sendable, Equatable {
+///
+/// `Hashable` and `Codable` for the route that opens a profile, which carries
+/// the row the list showed (`ClientsRoute.profile`): navigation and its
+/// restoration, never the network — the server's shapes stay in their wires.
+nonisolated struct ClientItem: Identifiable, Sendable, Hashable, Codable {
     let id: String
     /// "Raphaël Van den Berg", or `nil` when there is no name.
     let displayName: String?
@@ -33,14 +37,6 @@ nonisolated struct ClientItem: Identifiable, Sendable, Equatable {
     let salesAssociateName: String?
     let primaryEmail: String?
     let primaryPhone: String?
-
-    /// The name to write: the client's, or "Unnamed client" when the server
-    /// has none — never a blank line. What every row, title and header reads;
-    /// an avatar keeps `displayName`, so a client with no name gets an empty
-    /// circle rather than the placeholder's initials.
-    var displayLabel: String {
-        displayName ?? String(localized: "Unnamed client")
-    }
 }
 
 nonisolated extension ClientItem {
@@ -98,5 +94,18 @@ nonisolated extension ClientItem {
             primaryEmail: wire.email,
             primaryPhone: wire.mobile
         )
+    }
+}
+
+nonisolated extension ClientItem {
+
+    // MARK: - Display
+
+    /// The name to write: the client's, or "Unnamed client" when the server
+    /// has none — never a blank line. What every row, title and header reads;
+    /// an avatar keeps `displayName`, so a client with no name gets an empty
+    /// circle rather than the placeholder's initials.
+    var displayLabel: String {
+        displayName ?? String(localized: "Unnamed client")
     }
 }

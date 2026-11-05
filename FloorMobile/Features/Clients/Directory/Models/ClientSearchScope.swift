@@ -14,6 +14,11 @@ nonisolated enum ClientSearchScope: CaseIterable, Sendable {
     case mine
     /// Any client of the brand — "All Brand", on the server.
     case brand
+}
+
+nonisolated extension ClientSearchScope {
+
+    // MARK: - Display
 
     /// The scope's name in the Clients tab's picker.
     var title: String {

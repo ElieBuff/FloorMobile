@@ -33,6 +33,11 @@ nonisolated enum ReminderOffset {
         let minutes = Int((startDate.timeIntervalSince(reminderDate) / 60).rounded())
         return minutes > 0 ? minutes : nil
     }
+}
+
+nonisolated extension ReminderOffset {
+
+    // MARK: - Display
 
     /// "30 min before", or "None" when there is no reminder.
     static func label(_ offset: Int?) -> String {

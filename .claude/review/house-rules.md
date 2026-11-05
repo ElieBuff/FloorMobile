@@ -41,8 +41,14 @@ provide (`TaskActions` documents why it does). Copying the closest precedent is 
 
 **The shape of a `@Model`.** The class body carries only the stored fields and the `init`. Behaviour goes in a
 `nonisolated extension` in the same file, just below, split by `// MARK: -`. No `Type+Qualifier.swift` file for a
-model the feature owns: that suffix is for extending a type defined elsewhere (`Date+NextHour`). A plain struct (a
-value, a summary, a wire type) keeps its computed properties in its own body.
+model the feature owns: that suffix is for extending a type defined elsewhere (`Date+NextHour`).
+
+**Display in an extension, for every model** (the user's rule, 05/11). Struct, enum or `@Model`: what only shows the
+value — labels, formatted names, symbols, colours — leaves the body for an extension in the same file, under
+`// MARK: - Display`, one per nested type. The body keeps the stored fields, the `init`s and the business logic. The
+extension is `nonisolated` like its type, unless it reads main-actor labels: then it stays a plain extension, on the
+main actor, and says so. Never make another type's labels `nonisolated` just to read them from a struct. Screen-state
+types (`@Observable`) are out of scope.
 
 **Wire → model → view, one exception.** Server JSON is decoded into a wire type in `Data/Wire/`, converted by
 `init(wire:)`, and views see only the model. One `<Model>Wire.swift` per local model, an `enum` namespace holding

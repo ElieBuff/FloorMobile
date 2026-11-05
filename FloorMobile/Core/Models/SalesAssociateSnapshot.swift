@@ -16,11 +16,6 @@ nonisolated struct SalesAssociateSnapshot: Codable, Sendable, Equatable {
     var firstName: String?
     var lastName: String?
 
-    /// "Elie Buff", "Elie", "Buff", or `nil` when the API sent no name.
-    var displayName: String? {
-        PersonName.display(first: firstName, last: lastName)
-    }
-
     init(id: String? = nil, firstName: String? = nil, lastName: String? = nil) {
         self.id = id
         self.firstName = firstName
@@ -29,5 +24,15 @@ nonisolated struct SalesAssociateSnapshot: Codable, Sendable, Equatable {
 
     init(wire: SalesAssociateSnapshotWire) {
         self.init(id: wire.id, firstName: wire.firstName, lastName: wire.lastName)
+    }
+}
+
+nonisolated extension SalesAssociateSnapshot {
+
+    // MARK: - Display
+
+    /// "Elie Buff", "Elie", "Buff", or `nil` when the API sent no name.
+    var displayName: String? {
+        PersonName.display(first: firstName, last: lastName)
     }
 }
