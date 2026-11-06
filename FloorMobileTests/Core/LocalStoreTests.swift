@@ -12,12 +12,8 @@ import Testing
 @MainActor
 struct LocalStoreTests {
 
-    private func makeStore(
-        tenant: StoredValue<String>,
-        cursor: StoredValue<String> = .inMemory(),
-        language: StoredValue<String> = .inMemory()
-    ) -> LocalStore {
-        LocalStore(tenantID: tenant, clientCursor: cursor, preferredLanguage: language)
+    private func makeStore(tenant: StoredValue<String>, cursor: StoredValue<String> = .inMemory()) -> LocalStore {
+        LocalStore(tenantID: tenant, clientCursor: cursor)
     }
 
     /// A store holding one row of **every** model in the schema.
@@ -68,14 +64,12 @@ struct LocalStoreTests {
         let context = try seededContext()
         let tenant = StoredValue<String>.inMemory("org-1")
         let cursor = StoredValue<String>.inMemory("cursor")
-        let language = StoredValue<String>.inMemory("Fr")
 
-        try makeStore(tenant: tenant, cursor: cursor, language: language).enforceTenant("org-1", context: context)
+        try makeStore(tenant: tenant, cursor: cursor).enforceTenant("org-1", context: context)
 
         #expect(try remainingRowCount(in: context) == 8)
         #expect(tenant.get() == "org-1")
         #expect(cursor.get() == "cursor")
-        #expect(language.get() == "Fr")
     }
 
     @Test("A different tenant wipes every model and updates the marker")
@@ -83,9 +77,8 @@ struct LocalStoreTests {
         let context = try seededContext()
         let tenant = StoredValue<String>.inMemory("org-1")
         let cursor = StoredValue<String>.inMemory("cursor")
-        let language = StoredValue<String>.inMemory("Fr")
 
-        try makeStore(tenant: tenant, cursor: cursor, language: language).enforceTenant("org-2", context: context)
+        try makeStore(tenant: tenant, cursor: cursor).enforceTenant("org-2", context: context)
 
         // Not a single row of any model survives: this is what keeps one
         // tenant's data from surfacing under another.
@@ -94,8 +87,6 @@ struct LocalStoreTests {
         // Nor the client cursor: kept, it would ask the new tenant's server
         // for recent changes only, on a store that now holds no client.
         #expect(cursor.get() == nil)
-        // Nor the previous associate's language.
-        #expect(language.get() == nil)
     }
 
     @Test("First login (no previous tenant) records the tenant")

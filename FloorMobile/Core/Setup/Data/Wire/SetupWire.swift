@@ -13,14 +13,30 @@ nonisolated enum SetupWire {
         /// by `EnumsWire`.
         var enums: EnumsWire.Response
         var clients: Clients
-        var salesAssociate: SalesAssociate
+        /// `nil` only if the associate's record went between the token's
+        /// check and this read.
+        var salesAssociate: SalesAssociate?
     }
 
-    /// The connected associate's block.
+    /// The connected associate's block: the shared projection every response
+    /// embeds an associate with — their language included — plus their main
+    /// store.
     struct SalesAssociate: Decodable, Sendable {
-        /// `"Fr"`, `"En"`… — kept raw, the server may add more. `nil` when
-        /// the associate has no preference.
-        var preferredLanguage: String?
+        /// Who they are, read with the shared fragment off the same object.
+        var snapshot: SalesAssociateSnapshotWire
+        /// Their main store, in the shape a client's store comes in; `nil`
+        /// without one.
+        var primaryStore: StoreSnapshotWire?
+
+        private enum CodingKeys: String, CodingKey {
+            case primaryStore
+        }
+
+        init(from decoder: any Decoder) throws {
+            snapshot = try SalesAssociateSnapshotWire(from: decoder)
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            primaryStore = try container.decodeIfPresent(StoreSnapshotWire.self, forKey: .primaryStore)
+        }
     }
 
     /// The Clients feature's block.

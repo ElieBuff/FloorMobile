@@ -24,7 +24,7 @@ struct SetupServiceTests {
         }
         let container = try Self.inMemoryContainer()
 
-        try await SetupService(modelContainer: container).synchronize(using: client, localStore: Self.localStore())
+        try await SetupService(modelContainer: container).synchronize(using: client)
 
         #expect(requestedPath.withLock { $0 }?.hasSuffix("setup") == true)
         let context = ModelContext(container)
@@ -53,7 +53,7 @@ struct SetupServiceTests {
         )
         try container.mainContext.save()
 
-        try await SetupService(modelContainer: container).synchronize(using: client, localStore: Self.localStore())
+        try await SetupService(modelContainer: container).synchronize(using: client)
 
         let values = try ModelContext(container)
             .fetch(FetchDescriptor<EnumValue>())
@@ -68,8 +68,8 @@ struct SetupServiceTests {
         let container = try Self.inMemoryContainer()
         let service = SetupService(modelContainer: container)
 
-        try await service.synchronize(using: client, localStore: Self.localStore())
-        try await service.synchronize(using: client, localStore: Self.localStore())
+        try await service.synchronize(using: client)
+        try await service.synchronize(using: client)
 
         let context = ModelContext(container)
         #expect(try context.fetchCount(FetchDescriptor<EnumValue>()) == (try Fixture.enumsValueCount()))
@@ -83,10 +83,10 @@ struct SetupServiceTests {
         let container = try Self.inMemoryContainer()
         let service = SetupService(modelContainer: container)
 
-        try await service.synchronize(using: client, localStore: Self.localStore())
+        try await service.synchronize(using: client)
         let before = try Self.identities(in: container)
 
-        try await service.synchronize(using: client, localStore: Self.localStore())
+        try await service.synchronize(using: client)
 
         // Row identities survive only if the rows were left alone: the rewrite
         // path deletes and re-inserts, which mints new ones. This is what keeps
@@ -106,8 +106,8 @@ struct SetupServiceTests {
         let container = try Self.inMemoryContainer()
         let service = SetupService(modelContainer: container)
 
-        try await service.synchronize(using: client, localStore: Self.localStore())
-        try await service.synchronize(using: client, localStore: Self.localStore())
+        try await service.synchronize(using: client)
+        try await service.synchronize(using: client)
 
         // Same two values, listed the other way round: `rank` is what the
         // pickers order by, so an identical *set* is still a real change.
@@ -130,7 +130,7 @@ struct SetupServiceTests {
         try container.mainContext.save()
 
         await #expect(throws: AppError.self) {
-            try await SetupService(modelContainer: container).synchronize(using: client, localStore: Self.localStore())
+            try await SetupService(modelContainer: container).synchronize(using: client)
         }
 
         // Nothing is deleted before the new set is in hand: an old
@@ -146,7 +146,7 @@ struct SetupServiceTests {
     func synchronizePersistsFilters() async throws {
         let container = try Self.inMemoryContainer()
 
-        try await SetupService(modelContainer: container).synchronize(using: Self.serving("setup"), localStore: Self.localStore())
+        try await SetupService(modelContainer: container).synchronize(using: Self.serving("setup"))
 
         let filters = try ModelContext(container).fetch(
             FetchDescriptor<ClientFilter>(sortBy: [SortDescriptor(\.rank)])
@@ -178,8 +178,8 @@ struct SetupServiceTests {
         let container = try Self.inMemoryContainer()
         let service = SetupService(modelContainer: container)
 
-        try await service.synchronize(using: client, localStore: Self.localStore())
-        try await service.synchronize(using: client, localStore: Self.localStore())
+        try await service.synchronize(using: client)
+        try await service.synchronize(using: client)
 
         let filters = try ModelContext(container).fetch(FetchDescriptor<ClientFilter>())
         #expect(filters.map(\.id) == ["b"])
@@ -199,8 +199,8 @@ struct SetupServiceTests {
         let container = try Self.inMemoryContainer()
         let service = SetupService(modelContainer: container)
 
-        try await service.synchronize(using: client, localStore: Self.localStore())
-        try await service.synchronize(using: client, localStore: Self.localStore())
+        try await service.synchronize(using: client)
+        try await service.synchronize(using: client)
 
         // Same count, so the comparison has to look inside each filter.
         let filters = try ModelContext(container).fetch(
@@ -221,8 +221,8 @@ struct SetupServiceTests {
         let container = try Self.inMemoryContainer()
         let service = SetupService(modelContainer: container)
 
-        try await service.synchronize(using: client, localStore: Self.localStore())
-        try await service.synchronize(using: client, localStore: Self.localStore())
+        try await service.synchronize(using: client)
+        try await service.synchronize(using: client)
 
         let filters = try ModelContext(container).fetch(
             FetchDescriptor<ClientFilter>(sortBy: [SortDescriptor(\.rank)])
@@ -233,27 +233,32 @@ struct SetupServiceTests {
 
     // MARK: - Sales associate
 
-    @Test("The associate's language is kept, raw, beside the store")
-    func synchronizeKeepsTheLanguage() async throws {
-        let localStore = Self.localStore()
+    @Test("The real setup hands back the associate signed in and their store")
+    func synchronizeHandsBackTheAssociate() async throws {
+        let signedIn = try #require(
+            try await SetupService(modelContainer: try Self.inMemoryContainer())
+                .synchronize(using: Self.serving("setup"))
+        )
+
+        #expect(signedIn.associate == SalesAssociateSnapshot(
+            id: "01KTRSFERMNXK5FGSQW11M1478", firstName: "Elie", lastName: "Buff", preferredLanguage: nil
+        ))
+        #expect(signedIn.store == StoreSnapshot(
+            id: "09270e8c-d9ff-4c29-ba93-330212bda2ef", name: "Shop location", storeCode: "90917634296"
+        ))
+    }
+
+    @Test("The associate's language comes with them, raw")
+    func synchronizeHandsBackTheLanguage() async throws {
         let client = Self.makeClient { request in
             (Self.response(request, statusCode: 200), try Self.payload(language: "Fr"))
         }
 
-        try await SetupService(modelContainer: try Self.inMemoryContainer())
-            .synchronize(using: client, localStore: localStore)
+        let signedIn = try await SetupService(modelContainer: try Self.inMemoryContainer())
+            .synchronize(using: client)
 
-        #expect(localStore.preferredLanguage.get() == "Fr")
-    }
-
-    @Test("The real setup, whose associate has no language, keeps none")
-    func synchronizeKeepsNoLanguageFromTheFixture() async throws {
-        let localStore = Self.localStore(language: "En")
-
-        try await SetupService(modelContainer: try Self.inMemoryContainer())
-            .synchronize(using: Self.serving("setup"), localStore: localStore)
-
-        #expect(localStore.preferredLanguage.get() == nil)
+        #expect(signedIn?.associate.preferredLanguage == "Fr")
+        #expect(signedIn?.store == nil)
     }
 
     // MARK: - Client sorts
@@ -263,7 +268,7 @@ struct SetupServiceTests {
         let container = try Self.inMemoryContainer()
 
         try await SetupService(modelContainer: container)
-            .synchronize(using: Self.serving("setup"), localStore: Self.localStore())
+            .synchronize(using: Self.serving("setup"))
 
         let sorts = try ModelContext(container).fetch(FetchDescriptor<ClientSort>(sortBy: [SortDescriptor(\.rank)]))
         #expect(sorts.map(\.value) == ["name", "lastPurchase", "spent12M", "spentLifetime", "createdDate", "contactedByMe"])
@@ -280,7 +285,7 @@ struct SetupServiceTests {
         }
         let container = try Self.inMemoryContainer()
 
-        try await SetupService(modelContainer: container).synchronize(using: client, localStore: Self.localStore())
+        try await SetupService(modelContainer: container).synchronize(using: client)
 
         let sorts = try ModelContext(container).fetch(FetchDescriptor<ClientSort>(sortBy: [SortDescriptor(\.rank)]))
         #expect(sorts.map(\.value) == ["a", "b"])
@@ -298,8 +303,8 @@ struct SetupServiceTests {
         let container = try Self.inMemoryContainer()
         let service = SetupService(modelContainer: container)
 
-        try await service.synchronize(using: client, localStore: Self.localStore())
-        try await service.synchronize(using: client, localStore: Self.localStore())
+        try await service.synchronize(using: client)
+        try await service.synchronize(using: client)
 
         let sorts = try ModelContext(container).fetch(FetchDescriptor<ClientSort>(sortBy: [SortDescriptor(\.rank)]))
         #expect(sorts.filter(\.isDefault).map(\.value) == ["b"])
@@ -317,32 +322,26 @@ struct SetupServiceTests {
         let container = try Self.inMemoryContainer()
         let service = SetupService(modelContainer: container)
 
-        try await service.synchronize(using: client, localStore: Self.localStore())
-        try await service.synchronize(using: client, localStore: Self.localStore())
+        try await service.synchronize(using: client)
+        try await service.synchronize(using: client)
 
         #expect(try ModelContext(container).fetch(FetchDescriptor<ClientSort>()).map(\.value) == ["a"])
     }
 
-    @Test("An associate with no language any more clears the kept one")
-    func synchronizeClearsAMissingLanguage() async throws {
-        let localStore = Self.localStore(language: "En")
+    @Test("A setup without an associate does not fail, and hands back none")
+    func synchronizeWithoutAnAssociate() async throws {
+        // The server sends null only if the record went between the token's check and the read.
         let client = Self.makeClient { request in
-            (Self.response(request, statusCode: 200), try Self.payload(language: nil))
+            (Self.response(request, statusCode: 200), try Self.payload(associate: false))
         }
 
-        try await SetupService(modelContainer: try Self.inMemoryContainer())
-            .synchronize(using: client, localStore: localStore)
+        let signedIn = try await SetupService(modelContainer: try Self.inMemoryContainer())
+            .synchronize(using: client)
 
-        #expect(localStore.preferredLanguage.get() == nil)
+        #expect(signedIn == nil)
     }
 
     // MARK: - Helpers
-
-    /// A `LocalStore` held in memory: the tests never touch the device's
-    /// `UserDefaults`.
-    private nonisolated static func localStore(language: String? = nil) -> LocalStore {
-        LocalStore(tenantID: .inMemory(), clientCursor: .inMemory(), preferredLanguage: .inMemory(language))
-    }
 
     /// The store's row identities, which change if and only if the rows were
     /// deleted and re-inserted.
@@ -356,13 +355,21 @@ struct SetupServiceTests {
 
     /// A minimal `GET setup` body: one vocabulary field in the given order,
     /// the given filters, each with no value, the given sorts, and the
-    /// associate's language.
+    /// associate of the real fixture with the given language, without a
+    /// store — or `null` for them.
     private nonisolated static func payload(
         taskReasons: [String] = ["FOLLOW_UP"],
         filters: [(id: String, titleKey: String)] = [],
         sorts: [(value: String, position: Int, isDefault: Bool)] = [],
-        language: String? = "Fr"
+        language: String? = "Fr",
+        associate: Bool = true
     ) throws -> Data {
+        let salesAssociate: Any = associate
+            ? [
+                "id": "01KTRSFERMNXK5FGSQW11M1478", "externalId": "378970372512460673",
+                "firstName": "Elie", "lastName": "Buff", "preferredLanguage": language as Any? ?? NSNull(),
+            ] as [String: Any]
+            : NSNull()
         let body: [String: Any] = [
             "enums": ["task": ["reason": taskReasons]],
             "clients": [
@@ -376,7 +383,7 @@ struct SetupServiceTests {
                     ] as [String: Any]
                 },
             ],
-            "salesAssociate": ["preferredLanguage": language as Any? ?? NSNull()],
+            "salesAssociate": salesAssociate,
         ]
         return try JSONSerialization.data(withJSONObject: body)
     }

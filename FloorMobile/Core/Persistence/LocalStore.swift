@@ -22,10 +22,6 @@ nonisolated struct LocalStore: Sendable {
     var tenantID: StoredValue<String>
     /// Where the store's client sync resumes from — see `ClientService`.
     var clientCursor: StoredValue<String>
-    /// The connected associate's language, raw as `GET setup` sends it (`"Fr"`,
-    /// `"En"`) — `nil` when they have none. Theirs, not the device's: it goes
-    /// with the store, so the next associate on this phone never inherits it.
-    var preferredLanguage: StoredValue<String>
 
     /// Erases the store when `currentTenantID` is not the tenant it holds, and
     /// records the new one.
@@ -67,16 +63,16 @@ nonisolated struct LocalStore: Sendable {
     }
 
     /// The values that belong to the session, wiped with the store. A value
-    /// added above joins this list if it describes the rows or the associate.
-    /// Not `tenantID`, which `enforceTenant` writes right after, nor a device
-    /// preference, which outlives a sign-out.
+    /// added above joins this list if it describes the rows. Not `tenantID`,
+    /// which `enforceTenant` writes right after, nor a device preference,
+    /// which outlives a sign-out — nor the associate signed in, whom
+    /// `AppSession` keeps and clears.
     private var sessionValues: [StoredValue<String>] {
-        [clientCursor, preferredLanguage]
+        [clientCursor]
     }
 
     static let live = LocalStore(
         tenantID: .userDefaults(.lastTenantID),
-        clientCursor: .userDefaults(.clientSyncCursor),
-        preferredLanguage: .userDefaults(.preferredLanguage)
+        clientCursor: .userDefaults(.clientSyncCursor)
     )
 }

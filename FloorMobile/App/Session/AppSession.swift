@@ -36,9 +36,46 @@ final class AppSession {
     /// (e.g. `AIActionService`) with the session's authenticated client.
     let api: APIClient
 
-    init(auth: AuthClient, api: APIClient) {
+    /// The associate signed in, as `GET setup` last described them — their
+    /// language included; `nil` before an installation's first setup and
+    /// after a sign-out. The same person as the authenticated `User`: to tell
+    /// whether a client is theirs, compare the client's associate with
+    /// `User.id` — the token's `sub`, their external id — never with this
+    /// `id`, the server's internal one.
+    ///
+    /// A session ended without `signOut()` — a refresh token refused at
+    /// launch — leaves the previous associate kept until the next sign-in's
+    /// `GET setup` replaces them.
+    private(set) var salesAssociate: SalesAssociateSnapshot?
+    /// Their main store; `nil` without one.
+    private(set) var store: StoreSnapshot?
+
+    /// Where the two above are kept between launches, so a launch offline
+    /// still has them. In memory in tests, never the device's defaults.
+    private let salesAssociateStorage: StoredValue<SalesAssociateSnapshot>
+    private let storeStorage: StoredValue<StoreSnapshot>
+
+    init(
+        auth: AuthClient,
+        api: APIClient,
+        salesAssociateStorage: StoredValue<SalesAssociateSnapshot> = .signedInAssociate,
+        storeStorage: StoredValue<StoreSnapshot> = .signedInStore
+    ) {
         self.auth = auth
         self.api = api
+        self.salesAssociateStorage = salesAssociateStorage
+        self.storeStorage = storeStorage
+        salesAssociate = salesAssociateStorage.get()
+        store = storeStorage.get()
+    }
+
+    /// Keeps the associate signed in and their store, as `GET setup` just
+    /// described them, for this launch and the next; `nil` clears them.
+    func keep(_ salesAssociate: SalesAssociateSnapshot?, store: StoreSnapshot?) {
+        self.salesAssociate = salesAssociate
+        self.store = store
+        salesAssociateStorage.set(salesAssociate)
+        storeStorage.set(store)
     }
 
     /// Restores a persisted session at launch. Only acts from the initial
@@ -70,8 +107,11 @@ final class AppSession {
         }
     }
 
+    /// Ends the session — a sign-out, or an expired one (`RootView`) — and
+    /// forgets the associate: the next one on this phone never inherits them.
     func signOut() async {
         await auth.signOut()
+        keep(nil, store: nil)
         state = .unauthenticated
     }
 }

@@ -49,11 +49,15 @@ final class SyncManager {
     ///     store before any data is shown (single-tenant isolation).
     ///   - services: The data services the startup payload runs through.
     ///   - api: The client those services fetch with.
+    ///   - keepSignedInAssociate: Given the associate signed in and their
+    ///     store once `GET setup` is in — `AppSession.keep` in the app. Not
+    ///     called when it fails: the session keeps the ones it had.
     func synchronize(
         context: ModelContext,
         tenantID: String?,
         services: AppServices,
-        api: APIClient
+        api: APIClient,
+        keepSignedInAssociate: (SalesAssociateSnapshot?, StoreSnapshot?) -> Void
     ) async {
         state = .syncing
 
@@ -71,7 +75,7 @@ final class SyncManager {
         }
 
         do {
-            try await performSync(services: services, api: api)
+            try await performSync(services: services, api: api, keepSignedInAssociate: keepSignedInAssociate)
             state = .finished
         } catch {
             // Data already on the device beats a locked launch: a refresh that
@@ -92,7 +96,8 @@ final class SyncManager {
     /// What the launch brings up to date, fanned out with `async let`:
     /// - the app's configuration (`GET setup`): the field vocabulary, which
     ///   every picker reads, the tenant's "My Clients" filters, and the
-    ///   associate's language;
+    ///   associate signed in with their store, handed on as soon as they are
+    ///   in;
     /// - the store's clients — brought up to date, then cleared of those that
     ///   left the store, in that order: the prune only means something once
     ///   the delta is in;
@@ -104,16 +109,22 @@ final class SyncManager {
     /// Feature data that changes by the hour (events, tasks, AI actions) is
     /// deliberately absent: Home loads it on appear and on pull-to-refresh,
     /// and it must not hold the launch back.
-    private func performSync(services: AppServices, api: APIClient) async throws {
+    private func performSync(
+        services: AppServices,
+        api: APIClient,
+        keepSignedInAssociate: (SalesAssociateSnapshot?, StoreSnapshot?) -> Void
+    ) async throws {
         let clients = services.clients
         let cursor = localStore.clientCursor
-        async let configuration: Void = services.setup.synchronize(using: api, localStore: localStore)
+        async let configuration = services.setup.synchronize(using: api)
         async let clientBook: Void = {
             try await clients.synchronize(using: api, cursor: cursor)
             try await clients.pruneDeparted(using: api)
         }()
         async let recentClients: Void = refreshRecentClients(clients, using: api)
-        _ = try await (configuration, clientBook, recentClients)
+        let signedIn = try await configuration
+        keepSignedInAssociate(signedIn?.associate, signedIn?.store)
+        _ = try await (clientBook, recentClients)
     }
 
     /// Brings the associate's recent clients up to date, and never fails the

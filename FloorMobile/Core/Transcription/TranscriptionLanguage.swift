@@ -67,11 +67,13 @@ nonisolated struct TranscriptionLanguage: Sendable {
 }
 
 nonisolated extension TranscriptionLanguage {
-    /// The app's: the associate's language from the store, the device's, the
-    /// device's last pick.
+    /// The app's: the language of the associate signed in, the device's, the
+    /// device's last pick. The associate is read where `AppSession.keep`
+    /// writes them (`StoredValue.signedInAssociate`), not through the session:
+    /// a value, not a view, with no environment to read it from.
     static var live: TranscriptionLanguage {
         TranscriptionLanguage(
-            associateLanguage: LocalStore.live.preferredLanguage.get(),
+            associateLanguage: StoredValue<SalesAssociateSnapshot>.signedInAssociate.get()?.preferredLanguage,
             deviceLocale: .current,
             lastPicked: .userDefaults(.transcriptionLanguage),
             supportedLocale: { await SpeechTranscriber.supportedLocale(equivalentTo: $0) }

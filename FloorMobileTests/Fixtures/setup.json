@@ -153,6 +153,12 @@
         "externalId": "378970372512460673",
         "firstName": "Elie",
         "lastName": "Buff",
-        "preferredLanguage": null
+        "preferredLanguage": null,
+        "primaryStore": {
+            "id": "09270e8c-d9ff-4c29-ba93-330212bda2ef",
+            "externalId": "90917634296",
+            "storeCode": "90917634296",
+            "name": "Shop location"
+        }
     }
 }

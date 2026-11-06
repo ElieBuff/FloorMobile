@@ -167,7 +167,8 @@ struct TaskActionsTests {
                     return (response, Self.savedTask)
                 }
             )
-            session = AppSession(auth: .preview, api: client)
+            // The associate in memory: never the simulator's `UserDefaults`.
+            session = AppSession(auth: .preview, api: client, salesAssociateStorage: .inMemory(), storeStorage: .inMemory())
             services = AppServices(container: container)
         }
 

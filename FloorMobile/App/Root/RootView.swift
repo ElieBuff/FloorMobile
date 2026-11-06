@@ -89,7 +89,8 @@ struct RootView: View {
             context: modelContext,
             tenantID: session.currentTenantID,
             services: services,
-            api: session.api
+            api: session.api,
+            keepSignedInAssociate: session.keep
         )
     }
 }

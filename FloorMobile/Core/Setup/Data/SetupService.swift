@@ -9,9 +9,9 @@ import os
 
 /// Keeps the app's configuration — what `GET setup` serves: the field
 /// vocabulary (`EnumValue`) and the tenant's "My Clients" filters and sorts
-/// (`ClientFilter`, `ClientSort`) in SwiftData, the associate's language in
-/// `LocalStore`. A `@ModelActor`, like the other services, so its writes run
-/// off the main actor.
+/// (`ClientFilter`, `ClientSort`) in SwiftData — and hands back the associate
+/// signed in and their store, which `AppSession` carries. A `@ModelActor`,
+/// like the other services, so its writes run off the main actor.
 @ModelActor
 actor SetupService {
 
@@ -24,16 +24,18 @@ actor SetupService {
     /// fetch and no write. A failed request leaves the previous configuration
     /// untouched: nothing is replaced before the whole of it is in hand.
     ///
-    /// What describes the associate is a few single values, kept in
-    /// `localStore` rather than in SwiftData — wiped with the store. A
-    /// parameter, like `ClientService`'s cursor, so a test passes one held in
-    /// memory.
-    func synchronize(using client: APIClient, localStore: LocalStore) async throws {
+    /// Returns the associate signed in — their language included — and their
+    /// store, for the session to carry; `nil` when the server sent no
+    /// associate.
+    @discardableResult
+    func synchronize(using client: APIClient) async throws -> (associate: SalesAssociateSnapshot, store: StoreSnapshot?)? {
         let setup: SetupWire.Response = try await client.send(.setup())
         try saveVocabulary(setup.enums)
         try saveFilters(setup.clients.filters)
         try saveSorts(setup.clients.sorts)
-        saveSalesAssociate(setup.salesAssociate, in: localStore)
+        return setup.salesAssociate.map {
+            (SalesAssociateSnapshot(wire: $0.snapshot), $0.primaryStore.map(StoreSnapshot.init(wire:)))
+        }
     }
 
     // MARK: - Blocks
@@ -59,12 +61,6 @@ actor SetupService {
         let incoming = sorts.map(ClientSort.init(wire:)).sorted { $0.rank < $1.rank }
         let wrote = try modelContext.replace(with: incoming, order: SortDescriptor(\.rank))
         Self.log("Client sorts", count: incoming.count, wrote: wrote)
-    }
-
-    /// Keeps what the server says of the connected associate. A missing
-    /// language clears the stored one: the associate no longer has one.
-    private func saveSalesAssociate(_ salesAssociate: SetupWire.SalesAssociate, in localStore: LocalStore) {
-        localStore.preferredLanguage.set(salesAssociate.preferredLanguage)
     }
 
     /// Logged, not silent: "the launch wrote nothing" is the point of the

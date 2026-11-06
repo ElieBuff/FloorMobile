@@ -15,19 +15,21 @@ struct SyncManagerTests {
     @Test("A successful startup sync stores the configuration and the clients, and opens the app")
     func finishesAndPersists() async throws {
         let container = try Self.inMemoryContainer()
-        let language = StoredValue<String>.inMemory()
-        let manager = SyncManager(localStore: Self.store(tenant: .inMemory("org-1"), language: language))
+        let manager = SyncManager(localStore: Self.store(tenant: .inMemory("org-1")))
+        var kept: (associate: SalesAssociateSnapshot?, store: StoreSnapshot?)?
 
         await manager.synchronize(
             context: container.mainContext,
             tenantID: "org-1",
             services: AppServices(container: container),
-            api: Self.serving()
+            api: Self.serving(),
+            keepSignedInAssociate: { kept = ($0, $1) }
         )
 
         #expect(manager.state == .finished)
-        // The real setup's associate has no language.
-        #expect(language.get() == nil)
+        // The real setup's associate and store, handed on to the session.
+        #expect(kept?.associate?.firstName == "Elie")
+        #expect(kept?.store?.storeCode == "90917634296")
         let options = try ModelContext(container).fetch(FetchDescriptor<EnumValue>())
         let valueCount = try Fixture.enumsValueCount()
         #expect(options.count == valueCount)
@@ -46,7 +48,8 @@ struct SyncManagerTests {
             context: container.mainContext,
             tenantID: "org-1",
             services: AppServices(container: container),
-            api: Self.failing()
+            api: Self.failing(),
+            keepSignedInAssociate: { _, _ in }
         )
 
         guard case .failed = manager.state else {
@@ -59,6 +62,7 @@ struct SyncManagerTests {
     func setupFailureWithoutCacheBlocks() async throws {
         let container = try Self.inMemoryContainer()
         let manager = SyncManager(localStore: Self.store(tenant: .inMemory("org-1")))
+        var keptCalled = false
 
         // Every other route answers: the failure can only come from `setup`,
         // which the launch must not treat as optional — the pickers need it.
@@ -66,13 +70,16 @@ struct SyncManagerTests {
             context: container.mainContext,
             tenantID: "org-1",
             services: AppServices(container: container),
-            api: Self.serving(setupFails: true)
+            api: Self.serving(setupFails: true),
+            keepSignedInAssociate: { _, _ in keptCalled = true }
         )
 
         guard case .failed = manager.state else {
             Issue.record("Expected .failed, got \(manager.state)")
             return
         }
+        // No setup, nothing handed on: the session keeps the associate it had.
+        #expect(!keptCalled)
     }
 
     @Test("A failure with data from an earlier run opens the app anyway")
@@ -91,7 +98,8 @@ struct SyncManagerTests {
             context: container.mainContext,
             tenantID: "org-1",
             services: AppServices(container: container),
-            api: Self.failing()
+            api: Self.failing(),
+            keepSignedInAssociate: { _, _ in }
         )
 
         // Offline in the shop: the advisor keeps what the last sync brought.
@@ -114,7 +122,8 @@ struct SyncManagerTests {
             context: container.mainContext,
             tenantID: "org-1",
             services: AppServices(container: container),
-            api: Self.failing()
+            api: Self.failing(),
+            keepSignedInAssociate: { _, _ in }
         )
 
         guard case .failed = manager.state else {
@@ -141,7 +150,8 @@ struct SyncManagerTests {
             context: container.mainContext,
             tenantID: "org-2",
             services: AppServices(container: container),
-            api: Self.serving()
+            api: Self.serving(),
+            keepSignedInAssociate: { _, _ in }
         )
 
         // The previous tenant's rows are gone, replaced by the new sync only.
@@ -161,7 +171,8 @@ struct SyncManagerTests {
             context: container.mainContext,
             tenantID: "org-1",
             services: AppServices(container: container),
-            api: Self.serving()
+            api: Self.serving(),
+            keepSignedInAssociate: { _, _ in }
         )
         #expect(manager.state == .finished)
 
@@ -180,12 +191,8 @@ struct SyncManagerTests {
         )
     }
 
-    private static func store(
-        tenant: StoredValue<String>,
-        cursor: StoredValue<String> = .inMemory(),
-        language: StoredValue<String> = .inMemory()
-    ) -> LocalStore {
-        LocalStore(tenantID: tenant, clientCursor: cursor, preferredLanguage: language)
+    private static func store(tenant: StoredValue<String>, cursor: StoredValue<String> = .inMemory()) -> LocalStore {
+        LocalStore(tenantID: tenant, clientCursor: cursor)
     }
 
     /// Every startup route answered: the configuration, a client pass in two

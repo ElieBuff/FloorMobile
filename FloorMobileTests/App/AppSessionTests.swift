@@ -14,7 +14,7 @@ struct AppSessionTests {
     @Test("Launch with a persisted session goes straight to authenticated")
     func restoreGoesToAuthenticated() async throws {
         let claims = try Self.claims(["sub": "u-1", "name": "Marie"])
-        let session = AppSession(auth: Self.client(restore: { claims }), api: Self.stubAPIClient())
+        let session = Self.session(auth: Self.client(restore: { claims }), api: Self.stubAPIClient())
 
         await session.start()
 
@@ -24,7 +24,7 @@ struct AppSessionTests {
 
     @Test("Launch with an empty Keychain goes to unauthenticated")
     func emptyRestoreGoesToUnauthenticated() async {
-        let session = AppSession(auth: Self.client(restore: { nil }), api: Self.stubAPIClient())
+        let session = Self.session(auth: Self.client(restore: { nil }), api: Self.stubAPIClient())
         await session.start()
         #expect(session.state == .unauthenticated)
     }
@@ -32,7 +32,7 @@ struct AppSessionTests {
     @Test("Successful sign-in exposes the mapped user")
     func signInSuccess() async throws {
         let claims = try Self.claims(["sub": "u-2", "email": "paul@example.com"])
-        let session = AppSession(auth: Self.client(signIn: { claims }), api: Self.stubAPIClient())
+        let session = Self.session(auth: Self.client(signIn: { claims }), api: Self.stubAPIClient())
 
         await session.signIn()
 
@@ -110,7 +110,66 @@ struct AppSessionTests {
         }
     }
 
+    // MARK: - Associate signed in
+
+    @Test("A new session on an empty store has no associate")
+    func noAssociateAtFirst() {
+        let session = Self.session(auth: Self.client(), api: Self.stubAPIClient())
+
+        #expect(session.salesAssociate == nil)
+        #expect(session.store == nil)
+    }
+
+    @Test("The associate kept is there at the next launch, with their store")
+    func keptAssociateSurvivesALaunch() {
+        let associateStorage = StoredValue<SalesAssociateSnapshot>.inMemory()
+        let storeStorage = StoredValue<StoreSnapshot>.inMemory()
+        let associate = SalesAssociateSnapshot(id: "sa-1", firstName: "Elie", lastName: "Buff", preferredLanguage: "Fr")
+        let store = StoreSnapshot(id: "s-1", name: "Shop location", storeCode: "90917634296")
+
+        Self.session(
+            auth: Self.client(), api: Self.stubAPIClient(),
+            salesAssociateStorage: associateStorage, storeStorage: storeStorage
+        )
+        .keep(associate, store: store)
+        let next = Self.session(
+            auth: Self.client(), api: Self.stubAPIClient(),
+            salesAssociateStorage: associateStorage, storeStorage: storeStorage
+        )
+
+        #expect(next.salesAssociate == associate)
+        #expect(next.store == store)
+    }
+
+    @Test("Signing out forgets the associate, in memory and on the device")
+    func signOutForgetsTheAssociate() async {
+        let associateStorage = StoredValue<SalesAssociateSnapshot>.inMemory(SalesAssociateSnapshot(id: "sa-1"))
+        let storeStorage = StoredValue<StoreSnapshot>.inMemory(StoreSnapshot(id: "s-1"))
+        let session = Self.session(
+            auth: Self.client(), api: Self.stubAPIClient(),
+            salesAssociateStorage: associateStorage, storeStorage: storeStorage
+        )
+
+        await session.signOut()
+
+        #expect(session.salesAssociate == nil)
+        #expect(session.store == nil)
+        #expect(associateStorage.get() == nil)
+        #expect(storeStorage.get() == nil)
+    }
+
     // MARK: - Helpers
+
+    /// A session whose associate is kept in memory: the tests never read or
+    /// write the simulator's `UserDefaults`.
+    private static func session(
+        auth: AuthClient,
+        api: APIClient,
+        salesAssociateStorage: StoredValue<SalesAssociateSnapshot> = .inMemory(),
+        storeStorage: StoredValue<StoreSnapshot> = .inMemory()
+    ) -> AppSession {
+        AppSession(auth: auth, api: api, salesAssociateStorage: salesAssociateStorage, storeStorage: storeStorage)
+    }
 
     private static func stubAPIClient() -> APIClient {
         APIClient(
