@@ -90,8 +90,7 @@ nonisolated struct TaskDraft: Equatable, Sendable {
     /// The note as it will be sent, or `nil` when there is nothing in it — an
     /// empty string would be a description nobody wrote.
     var trimmedNote: String? {
-        let note = note.trimmingCharacters(in: .whitespacesAndNewlines)
-        return note.isEmpty ? nil : note
+        note.trimmedNonBlank
     }
 
     /// Whether the form can be sent. A task with no title is one nobody will

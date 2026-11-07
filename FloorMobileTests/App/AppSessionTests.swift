@@ -22,6 +22,17 @@ struct AppSessionTests {
         #expect(session.state == .authenticated(user))
     }
 
+    @Test("The user is the authenticated one, their id the token's sub; nil before a sign-in")
+    func userFollowsTheState() async throws {
+        let claims = try Self.claims(["sub": "u-1", "name": "Marie"])
+        let session = Self.session(auth: Self.client(restore: { claims }), api: Self.stubAPIClient())
+        #expect(session.user == nil)
+
+        await session.start()
+
+        #expect(session.user?.id == "u-1")
+    }
+
     @Test("Launch with an empty Keychain goes to unauthenticated")
     func emptyRestoreGoesToUnauthenticated() async {
         let session = Self.session(auth: Self.client(restore: { nil }), api: Self.stubAPIClient())

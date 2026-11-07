@@ -94,7 +94,7 @@ private struct DetailLine: View {
 
 #Preview("Both styles") {
     let alice = ClientItem(
-        id: "1", displayName: "Alice Martinez", segment: "VIC",
+        id: "1", firstName: "Alice", lastName: "Martinez", segment: "VIC",
         storeCode: "90917634296", storeName: "Regent Street",
         salesAssociateExternalId: "378970372512460673", salesAssociateName: "Elie Buff",
         primaryEmail: "alice.martinez@example.com", primaryPhone: "+33 6 12 34 56 78"
@@ -104,16 +104,12 @@ private struct DetailLine: View {
         ClientRow(client: alice, display: .brand)
         // One of the associate's own clients without a phone: one line only.
         ClientRow(client: ClientItem(
-            id: "2", displayName: "Raphaël Van den Berg", segment: nil,
+            id: "2", firstName: "Raphaël", lastName: "Van den Berg",
             storeCode: "90917634296", storeName: "Regent Street",
-            salesAssociateExternalId: nil, salesAssociateName: nil,
-            primaryEmail: "raphael.vandenberg@example.com", primaryPhone: nil
+            primaryEmail: "raphael.vandenberg@example.com"
         ), display: .mine)
         // No name on file.
-        ClientRow(client: ClientItem(
-            id: "3", displayName: nil, segment: nil, storeCode: nil, storeName: nil,
-            salesAssociateExternalId: nil, salesAssociateName: nil, primaryEmail: nil, primaryPhone: nil
-        ), display: .mine)
+        ClientRow(client: ClientItem(id: "3"), display: .mine)
     }
     .cardList()
 }

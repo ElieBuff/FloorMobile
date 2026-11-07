@@ -32,6 +32,13 @@ final class AppSession {
         if case .authenticated(let user) = state { user.tenantID } else { nil }
     }
 
+    /// The user signed in, else `nil`. Their `id` is the token's `sub`, the
+    /// associate's external id: what a client's associate is compared with
+    /// (`ClientItem.isAssigned(to:)`).
+    var user: User? {
+        if case .authenticated(let user) = state { user } else { nil }
+    }
+
     /// The configured API client, exposed so features drive their own syncs
     /// (e.g. `AIActionService`) with the session's authenticated client.
     let api: APIClient

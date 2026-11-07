@@ -8,9 +8,11 @@ import SwiftData
 import Testing
 @testable import FloorMobile
 
-@Suite("Client search")
+@Suite("Client")
 @MainActor
 struct ClientTests {
+
+    // MARK: - Search
 
     /// The ids of the clients `Client.matching(query)` keeps, out of a store
     /// holding Alice, Hélène and a client with nothing on file.
@@ -56,5 +58,36 @@ struct ClientTests {
     )
     func plainContains(query: String) throws {
         #expect(try matches(query).isEmpty)
+    }
+
+    // MARK: - Edit
+
+    @Test("An edit takes the name, the email, the phone, the address and the consents, and leaves the rest")
+    func applyTakesEditableFields() {
+        let client = Client(
+            id: "alice", externalId: "1", firstName: "Alice", lastName: "Martinez",
+            primaryEmail: "alice@example.com", segment: "VIC", salesAssociateExternalId: "sa-1",
+            searchWords: ["alice", "martinez"], salutation: "misses"
+        )
+        let address = ClientItem.Address(street: "12 Rue Royale", postalCode: "75008", city: "Paris", state: nil, country: "FR")
+        let optIns = ClientItem.OptIns(email: false, directMessage: true, call: false, wechat: false, line: false)
+
+        client.apply(ClientItem(
+            id: "alice", firstName: "Alicia", lastName: "Martin", segment: "Gold",
+            primaryEmail: nil, primaryPhone: "+33 6 00 00 00 00", salutation: "miss",
+            address: address, optIns: optIns
+        ))
+
+        #expect(client.firstName == "Alicia")
+        #expect(client.lastName == "Martin")
+        #expect(client.primaryEmail == nil)
+        #expect(client.primaryPhone == "+33 6 00 00 00 00")
+        #expect(client.address == address)
+        #expect(client.optIns == optIns)
+        // Not editable: as the server last sent them.
+        #expect(client.segment == "VIC")
+        #expect(client.salutation == "misses")
+        #expect(client.salesAssociateExternalId == "sa-1")
+        #expect(client.searchWords == ["alice", "martinez"])
     }
 }

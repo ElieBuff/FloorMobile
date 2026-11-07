@@ -57,7 +57,6 @@ nonisolated struct LocalStore: Sendable {
         try context.delete(model: ClientFilter.self)
         try context.delete(model: ClientSort.self)
         try context.delete(model: EnumValue.self)
-        try context.delete(model: RecentClient.self)
         try context.save()
         sessionValues.forEach { $0.set(nil) }
     }

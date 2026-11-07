@@ -79,6 +79,38 @@ struct ClientWireTests {
         #expect(client.searchPhones == ["33612345678"])
     }
 
+    @Test("A BFF that does not send the salutation, language, address or consents yet leaves them empty")
+    func baseDataAbsentYet() throws {
+        // The fixtures were captured before the sync sent them: as served.
+        let client = Client(wire: try Self.page().items[0])
+
+        #expect(client.salutation == nil)
+        #expect(client.preferredLanguage == nil)
+        #expect(client.address == nil)
+        #expect(client.optIns == nil)
+    }
+
+    @Test("The salutation, language, address and consents map onto the model as sent")
+    func baseDataMaps() throws {
+        // Set on the decoded wire until a fixture copied from the BFF carries them.
+        var wire = try Self.page().items[0]
+        wire.salutation = "misses"
+        wire.preferredLanguage = "fr"
+        wire.mainAddress = ClientWire.Address(
+            street: "12 Rue Royale", postalCode: "75008", city: "Paris", state: nil, country: "FR"
+        )
+        wire.optIns = ClientWire.OptIns(email: true, directMessage: false, call: true, wechat: false, line: true)
+
+        let client = Client(wire: wire)
+
+        #expect(client.salutation == "misses")
+        #expect(client.preferredLanguage == "fr")
+        #expect(client.address == ClientItem.Address(
+            street: "12 Rue Royale", postalCode: "75008", city: "Paris", state: nil, country: "FR"
+        ))
+        #expect(client.optIns == ClientItem.OptIns(email: true, directMessage: false, call: true, wechat: false, line: true))
+    }
+
     @Test("The store's id list decodes")
     func storeIDsDecode() throws {
         let store = try APIClient.makeDecoder().decode(

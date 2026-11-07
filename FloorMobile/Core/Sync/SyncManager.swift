@@ -100,11 +100,7 @@ final class SyncManager {
     ///   in;
     /// - the store's clients — brought up to date, then cleared of those that
     ///   left the store, in that order: the prune only means something once
-    ///   the delta is in;
-    /// - the associate's recent clients, which never stop the launch
-    ///   (`refreshRecentClients`). When one of the first two fails, leaving
-    ///   the function cancels this one if it is still running; a list it
-    ///   already kept stays.
+    ///   the delta is in.
     ///
     /// Feature data that changes by the hour (events, tasks, AI actions) is
     /// deliberately absent: Home loads it on appear and on pull-to-refresh,
@@ -121,26 +117,9 @@ final class SyncManager {
             try await clients.synchronize(using: api, cursor: cursor)
             try await clients.pruneDeparted(using: api)
         }()
-        async let recentClients: Void = refreshRecentClients(clients, using: api)
         let signedIn = try await configuration
         keepSignedInAssociate(signedIn?.associate, signedIn?.store)
-        _ = try await (clientBook, recentClients)
-    }
-
-    /// Brings the associate's recent clients up to date, and never fails the
-    /// launch: they are a convenience, not what the app needs to open. A
-    /// failure is logged, and the list of the last launch stays. A
-    /// cancellation — the rest of the launch failed first — is not a failure:
-    /// `APIClient` reports it as a network error, which is not logged.
-    private func refreshRecentClients(_ clients: ClientService, using api: APIClient) async {
-        do {
-            try await clients.synchronizeRecent(using: api)
-        } catch {
-            guard !Task.isCancelled else { return }
-            AppLog.sync.error(
-                "Recent clients refresh failed: \(error.localizedDescription, privacy: .public)"
-            )
-        }
+        try await clientBook
     }
 
     /// Whether an earlier run left something usable behind — one entry per
@@ -150,8 +129,7 @@ final class SyncManager {
     /// once a pass has gone through, so it tells a complete copy from one cut
     /// short — and a store may well have no client at all. The configuration
     /// counts by its vocabulary alone: a tenant may have no filter, never an
-    /// empty vocabulary. The recent clients have no entry: their refresh never
-    /// fails the launch, so there is nothing to check.
+    /// empty vocabulary.
     private func hasUsableCache(in context: ModelContext) -> Bool {
         let vocabulary = (try? context.fetchCount(FetchDescriptor<EnumValue>())) ?? 0
         return vocabulary > 0 && localStore.clientCursor.get() != nil

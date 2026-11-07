@@ -103,6 +103,16 @@ nonisolated extension Endpoint {
         Endpoint(path: "client/\(id)", interactive: true)
     }
 
+    /// Edits one of the associate's own clients (`ClientDetailsWire.Request`),
+    /// and answers with their details as they now stand — the shape of
+    /// `clientDetails`. Interactive: the associate waits on it, so without a
+    /// connection it fails at once and the form offers to try again; 30 s
+    /// rather than the interactive default, for a body that carries a
+    /// signature and a server that writes several tables.
+    static func updateClient(id: String, body: ClientDetailsWire.Request) -> Endpoint {
+        Endpoint(path: "client/\(id)", method: .patch, body: body, interactive: true, timeout: 30)
+    }
+
     /// One client's AI summary (`ClientSummaryWire`): the stored one while it
     /// is fresh, at once, else a new one, computed now. Interactive, but with
     /// a wait of its own: the BFF gives a new summary `SUMMARY_TIMEOUT_MS`
@@ -124,7 +134,7 @@ nonisolated extension Endpoint {
     /// Records that the connected associate opened this client's profile: one
     /// line in the server's views journal, at the server's time. Answers with
     /// the recent clients as they now stand — `recentClients`' list, this
-    /// client first.
+    /// client first —, which the app does not read.
     ///
     /// Interactive although no one waits on its answer: the route forbids
     /// queuing a view offline — a view made without network is lost, by
@@ -137,9 +147,8 @@ nonisolated extension Endpoint {
     }
 
     /// The associate's last viewed clients, each once, the latest view first —
-    /// as many as the server keeps, its call alone. The device refreshes its
-    /// copy (`RecentClient`) from it at launch; after a view, the answer to
-    /// `recordClientView` carries the same list.
+    /// as many as the server keeps, its call alone. Nothing calls it yet: the
+    /// screen of the recent clients will, when it shows, without keeping them.
     static let recentClients = Endpoint(path: "client/recent")
 
     /// `after` when there is a cursor to send, nothing otherwise.

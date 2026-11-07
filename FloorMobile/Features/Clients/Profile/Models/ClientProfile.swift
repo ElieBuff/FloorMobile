@@ -16,8 +16,8 @@ import Foundation
 nonisolated struct ClientProfile: Sendable {
     /// The client whose profile it is.
     let clientID: String
-    /// Who they are.
-    var details: Loadable<ClientDetails> = .loading
+    /// Who they are: the card, complete, as `client/{id}` serves it.
+    var details: Loadable<ClientItem> = .loading
     /// Their AI summary.
     var summary: Loadable<ClientSummary> = .loading
     /// What is planned with them and what happened.

@@ -10,12 +10,16 @@ import Testing
 @Suite("ClientsRoute")
 struct ClientsRouteTests {
 
-    /// The row a list showed, carried along to the profile.
+    /// The row a list showed, carried along to the profile — complete, as one
+    /// of the associate's own clients: its address and consents travel too.
     private static let card = ClientItem(
-        id: "client-1", displayName: "Alice Martinez", segment: "VIC",
+        id: "client-1", firstName: "Alice", lastName: "Martinez", segment: "VIC",
         storeCode: "store-1", storeName: "Regent Street",
         salesAssociateExternalId: "sa-1", salesAssociateName: "Elie Buff",
-        primaryEmail: "alice@example.com", primaryPhone: nil
+        primaryEmail: "alice@example.com", salutation: "misses",
+        address: ClientItem.Address(street: "12 Rue Royale", postalCode: "75008", city: "Paris", state: nil, country: "FR"),
+        preferredLanguage: "fr",
+        optIns: ClientItem.OptIns(email: true, directMessage: false, call: true, wechat: false, line: false)
     )
 
     @Test("Routes are equal when they carry the same id and the same card, so the stack can diff them")

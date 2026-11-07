@@ -8,8 +8,9 @@ import SwiftData
 
 /// A client of the connected sales associate's store, kept on the device: the
 /// card the server sends of the associate's own clients (`ClientWire`), and
-/// nothing more — who they are, their store and associate, how to reach them,
-/// and the words a future search on the device will read.
+/// nothing more — who they are, their store and associate, how to reach them
+/// and what they agreed to, and the words a future search on the device will
+/// read.
 ///
 /// Local-first: the store's clients are loaded in full once, then only what
 /// changed (`ClientService`), and read by the views through `@Query`. Every
@@ -46,6 +47,15 @@ nonisolated final class Client {
     /// same way for a search by phone number.
     var searchPhones: [String] = []
 
+    /// The server's own value (`mister`, `misses`, `miss`), as received.
+    var salutation: String?
+    /// An ISO 639-1 code ("fr", "en", "zh").
+    var preferredLanguage: String?
+    /// Their main address, as a composite.
+    var address: ClientItem.Address?
+    /// What they agreed to be reached by, as a composite.
+    var optIns: ClientItem.OptIns?
+
     init(
         id: String,
         externalId: String,
@@ -59,7 +69,11 @@ nonisolated final class Client {
         salesAssociateExternalId: String? = nil,
         salesAssociate: SalesAssociateSnapshot? = nil,
         searchWords: [String] = [],
-        searchPhones: [String] = []
+        searchPhones: [String] = [],
+        salutation: String? = nil,
+        preferredLanguage: String? = nil,
+        address: ClientItem.Address? = nil,
+        optIns: ClientItem.OptIns? = nil
     ) {
         self.id = id
         self.externalId = externalId
@@ -74,6 +88,10 @@ nonisolated final class Client {
         self.salesAssociate = salesAssociate
         self.searchWords = searchWords
         self.searchPhones = searchPhones
+        self.salutation = salutation
+        self.preferredLanguage = preferredLanguage
+        self.address = address
+        self.optIns = optIns
     }
 }
 
@@ -105,5 +123,20 @@ nonisolated extension Client {
                 || client.primaryEmail?.localizedStandardContains(query) == true
                 || client.primaryPhone?.localizedStandardContains(query) == true
         }
+    }
+
+    // MARK: - Edit
+
+    /// Takes what an edit can change, from the client as the server answered
+    /// it (`ClientService.update`): the name, the email, the phone, the
+    /// address and the consents. The search's words stay the server's until
+    /// the next sync: nothing reads them yet.
+    func apply(_ edited: ClientItem) {
+        firstName = edited.firstName
+        lastName = edited.lastName
+        primaryEmail = edited.primaryEmail
+        primaryPhone = edited.primaryPhone
+        address = edited.address
+        optIns = edited.optIns
     }
 }

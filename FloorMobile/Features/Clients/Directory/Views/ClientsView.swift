@@ -21,6 +21,10 @@ struct ClientsView: View {
 
     @State private var query = ""
     @State private var scope = ClientSearchScope.mine
+    /// The clients edited from a profile this tab opened, which the lists
+    /// show over the server's pages until their next search: here, above both
+    /// the lists and the profiles they open.
+    @State private var edits = ClientEdits()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -35,9 +39,9 @@ struct ClientsView: View {
 
             switch scope {
             case .mine:
-                MyClientsList(query: query)
+                MyClientsList(query: query, edits: edits)
             case .brand:
-                BrandClientsList(query: query)
+                BrandClientsList(query: query, edits: edits)
             }
         }
         .searchable(
@@ -47,6 +51,15 @@ struct ClientsView: View {
         )
         .ambientBackground()
         .appHeader()
+        // On the stack's root content, never inside a lazy container (List,
+        // LazyVStack), where it might never register — and here rather than
+        // in `MainTabView`, so the profile gets the edits its list reads.
+        .navigationDestination(for: ClientsRoute.self) { route in
+            switch route {
+            case .profile(let id, let card):
+                ClientProfileView(clientID: id, card: card, edits: edits)
+            }
+        }
     }
 }
 

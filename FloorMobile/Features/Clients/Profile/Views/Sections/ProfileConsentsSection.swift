@@ -6,25 +6,20 @@
 import SwiftUI
 
 /// What the client agreed to be reached by, channel by channel, in the
-/// profile's "Profile" tab — from their details (`ClientDetails.optIns`), so
-/// shown once those are in.
+/// profile's "Profile" tab — from the card on screen (`ClientItem.optIns`), so
+/// shown once a card carries them: at once for the associate's own clients,
+/// with the details for a client of the brand.
 struct ProfileConsentsSection: View {
-    let optIns: ClientDetails.OptIns
+    let optIns: ClientItem.OptIns
 
     var body: some View {
         Section {
-            row(String(localized: "Email"), optIns.email)
-            row(String(localized: "Messages"), optIns.directMessage)
-            row(String(localized: "Phone call"), optIns.call)
-            row(String(localized: "WeChat"), optIns.wechat)
-            row(String(localized: "LINE"), optIns.line)
+            ForEach(ClientItem.OptIns.Channel.allCases, id: \.self) { channel in
+                DetailRow(label: channel.label, value: optIns.answer(for: channel))
+                    .listRowInsets(.cardRow)
+            }
         } header: {
             Text("Consents")
         }
-    }
-
-    private func row(_ channel: String, _ agreed: Bool) -> some View {
-        DetailRow(label: channel, value: agreed ? String(localized: "Yes") : String(localized: "No"))
-            .listRowInsets(.cardRow)
     }
 }

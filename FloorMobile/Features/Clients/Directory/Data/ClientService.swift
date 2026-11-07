@@ -5,19 +5,19 @@
 
 import Foundation
 import SwiftData
+import os
 
 /// The Clients feature's data service: keeps the connected associate's store
-/// clients and their recent clients in SwiftData, and asks for the three parts
-/// of a client's profile — their details, their AI summary, their timeline —
-/// without keeping them. A `@ModelActor` so the import runs off the main actor
-/// on a private, actor-owned context.
+/// clients in SwiftData, and asks for the three parts of a client's profile —
+/// their details, their AI summary, their timeline — without keeping them. A
+/// `@ModelActor` so the import runs off the main actor on a private,
+/// actor-owned context.
 ///
 /// The store's clients are not refreshed in full like the agenda's: a store
 /// holds thousands of them, so they are loaded in full once, then only what
 /// changed. That is why a page never sweeps what it does not carry — what is
 /// missing from a delta is unchanged, not gone. What is gone is found by
-/// `pruneDeparted(using:)`. The recent clients are refreshed in full: a few
-/// of them, in the server's order, which `lastViewedAt` carries.
+/// `pruneDeparted(using:)`.
 @ModelActor
 actor ClientService {
 
@@ -128,9 +128,54 @@ actor ClientService {
     /// store's. So are the two other parts. A client the tenant does not have
     /// is thrown as `AppError.server(statusCode: 404)`, a network failure as
     /// `AppError.network`. See `Endpoint.clientDetails`.
-    func details(id: String, using client: APIClient) async throws -> ClientDetails {
+    func details(id: String, using client: APIClient) async throws -> ClientItem {
         let wire: ClientDetailsWire.Response = try await client.send(.clientDetails(id: id))
-        return ClientDetails(wire: wire)
+        return ClientItem(wire: wire)
+    }
+
+    /// Sends what `edited` changes from `original` (`ClientDetailsWire.Request`)
+    /// and returns the client as the server now has them. The signature goes
+    /// with changed consents, which the server refuses without one
+    /// (`AppError.server(statusCode: 422)`); not their client is a 403, a
+    /// network failure `AppError.network`, and a failure writes nothing. A
+    /// network failure first reads the client again: when the server holds
+    /// the edit all the same, its answer only was lost, and the save stands.
+    ///
+    /// The device's copy follows: the `Client` of this id, when the store
+    /// keeps one, takes what an edit changes (`Client.apply`) — none is
+    /// created for a client the store does not keep. A copy that cannot be
+    /// written is logged, not thrown: the server has the edit, and the next
+    /// sync brings it.
+    func update(
+        _ edited: ClientItem,
+        from original: ClientItem,
+        signature: ClientSignature?,
+        using client: APIClient
+    ) async throws -> ClientItem {
+        let body = ClientDetailsWire.Request(edited: edited, original: original, signature: signature)
+        let saved: ClientItem
+        do {
+            let wire: ClientDetailsWire.Response = try await client.send(.updateClient(id: original.id, body: body))
+            saved = ClientItem(wire: wire)
+        } catch let error as AppError {
+            // A network failure may come after the server's write: read the client
+            // again rather than send again, which would record the signature twice.
+            guard case .network = error,
+                  let current = try? await details(id: edited.id, using: client),
+                  !edited.hasChanges(from: current) else { throw error }
+            saved = current
+        }
+        do {
+            let id = saved.id
+            let kept = try modelContext.fetch(FetchDescriptor<Client>(predicate: #Predicate { $0.id == id }))
+            if let stored = kept.first {
+                stored.apply(saved)
+                try modelContext.save()
+            }
+        } catch {
+            AppLog.sync.error("Keeping an edited client failed: \(error.localizedDescription, privacy: .public)")
+        }
+        return saved
     }
 
     /// One client's AI summary, as the server has it or computes it now — a
@@ -151,29 +196,12 @@ actor ClientService {
         return ClientTimeline(wire: wire)
     }
 
-    /// Asks for the associate's recent clients and keeps them, at launch.
-    func synchronizeRecent(using client: APIClient) async throws {
-        let list: RecentClientWire.List = try await client.send(.recentClients)
-        try await replaceRecent(with: list)
-    }
-
-    /// Records that the associate opened this client's profile, and keeps the
-    /// recent clients the server answers with, as they now stand — this
-    /// client first, moved up if it was already there. No second call, and a
-    /// list that holds the view it follows.
-    ///
-    /// A view the server refuses (404) or that never leaves (offline, see
-    /// `Endpoint.recordClientView`) throws before anything is written: the
-    /// list stays as it was.
+    /// Records that the associate opened this client's profile, for their
+    /// recent clients, which the server keeps. The device keeps nothing: the
+    /// list the server answers with is not read. A view the server refuses
+    /// (404) or that never leaves (offline, see `Endpoint.recordClientView`)
+    /// throws.
     func recordView(of id: String, using client: APIClient) async throws {
-        let list: RecentClientWire.List = try await client.send(.recordClientView(id: id))
-        try await replaceRecent(with: list)
-    }
-
-    /// Replaces the device's recent clients with `list`, by mark-and-sweep
-    /// like the AI actions: the server alone orders and bounds it, so the
-    /// device keeps exactly what it sends — whichever route sent it.
-    private func replaceRecent(with list: RecentClientWire.List) async throws {
-        try await modelContext.refresh(from: { list.items }, make: RecentClient.init(wire:))
+        try await client.send(.recordClientView(id: id))
     }
 }

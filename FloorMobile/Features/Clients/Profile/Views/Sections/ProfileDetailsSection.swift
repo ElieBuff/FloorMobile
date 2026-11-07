@@ -6,17 +6,18 @@
 import SwiftUI
 
 /// How to reach the client and where they belong, in the profile's "Profile"
-/// tab: their card's email, phone, store and sales associate — on screen at
-/// once, from the list that opened the profile until the details replace it —
-/// then what only their details carry (`ClientProfile.details`): their
-/// salutation, address and language.
+/// tab: the email, phone, store, sales associate, salutation, address and
+/// language of the card on screen — the list's, which opened the profile,
+/// until the details replace it (`ClientProfile.details`).
 ///
-/// While the details are on their way, grey bars stand in for those three.
-/// Details that failed leave the card's lines alone: the page's one notice
-/// says so.
+/// Every card carries the salutation and the language; only the associate's
+/// own clients come with their address. While the details are on their way,
+/// grey bars stand in for an address the card lacks. Details that failed
+/// leave the card's lines alone: the page's one notice says so.
 struct ProfileDetailsSection: View {
     let client: ClientItem
-    let details: Loadable<ClientDetails>
+    /// Whether the details are still on their way.
+    let isLoading: Bool
 
     var body: some View {
         Section {
@@ -24,19 +25,17 @@ struct ProfileDetailsSection: View {
             row(String(localized: "Phone"), client.primaryPhone)
             row(String(localized: "Store"), client.storeName)
             row(String(localized: "Sales associate"), client.salesAssociateName)
+            row(String(localized: "Salutation"), client.salutationLabel)
 
-            switch details {
-            case .loading:
-                // The salutation, the address on two lines, the language.
-                SkeletonLines(widths: [0.4, 0.8, 0.6, 0.45])
+            if isLoading && client.address == nil {
+                // The address, on two lines.
+                SkeletonLines(widths: [0.8, 0.6])
                     .listRowInsets(.cardRow)
-            case .loaded(let details):
-                row(String(localized: "Salutation"), details.salutationLabel)
-                address(details.address?.lines ?? [])
-                row(String(localized: "Language"), details.languageName)
-            case .failed:
-                EmptyView()
+            } else {
+                address(client.address?.lines ?? [])
             }
+
+            row(String(localized: "Language"), client.languageName)
         } header: {
             Text("Details")
         }

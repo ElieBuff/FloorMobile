@@ -46,6 +46,8 @@ import SwiftUI
 /// screen, not the whole book.
 struct MyClientsList: View {
     let query: String
+    /// The clients edited since the server's pages came, shown over them.
+    let edits: ClientEdits
 
     /// The sort and the filters picked, as the server's search sends them.
     @State private var options = ClientSearchOptions()
@@ -132,6 +134,9 @@ struct MyClientsList: View {
         } else {
             // A sort or a filter picked starts the search over from its first page.
             PagedSearchList(query: text, restartingOn: options) { text, cursor in
+                // A first page reads a server that has every edit already: the ones
+                // shown over the last pages go (`ClientEdits`).
+                if cursor == nil { edits.removeAll() }
                 // A text too short for the server is left out: the sort alone orders.
                 let query = text.count >= ClientsView.searchMinimumLength ? text : nil
                 return try await services.clients.searchClients(
@@ -146,7 +151,9 @@ struct MyClientsList: View {
                     // The server's pages stay; the alert fetches the one that failed.
                     alert = failure.alert
                 }
-            } row: { client in
+            } row: { received in
+                // An edit saved since the page came shows, here and in the profile it opens.
+                let client = edits.current(received)
                 NavigationLink(value: ClientsRoute.profile(id: client.id, card: client)) {
                     ClientRow(client: client, display: .mine)
                 }
@@ -275,7 +282,7 @@ private struct MatchingClients: View {
         id: "2", externalId: "2", firstName: "Raphaël", lastName: "Van den Berg",
         primaryPhone: "+33 6 98 76 54 32"
     ))
-    return MyClientsList(query: "")
+    return MyClientsList(query: "", edits: ClientEdits())
         .ambientBackground()
         .modelContainer(container)
         .environment(AppSession(auth: .preview, api: .preview))
@@ -287,7 +294,7 @@ private struct MatchingClients: View {
         for: Client.self, ClientSort.self, ClientFilter.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
-    return MyClientsList(query: "")
+    return MyClientsList(query: "", edits: ClientEdits())
         .ambientBackground()
         .modelContainer(container)
         .environment(AppSession(auth: .preview, api: .preview))

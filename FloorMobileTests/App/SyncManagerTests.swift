@@ -186,7 +186,7 @@ struct SyncManagerTests {
     private static func inMemoryContainer() throws -> ModelContainer {
         try ModelContainer(
             for: AIAction.self, AgendaEvent.self, AgendaTask.self, Client.self, ClientFilter.self, ClientSort.self,
-            EnumValue.self, RecentClient.self,
+            EnumValue.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
     }
@@ -196,17 +196,13 @@ struct SyncManagerTests {
     }
 
     /// Every startup route answered: the configuration, a client pass in two
-    /// pages, the store's ids, and the recent clients — an empty list, inline
-    /// until a fixture copied from the BFF replaces it. `setupFails` takes the
-    /// configuration down alone.
+    /// pages, and the store's ids. `setupFails` takes the configuration down
+    /// alone.
     private nonisolated static func serving(setupFails: Bool = false) -> APIClient {
         client { request in
             let url = request.url?.absoluteString ?? ""
             if setupFails, url.hasSuffix("setup") {
                 return (response(request, statusCode: 500), Data())
-            }
-            if url.contains("client/recent") {
-                return (response(request, statusCode: 200), Data(#"{"items":[]}"#.utf8))
             }
             let name = switch true {
             case url.contains("client/store-ids"): "client_filter_ids"

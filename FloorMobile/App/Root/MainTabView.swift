@@ -44,16 +44,8 @@ struct MainTabView: View {
 
             Tab(value: .clients) {
                 NavigationStack {
+                    // Declares its own destinations (`ClientsRoute`).
                     ClientsView()
-                        // Declared on the stack's root content, never inside a
-                        // lazy container (List, LazyVStack), where it might
-                        // never register.
-                        .navigationDestination(for: ClientsRoute.self) { route in
-                            switch route {
-                            case .profile(let id, let card):
-                                ClientProfileView(clientID: id, card: card)
-                            }
-                        }
                 }
             } label: {
                 label(String(localized: "Clients"), systemImage: "person.2", tab: .clients)

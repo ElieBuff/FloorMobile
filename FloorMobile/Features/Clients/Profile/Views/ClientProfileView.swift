@@ -20,6 +20,11 @@ import os
 /// bars; a part that failed hides its sections, and one notice above the tabs
 /// says so and asks again.
 ///
+/// On one of the associate's own clients, once the details are in, "Edit"
+/// opens the edit form full screen (`ClientEditorView`); what it saves
+/// replaces the details, and goes to `edits` for the list that opened the
+/// page.
+///
 /// Opening the page also records the view, for the associate's recent
 /// clients, by the route's rules: once per navigation — a pushed page is a new
 /// view, with a new `viewRecorded`, so coming back to the tab or from a screen
@@ -31,6 +36,8 @@ struct ClientProfileView: View {
     /// The row the list showed, on screen until the details are in; `nil`
     /// from a deep link.
     let card: ClientItem?
+    /// Where a saved edit goes, for the list that opened the page to show it.
+    let edits: ClientEdits
 
     @Environment(AppSession.self) private var session
     @Environment(AppServices.self) private var services
@@ -38,10 +45,14 @@ struct ClientProfileView: View {
     @State private var profile: ClientProfile
     /// Whether this navigation already recorded its view.
     @State private var viewRecorded = false
+    /// The details the edit form opened on, fixed when "Edit" was tapped;
+    /// `nil` while it is closed.
+    @State private var editing: ClientItem?
 
-    init(clientID: String, card: ClientItem? = nil) {
+    init(clientID: String, card: ClientItem? = nil, edits: ClientEdits) {
         self.clientID = clientID
         self.card = card
+        self.edits = edits
         _profile = State(initialValue: ClientProfile(clientID: clientID))
     }
 
@@ -50,6 +61,21 @@ struct ClientProfileView: View {
             .ambientBackground()
             .navigationTitle(client?.displayLabel ?? "")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                if editableDetails != nil {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button(String(localized: "Edit")) { editing = editableDetails }
+                    }
+                }
+            }
+            .fullScreenCover(item: $editing) { details in
+                NavigationStack {
+                    ClientEditorView(client: details) { saved in
+                        profile.details = .loaded(saved)
+                        edits.record(saved)
+                    }
+                }
+            }
             .onAppear(perform: recordViewOnce)
             // Here, on a view that never changes, and not on `content`: the
             // spinner giving way to the profile would cancel the loads under
@@ -67,7 +93,16 @@ struct ClientProfileView: View {
 
     /// The card shown: the details' once in, else the list's.
     private var client: ClientItem? {
-        profile.details.value?.client ?? card
+        profile.details.value ?? card
+    }
+
+    /// The details, once in, of one of the signed-in associate's own clients
+    /// — the only ones they may edit; `nil` otherwise, and "Edit" is not
+    /// offered. The details rather than the list's card: they carry the
+    /// consents, and are the server's latest.
+    private var editableDetails: ClientItem? {
+        guard let details = profile.details.value, details.isAssigned(to: session.user?.id) else { return nil }
+        return details
     }
 
     /// The profile as soon as there is a card to show; until then a spinner,
@@ -106,8 +141,7 @@ struct ClientProfileView: View {
         }
     }
 
-    /// Records this navigation's view, once, without making the screen wait:
-    /// the recent clients the server answers with are kept in the background.
+    /// Records this navigation's view, once, without making the screen wait.
     /// A failure — no network, an unknown client — is logged, never shown:
     /// the associate has the profile to read, not a view to retry.
     private func recordViewOnce() {
@@ -171,9 +205,9 @@ private struct ClientProfileContent: View {
             switch tab {
             case .profile:
                 ProfileSummarySection(summary: profile.summary)
-                ProfileDetailsSection(client: client, details: profile.details)
-                if let details = profile.details.value {
-                    ProfileConsentsSection(optIns: details.optIns)
+                ProfileDetailsSection(client: client, isLoading: profile.details.isLoading)
+                if let optIns = client.optIns {
+                    ProfileConsentsSection(optIns: optIns)
                 }
                 ProfileImportantDatesSection()
                 ProfileHouseholdSection()
@@ -252,26 +286,35 @@ private struct ClientProfileContent: View {
 
 // MARK: - Previews
 
+/// A card of the brand, as a search shows it: no address nor consents.
 private let previewClient = ClientItem(
-    id: "1", displayName: "Alice Martinez", segment: "VIC",
+    id: "1", firstName: "Alice", lastName: "Martinez", segment: "VIC",
     storeCode: "90917634296", storeName: "Regent Street",
     salesAssociateExternalId: "378970372512460673", salesAssociateName: "Elie Buff",
-    primaryEmail: "alice.martinez@example.com", primaryPhone: "+33 6 12 34 56 78"
+    primaryEmail: "alice.martinez@example.com", primaryPhone: "+33 6 12 34 56 78",
+    salutation: "misses",
+    preferredLanguage: "fr"
+)
+
+/// The same client, complete, as their details serve them.
+private let previewDetails = ClientItem(
+    id: "1", firstName: "Alice", lastName: "Martinez", segment: "VIC",
+    storeCode: "90917634296", storeName: "Regent Street",
+    salesAssociateExternalId: "378970372512460673", salesAssociateName: "Elie Buff",
+    primaryEmail: "alice.martinez@example.com", primaryPhone: "+33 6 12 34 56 78",
+    salutation: "misses",
+    address: ClientItem.Address(
+        street: "12 Rue du Faubourg Saint-Honoré", postalCode: "75008",
+        city: "Paris", state: nil, country: "FR"
+    ),
+    preferredLanguage: "fr",
+    optIns: ClientItem.OptIns(email: true, directMessage: true, call: false, wechat: false, line: false)
 )
 
 #Preview("Loaded") {
     @Previewable @State var profile = ClientProfile(
         clientID: "1",
-        details: .loaded(ClientDetails(
-            client: previewClient,
-            salutation: "misses",
-            address: ClientDetails.Address(
-                street: "12 Rue du Faubourg Saint-Honoré", postalCode: "75008",
-                city: "Paris", state: nil, country: "FR"
-            ),
-            preferredLanguage: "fr",
-            optIns: ClientDetails.OptIns(email: true, directMessage: true, call: false, wechat: false, line: false)
-        )),
+        details: .loaded(previewDetails),
         summary: .loaded(ClientSummary(
             title: "A loyal outerwear client",
             brief: "With the house since 2022, Alice buys outerwear each season and came for a fitting last week.",
@@ -295,7 +338,7 @@ private let previewClient = ClientItem(
         ))
     )
     NavigationStack {
-        ClientProfileContent(client: previewClient, profile: $profile)
+        ClientProfileContent(client: previewDetails, profile: $profile)
             .ambientBackground()
             .navigationTitle("Alice Martinez")
             .navigationBarTitleDisplayMode(.inline)

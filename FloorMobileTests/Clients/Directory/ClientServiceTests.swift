@@ -514,11 +514,175 @@ struct ClientServiceTests {
         #expect(page.nextCursor == nil)
     }
 
+    // MARK: - Edit
+
+    /// Kimberly Robinson as `client_details.json` serves her — what a PATCH
+    /// answers with too.
+    private static func details() throws -> ClientItem {
+        ClientItem(wire: try APIClient.makeDecoder().decode(
+            ClientDetailsWire.Response.self, from: try Fixture.data("client_details")
+        ))
+    }
+
+    @Test("An edit goes as a PATCH to the client's path, interactive, with 30 s")
+    func updateEndpoint() {
+        let endpoint = Endpoint.updateClient(
+            id: "c1",
+            body: ClientDetailsWire.Request(edited: ClientItem(id: "c1"), original: ClientItem(id: "c1"), signature: nil)
+        )
+
+        #expect(endpoint.path == "client/c1")
+        #expect(endpoint.method == .patch)
+        #expect(endpoint.interactive)
+        #expect(endpoint.timeout == 30)
+    }
+
+    @Test("An edit sends what changed and hands back the client as the server answers")
+    func updateSendsAndMaps() async throws {
+        let original = try Self.details()
+        var edited = original
+        edited.primaryPhone = "+351 912 345 678"
+        let sent = Mutex<URLRequest?>(nil)
+        let api = Self.makeClient { request in
+            sent.withLock { $0 = request }
+            return (Self.response(request), try Fixture.data("client_details"))
+        }
+
+        let saved = try await ClientService(modelContainer: try Self.inMemoryContainer())
+            .update(edited, from: original, signature: nil, using: api)
+
+        #expect(saved == original)
+        let request = try #require(sent.withLock { $0 })
+        #expect(request.httpMethod == "PATCH")
+        #expect(request.url?.path.hasSuffix("client/\(original.id)") == true)
+        let body = try #require(request.bodyData)
+        #expect(try JSONDecoder().decode([String: String].self, from: body) == ["mobile": "+351 912 345 678"])
+    }
+
+    @Test("The client the device keeps takes the answer; one it does not keep is not created")
+    func updateKeepsTheStoredClient() async throws {
+        let original = try Self.details()
+        let container = try Self.inMemoryContainer()
+        let context = ModelContext(container)
+        context.insert(Client(id: original.id, externalId: "seed", firstName: "Kim", searchWords: ["kim"]))
+        try context.save()
+        let api = Self.makeClient { request in (Self.response(request), try Fixture.data("client_details")) }
+
+        _ = try await ClientService(modelContainer: container)
+            .update(original, from: original, signature: nil, using: api)
+
+        let stored = try ModelContext(container).fetch(FetchDescriptor<Client>())
+        #expect(stored.count == 1)
+        #expect(stored.first?.firstName == "Kimberly")
+        #expect(stored.first?.primaryEmail == "kimberly.robinson1971@outlook.com")
+        #expect(stored.first?.searchWords == ["kim"])
+    }
+
+    @Test("An edit the device keeps no copy of creates none")
+    func updateCreatesNothing() async throws {
+        let original = try Self.details()
+        let container = try Self.inMemoryContainer()
+        let api = Self.makeClient { request in (Self.response(request), try Fixture.data("client_details")) }
+
+        _ = try await ClientService(modelContainer: container)
+            .update(original, from: original, signature: nil, using: api)
+
+        #expect(try ModelContext(container).fetchCount(FetchDescriptor<Client>()) == 0)
+    }
+
+    @Test("Consents refused without a signature fail with the 422, and the device's copy is left as it was")
+    func refusedUpdateWritesNothing() async throws {
+        let original = try Self.details()
+        var edited = original
+        edited.optIns?.line = true
+        let container = try Self.inMemoryContainer()
+        let context = ModelContext(container)
+        context.insert(Client(id: original.id, externalId: "seed", firstName: "Kim"))
+        try context.save()
+        let api = Self.makeClient { request in
+            (Self.response(request, statusCode: 422), Data(#"{"error":"A signature is required"}"#.utf8))
+        }
+
+        let error = await #expect(throws: AppError.self) {
+            try await ClientService(modelContainer: container)
+                .update(edited, from: original, signature: nil, using: api)
+        }
+
+        guard case .server(statusCode: 422)? = error else {
+            Issue.record("Expected AppError.server(422), got \(String(describing: error))")
+            return
+        }
+        let stored = try ModelContext(container).fetch(FetchDescriptor<Client>())
+        #expect(stored.first?.firstName == "Kim")
+        #expect(stored.first?.optIns == nil)
+    }
+
+    @Test("An edit whose answer is lost stands when the server holds it: read again, not sent again")
+    func lostAnswerUpdateStands() async throws {
+        let edited = try Self.details()
+        var original = edited
+        original.primaryPhone = "+351 900 000 000"
+        let container = try Self.inMemoryContainer()
+        let context = ModelContext(container)
+        context.insert(Client(id: edited.id, externalId: "seed", firstName: "Kim"))
+        try context.save()
+        let api = Self.makeClient { request in
+            guard request.httpMethod == "GET" else { throw URLError(.timedOut) }
+            return (Self.response(request), try Fixture.data("client_details"))
+        }
+
+        let saved = try await ClientService(modelContainer: container)
+            .update(edited, from: original, signature: nil, using: api)
+
+        #expect(saved == edited)
+        let stored = try ModelContext(container).fetch(FetchDescriptor<Client>())
+        #expect(stored.first?.firstName == "Kimberly")
+    }
+
+    @Test("An edit whose answer is lost fails when the server does not hold it")
+    func lostUpdateFails() async throws {
+        let original = try Self.details()
+        var edited = original
+        edited.primaryPhone = "+351 912 345 678"
+        let api = Self.makeClient { request in
+            guard request.httpMethod == "GET" else { throw URLError(.timedOut) }
+            return (Self.response(request), try Fixture.data("client_details"))
+        }
+
+        let error = await #expect(throws: AppError.self) {
+            try await ClientService(modelContainer: try Self.inMemoryContainer())
+                .update(edited, from: original, signature: nil, using: api)
+        }
+
+        guard case .network? = error else {
+            Issue.record("Expected AppError.network, got \(String(describing: error))")
+            return
+        }
+    }
+
+    @Test("An edit whose answer is lost fails when the client cannot be read again either")
+    func unconfirmedUpdateFails() async throws {
+        let original = try Self.details()
+        var edited = original
+        edited.primaryPhone = "+351 912 345 678"
+        let api = Self.makeClient { _ in throw URLError(.timedOut) }
+
+        let error = await #expect(throws: AppError.self) {
+            try await ClientService(modelContainer: try Self.inMemoryContainer())
+                .update(edited, from: original, signature: nil, using: api)
+        }
+
+        guard case .network? = error else {
+            Issue.record("Expected AppError.network, got \(String(describing: error))")
+            return
+        }
+    }
+
     // MARK: - Helpers
 
     private static func inMemoryContainer() throws -> ModelContainer {
         try ModelContainer(
-            for: Client.self, RecentClient.self,
+            for: Client.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
     }

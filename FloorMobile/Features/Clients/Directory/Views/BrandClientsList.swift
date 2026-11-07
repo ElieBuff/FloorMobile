@@ -17,6 +17,8 @@ import SwiftUI
 /// has nothing to fall back on: it keeps the store's clients, not the brand's.
 struct BrandClientsList: View {
     let query: String
+    /// The clients edited since the server's pages came, shown over them.
+    let edits: ClientEdits
 
     @Environment(AppSession.self) private var session
     @Environment(AppServices.self) private var services
@@ -33,8 +35,7 @@ struct BrandClientsList: View {
 
     var body: some View {
         content
-            // A new text, a new search: an error or an alert about the last
-            // one goes.
+            // A new text, a new search: an error or an alert about the last one goes.
             .onChange(of: text) {
                 failedSearch = nil
                 alert = nil
@@ -56,8 +57,11 @@ struct BrandClientsList: View {
         } else if let failedSearch, failedSearch.query == text {
             failedFirstPage(failedSearch)
         } else {
-            PagedSearchList(query: text) {
-                try await services.clients.searchClients($0, in: .brand, after: $1, using: session.api)
+            PagedSearchList(query: text) { text, cursor in
+                // A first page reads a server that has every edit already: the ones
+                // shown over the last pages go (`ClientEdits`).
+                if cursor == nil { edits.removeAll() }
+                return try await services.clients.searchClients(text, in: .brand, after: cursor, using: session.api)
             } onFailure: { failure in
                 if failure.isFirstPage {
                     // Nothing of the server's on screen: the error takes the list's place.
@@ -66,7 +70,9 @@ struct BrandClientsList: View {
                     // The pages already there stay; the alert fetches the one that failed.
                     alert = failure.alert
                 }
-            } row: { client in
+            } row: { received in
+                // An edit saved since the page came shows, here and in the profile it opens.
+                let client = edits.current(received)
                 NavigationLink(value: ClientsRoute.profile(id: client.id, card: client)) {
                     ClientRow(client: client, display: .brand)
                 }
@@ -86,7 +92,7 @@ struct BrandClientsList: View {
 // MARK: - Previews
 
 #Preview("Before 3 characters") {
-    BrandClientsList(query: "al")
+    BrandClientsList(query: "al", edits: ClientEdits())
         .ambientBackground()
         .environment(AppSession(auth: .preview, api: .preview))
         .environment(AppServices(container: try! ModelContainer(

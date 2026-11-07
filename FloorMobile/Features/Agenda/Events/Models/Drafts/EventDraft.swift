@@ -118,8 +118,7 @@ nonisolated struct EventDraft: Equatable, Sendable {
 
     /// The note as it will be sent, or `nil` when there is nothing in it.
     var trimmedNote: String? {
-        let note = note.trimmingCharacters(in: .whitespacesAndNewlines)
-        return note.isEmpty ? nil : note
+        note.trimmedNonBlank
     }
 
     /// Whether the form can be sent — see `TaskDraft.isValid` for why it is not

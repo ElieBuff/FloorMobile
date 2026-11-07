@@ -98,7 +98,7 @@ struct RootView: View {
 #Preview {
     let container = try! ModelContainer(
         for: AIAction.self, AgendaEvent.self, AgendaTask.self, Client.self, ClientFilter.self, ClientSort.self,
-        EnumValue.self, RecentClient.self,
+        EnumValue.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
     return RootView()

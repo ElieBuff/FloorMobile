@@ -7,7 +7,8 @@ import Foundation
 
 /// The screens the Clients tab can push. Navigation is value-based: a row
 /// pushes one of these, and the Clients `NavigationStack` maps it to a view in
-/// its `navigationDestination(for: ClientsRoute.self)` (`MainTabView`).
+/// its `navigationDestination(for: ClientsRoute.self)` (`ClientsView`, which
+/// holds the `ClientEdits` the profile receives).
 ///
 /// A route carries identifiers — never a model object — so it survives a
 /// relaunch, a sync or a search that moves on, and stays `Codable` for state
