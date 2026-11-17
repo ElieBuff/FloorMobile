@@ -151,6 +151,10 @@ struct AmbientEllipse {
     /// has left it, in screen points: the lowest edge, plus two blur radii for
     /// the halo that spills past it. Beyond this the background has nothing to
     /// draw and nothing to animate.
+    ///
+    /// Two radii to take the shapes away, where a shape's picture spans three
+    /// (`AmbientBackground.haloReach`): what is left of the halo past two is
+    /// assumed too faint for its going to show — not measured.
     static func reach(forWidth width: CGFloat) -> CGFloat {
         let lowestEdge = all.map { $0.frame.maxY + 2 * $0.blurRadius }.max() ?? 0
         return lowestEdge * width / referenceWidth

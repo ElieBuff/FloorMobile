@@ -18,8 +18,8 @@ import SwiftUI
 /// hides the scrollable's own background and feeds the distance scrolled.
 ///
 /// The shapes are drawn natively, from the mockup's own numbers: plain blurred
-/// ellipses over a flat fill, with no photo, blend mode or image crop to
-/// reproduce. The blur radii are the mockup's, used as they are.
+/// ellipses over a flat fill. The blur radii are the mockup's, used as they
+/// are.
 ///
 /// Each shape is blurred once, into a picture the whole app shares, and the
 /// breath only moves, swells and fades that picture. Blurring the live shapes
@@ -179,6 +179,6 @@ struct AmbientBackground: View {
     AmbientBackground(scrollOffset: 300)
 }
 
-#Preview("Background alone — mockup comparison") {
+#Preview("Background alone") {
     AmbientBackground()
 }

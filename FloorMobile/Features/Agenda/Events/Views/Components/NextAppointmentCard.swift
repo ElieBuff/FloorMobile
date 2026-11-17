@@ -11,9 +11,9 @@ import SwiftUI
 /// once it grew past a one-liner, the same way `AIActionRow` lives on its
 /// own next to `AIRecommendationsSection`.
 ///
-/// The card is an ink surface: its text and hairline are shades of
-/// `Base.paper`, not the `OnCanvas` colours, which are dark for the light
-/// background the screens stand on.
+/// The card is an ink surface, whatever the background: its time, names and
+/// hairline are shades of `Base.paper`, light on ink — not the `OnCanvas`
+/// colours, which are the background's and change with it.
 struct NextAppointmentCard: View {
     let event: AgendaEvent
     var onPrepare: () -> Void = {}
@@ -21,6 +21,11 @@ struct NextAppointmentCard: View {
     /// Injected so the countdown is testable and previewable at a fixed
     /// instant instead of drifting with the wall clock.
     var now: Date = .now
+
+    /// The hairline between the time and the client, paper on ink.
+    private static let hairlineOpacity = 0.12
+    /// The meeting's summary, paper on ink, quieter than the client.
+    private static let summaryOpacity = 0.55
 
     var body: some View {
         HStack(spacing: 14) {
@@ -57,7 +62,7 @@ struct NextAppointmentCard: View {
 
     private var divider: some View {
         Rectangle()
-            .fill(Color(.Base.paper).opacity(0.12))
+            .fill(Color(.Base.paper).opacity(Self.hairlineOpacity))
             .frame(width: 1)
     }
 
@@ -77,7 +82,7 @@ struct NextAppointmentCard: View {
             if let meetingSummary = event.meetingSummary {
                 Text(meetingSummary)
                     .font(.caption2)
-                    .foregroundStyle(Color(.Base.paper).opacity(0.55))
+                    .foregroundStyle(Color(.Base.paper).opacity(Self.summaryOpacity))
                     .lineLimit(1)
             }
         }
