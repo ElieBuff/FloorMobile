@@ -6,7 +6,7 @@
 import Foundation
 
 /// What the associate composes in "Sort & filter" (`ClientSortFilterSheet`):
-/// the sort and the filters picked — the tenant's values ticked and a
+/// the sort and the filters picked — the tenant's values picked and a
 /// sentence's pills —, the sentence, and where its filters stand: the one on
 /// its way to `client/text-filters`, the one the pills came from, and what the
 /// last answer said beside them.
@@ -29,7 +29,7 @@ nonisolated struct ClientFilterDraft: Equatable, Sendable {
 
     /// The sort and the filters picked, as `client/search` takes them: the
     /// sort through `ClientSearchOptions.pick`, the filters in one list — the
-    /// tenant's values ticked (`.value`) and a sentence's pills (`.filter`).
+    /// tenant's values picked (`.value`) and a sentence's pills (`.filter`).
     var options = ClientSearchOptions()
     /// The sentence: the clients wanted, in the associate's words — typed or
     /// dictated, cut at `maximumTextLength`.
@@ -59,9 +59,10 @@ nonisolated struct ClientFilterDraft: Equatable, Sendable {
         options != ClientSearchOptions() || !notUnderstood.isEmpty || failure != nil
     }
 
-    /// Puts the server's default sort back and takes off every filter, ticked
-    /// or pill, with what the last answer said and the sentence the pills came
-    /// from. The field stays, and a sentence on its way goes on.
+    /// Puts the server's default sort back and takes off every filter, a value
+    /// picked or a sentence's pill, with what the last answer said and the
+    /// sentence the pills came from. The field stays, and a sentence on its
+    /// way goes on.
     mutating func clear() {
         options = ClientSearchOptions()
         lastFetched = nil
@@ -117,6 +118,31 @@ nonisolated struct ClientFilterDraft: Equatable, Sendable {
     /// Lets go of `value`.
     mutating func unpick(_ value: ClientFilterValue) {
         options.filters.removeAll { $0.ref == value.ref }
+    }
+
+    /// Whether a touch on `value` must ask for its day first — "Since a
+    /// date", not picked yet: the calendar picks it
+    /// (`pick(_:forValue:in:)`).
+    func needsDay(for value: ClientFilterValue) -> Bool {
+        value.dateParameter != nil && !isPicked(value)
+    }
+
+    /// A touch on `value` of `filter`: lets go of it when it is picked, picks
+    /// it otherwise (`pick(_:of:parameters:)`). Never picks a value that asks
+    /// for a day (`needsDay`): without its day, the search would refuse it
+    /// (400 `invalid_params`).
+    mutating func toggle(_ value: ClientFilterValue, of filter: ClientFilter) {
+        if isPicked(value) {
+            unpick(value)
+        } else if !needsDay(for: value) {
+            pick(value, of: filter)
+        }
+    }
+
+    /// How many of `filter`'s values are picked: its "2 selected". A
+    /// sentence's pills are no value of a filter, and are not counted.
+    func pickedCount(in filter: ClientFilter) -> Int {
+        filter.values.count(where: isPicked)
     }
 
     // MARK: - Pills

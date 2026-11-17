@@ -7,24 +7,25 @@ import SwiftData
 import SwiftUI
 
 /// "Sort & filter" for the Clients tab's list, opened by the bar's button
-/// (`ClientsView`). From top to bottom: "Clear", the title and the close
-/// button; the sentence; "Sort by"; "Show N clients".
+/// (`ClientsView`). From top to bottom: the close button, the title and
+/// "Clear"; the sentence; "Sort by"; the tenant's filters (`ClientFilter`) in
+/// the server's order, each a group of pills (`ClientFilterGroup`); "Show N
+/// clients".
 ///
 /// Everything picked goes into a draft (`ClientFilterDraft`, held by
-/// `ClientFilterEditor`), made from the list's options once, in `init`. Only
+/// `ClientFilterEditor`), made from the list's options once, in `init` —
+/// `onAppear` would make it again on the way back from the calendar. Only
 /// "Show" writes them back, and closes the sheet; the close button and a
 /// swipe down drop them. "Clear" puts the server's default sort back and
 /// takes the filters off, in the draft.
 ///
-/// For now (decisions of 16/11): the tenant's filters are left out — the
-/// mockup's pills come at a next step, with the search's refusals of a
-/// filter applied (409 `filters_changed`, 400 `invalid_filters`), too rare to
-/// be worth the code —, and the sentence is only drawn.
+/// For now (decisions of 16/11 and 17/11): the sentence is only drawn.
 struct ClientSortFilterSheet: View {
     /// The list's options: written only by "Show".
     @Binding var options: ClientSearchOptions
 
     @Query(sort: \ClientSort.rank) private var sorts: [ClientSort]
+    @Query(sort: \ClientFilter.rank) private var filters: [ClientFilter]
     @Environment(AppSession.self) private var session
     @Environment(AppServices.self) private var services
     @Environment(\.dismiss) private var dismiss
@@ -32,6 +33,11 @@ struct ClientSortFilterSheet: View {
     @State private var editor: ClientFilterEditor
     /// Whether "Voice search" is open, from the sentence's microphone.
     @State private var isDictating = false
+    /// The `ref` of the value the calendar is open for, while it is pushed —
+    /// one calendar at a time, whatever the filter. Only the ref is kept: the
+    /// draft finds the filter and the value by it once a day is confirmed
+    /// (`ClientFilter.offering`).
+    @State private var calendarRef: String?
     @FocusState private var isSentenceFocused: Bool
     /// The sentence's line: 22 pt, iOS's for `.body` and the mockup's, scaled
     /// like the text — what the pebble and the buttons sit on.
@@ -46,6 +52,10 @@ struct ClientSortFilterSheet: View {
     /// between their discs, the mockup's (decision of 17/11, 12 read wide);
     /// their 44 pt targets overlap by 2.
     private static let sentenceButtonSpacing: CGFloat = 10
+    /// Around a filter's group, the mockup's: 14 pt above its title, 10
+    /// under its pills, and 20 from the screen's edges — 4 past the list's
+    /// 16.
+    private static let filterRowInsets = EdgeInsets(top: 14, leading: 4, bottom: 10, trailing: 4)
 
     init(options: Binding<ClientSearchOptions>) {
         _options = options
@@ -64,6 +74,14 @@ struct ClientSortFilterSheet: View {
                     Section {
                         sortPicker
                             .insetGroupedRow()
+                    }
+                }
+                // A tenant without filters has none to show.
+                if !filters.isEmpty {
+                    Section {
+                        ForEach(filters) { filter in
+                            filterRow(for: filter)
+                        }
                     }
                 }
             }
@@ -87,8 +105,11 @@ struct ClientSortFilterSheet: View {
             .navigationTitle(Text("Sort & filter"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbar }
+            .navigationDestination(item: $calendarRef, destination: calendar)
         }
         // The filters only: a sort changes no total (`ClientFilterEditor.count`).
+        // On the stack, not on its first screen: pushing the calendar would
+        // cancel the count, and coming back start it again.
         .task(id: editor.draft.options.filters) {
             await editor.count(session: session, services: services)
         }
@@ -261,14 +282,53 @@ struct ClientSortFilterSheet: View {
         }
     }
 
+    // MARK: - Filters
+
+    /// One of the tenant's filters, on the screen's background rather than in
+    /// a card, as the mockup draws it: no fill, the list's own hairline
+    /// between two filters — none above the first nor under the last —, from
+    /// one edge of the group to the other.
+    ///
+    /// A touch on a value lets go of it when it is picked, pushes the
+    /// calendar for one that asks for a day, and picks it otherwise — a
+    /// filter that takes one value lets go of the one it had
+    /// (`ClientFilterDraft.toggle`).
+    private func filterRow(for filter: ClientFilter) -> some View {
+        ClientFilterGroup(filter: filter, draft: editor.draft) { value in
+            if editor.draft.needsDay(for: value) {
+                calendarRef = value.ref
+            } else {
+                editor.draft.toggle(value, of: filter)
+            }
+        }
+        .listRowInsets(Self.filterRowInsets)
+        .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
+        .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] }
+        .listRowBackground(Color.clear)
+        .listRowSeparatorTint(Color(.OnSurface.borderSubtle))
+    }
+
+    /// The calendar pushed for the value `ref`, titled with its filter, which
+    /// picks the value once a day is confirmed. The closure keeps the ref, so
+    /// the day comes back to the right value; going back sets `calendarRef`
+    /// to nil.
+    @ViewBuilder
+    private func calendar(for ref: String) -> some View {
+        if let filter = ClientFilter.offering(ref, in: filters) {
+            ClientFilterDayPickerView(title: filter.title) { day in
+                editor.draft.pick(day, forValue: ref, in: filters)
+            }
+        }
+    }
+
     // MARK: - Toolbar
 
+    /// iOS's places for a sheet's bar (decision of 17/11, the mockup's too):
+    /// what closes it on the leading edge, its other action on the trailing
+    /// one.
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
-        ToolbarItem(placement: .topBarLeading) {
-            clearButton
-        }
-        ToolbarItem(placement: .topBarTrailing) {
+        ToolbarItem(placement: .cancellationAction) {
             // The system's close button: its cross, its glass, "Close" for
             // VoiceOver. `DetailScreen` and `ComposerScreen` draw their
             // `xmark` by hand.
@@ -276,6 +336,9 @@ struct ClientSortFilterSheet: View {
                 dismiss()
             }
             .barButtonStyle()
+        }
+        ToolbarItem(placement: .topBarTrailing) {
+            clearButton
         }
     }
 
@@ -297,6 +360,10 @@ struct ClientSortFilterSheet: View {
     /// total is a hint, not a gate. Writes the draft's sort and filters into
     /// the list's options, which starts its search over if they changed, and
     /// closes the sheet.
+    ///
+    /// The list's search then fails ("Search failed") on a value the tenant
+    /// removed since the app's launch (409 `filters_changed`), until it is
+    /// let go of or the app relaunched: too rare to be worth the code.
     private var showButton: some View {
         Button {
             options = editor.draft.options

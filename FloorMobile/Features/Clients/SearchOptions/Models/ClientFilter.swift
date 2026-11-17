@@ -11,13 +11,12 @@ import SwiftData
 /// filter".
 ///
 /// What a filter offers, not what an associate picked: the server owns the
-/// list, its order and each value's meaning. No screen lists them since
-/// 16/11 — "Sort & filter" (`ClientSortFilterSheet`) leaves them out until
-/// the mockup's pills (the user's decision) —; a value picked goes into the
-/// sheet's draft (`ClientFilterDraft`), then, shown, into
-/// `ClientSearchOptions`, which sends its `ref` back in `client/search`'s
-/// `filters`. Tied to the tenant like everything stored: `LocalStore.erase`
-/// wipes it.
+/// list, its order and each value's meaning. "Sort & filter"
+/// (`ClientSortFilterSheet`) lists them, each a group of its values to pick
+/// (`ClientFilterGroup`); a value picked goes into the sheet's draft
+/// (`ClientFilterDraft`), then, shown, into `ClientSearchOptions`, which
+/// sends its `ref` back in `client/search`'s `filters`. Tied to the tenant
+/// like everything stored: `LocalStore.erase` wipes it.
 ///
 /// Not `Syncable`, like `EnumValue`: the block lands whole, so
 /// `SetupService` saves the complete set at once.
@@ -129,8 +128,8 @@ nonisolated extension ClientFilterValue {
     /// else its `labelKey`'s translation, the key itself while the catalog
     /// has no entry for it. The server sends one or the other (`catalogueOf`,
     /// FloorPlatform's filter engine); the `ref` stands in for a value with
-    /// neither, so its row is never blank. A `String`, not a
-    /// `LocalizedStringResource` like `ClientFilter.title`: a label has
+    /// neither, so the capsule that shows it is never blank. A `String`, not
+    /// a `LocalizedStringResource` like `ClientFilter.title`: a label has
     /// nothing to look up.
     var title: String {
         if let label { return label }

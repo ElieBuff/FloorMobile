@@ -6,10 +6,9 @@
 import SwiftUI
 
 /// The day a filter value asks for — "Since a date" —, pushed inside the
-/// sheet that lists the filters: a calendar that ends today, opened on today,
-/// titled with the filter's name. Pushed by no screen since 16/11: "Sort &
-/// filter" (`ClientSortFilterSheet`) leaves the tenant's filters out until
-/// the mockup's pills (the user's decision).
+/// sheet that lists the filters ("Sort & filter", `ClientSortFilterSheet`):
+/// a calendar that ends today, opened on today, titled with the filter's
+/// name.
 ///
 /// Touching a day only selects it; the confirmation picks the day shown and
 /// goes back, today included — a `DatePicker` always holds a day, so touching

@@ -66,8 +66,7 @@ struct ClientsView: View {
     @State private var edits = ClientEdits()
     /// The sort and the filters picked, as the server's search sends them:
     /// written by "Sort & filter"'s "Show" (`ClientSortFilterSheet`), opened
-    /// by the bar's button. Only the sort can be picked there for now — the
-    /// tenant's filters wait for the mockup's pills (decision of 16/11).
+    /// by the bar's button.
     @State private var options = ClientSearchOptions()
     /// Whether "Sort & filter" is open.
     @State private var isSortingAndFiltering = false

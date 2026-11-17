@@ -32,6 +32,9 @@
         }
       }
     },
+    "%lld selected" : {
+
+    },
     "%lld task completed" : {
       "localizations" : {
         "en" : {

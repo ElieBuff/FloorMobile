@@ -158,6 +158,74 @@ struct ClientFilterDraftTests {
         #expect(draft.options.filters == [.value(ref: "tier-VIC")])
     }
 
+    @Test("A value asks for its day while it asks for one and is not picked")
+    func needsDayUntilPicked() {
+        let created = Self.created
+        let since = created.values[2]
+        var draft = ClientFilterDraft()
+
+        #expect(draft.needsDay(for: since))
+        #expect(!draft.needsDay(for: created.values[0]))
+
+        draft.pick(since, of: created, parameters: ["since": "2026-07-01"])
+
+        #expect(!draft.needsDay(for: since))
+    }
+
+    @Test("A touch picks a value, a second one lets go of it")
+    func togglePicksThenLetsGo() {
+        let tier = Self.tier
+        var draft = ClientFilterDraft()
+
+        draft.toggle(tier.values[0], of: tier)
+        draft.toggle(tier.values[1], of: tier)
+        #expect(draft.options.filters.map(\.ref) == ["tier-VIC", "tier-VIP"])
+
+        draft.toggle(tier.values[0], of: tier)
+        #expect(draft.options.filters.map(\.ref) == ["tier-VIP"])
+    }
+
+    @Test("A touch on a value of a single filter lets go of the one it had")
+    func toggleKeepsTheSingleRule() {
+        let created = Self.created
+        var draft = ClientFilterDraft()
+        draft.toggle(created.values[0], of: created)
+
+        draft.toggle(created.values[1], of: created)
+
+        #expect(draft.options.filters.map(\.ref) == ["created-last6Months"])
+    }
+
+    @Test("A touch never picks a value without the day it asks for; picked with its day, a touch lets go of it")
+    func toggleNeverPicksWithoutItsDay() {
+        let created = Self.created
+        let since = created.values[2]
+        var draft = ClientFilterDraft()
+
+        draft.toggle(since, of: created)
+        #expect(draft.options.filters.isEmpty)
+
+        draft.pick(since, of: created, parameters: ["since": "2026-07-01"])
+        draft.toggle(since, of: created)
+        #expect(draft.options.filters.isEmpty)
+    }
+
+    @Test("A filter counts its own values picked: not another filter's, not a sentence's pills")
+    func pickedCountIsTheFiltersOwn() {
+        let tier = Self.tier
+        let created = Self.created
+        var draft = ClientFilterDraft()
+        #expect(draft.pickedCount(in: tier) == 0)
+
+        draft.pick(tier.values[0], of: tier)
+        draft.pick(tier.values[1], of: tier)
+        draft.pick(created.values[0], of: created)
+        draft.receive(Self.answer([Self.pill("VIC")]))
+
+        #expect(draft.pickedCount(in: tier) == 2)
+        #expect(draft.pickedCount(in: created) == 1)
+    }
+
     // MARK: - Pills
 
     @Test("A new sentence's filters take the place of the last one's pills, and leave the ticks")
