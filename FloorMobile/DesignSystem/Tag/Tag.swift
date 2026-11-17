@@ -12,8 +12,7 @@ import SwiftUI
 /// `foregroundColor` on a capsule of `backgroundColor`.
 ///
 /// Any view as its content, not only a text: a status tag will put a coloured
-/// dot before its word. Not `Pill`, which is a filter in white with an X to
-/// take it off.
+/// dot before its word. Not `Pill`, a 36 pt capsule to pick or to take off.
 ///
 /// ```swift
 /// Tag(backgroundColor: Color(.Base.ink), foregroundColor: Color(.Base.paper)) {
