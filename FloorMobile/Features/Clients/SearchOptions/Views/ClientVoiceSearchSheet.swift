@@ -29,8 +29,7 @@ struct ClientVoiceSearchSheet: View {
             TranscriptionView(transcription: transcription, language: .live) {
                 doneButton
             }
-            // Still: the element's scroll view is its box of words, not the page.
-            .ambientBackground(followsScroll: false)
+            .sheetBackground()
             .navigationTitle(Text("Voice search"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -10,9 +10,8 @@ import SwiftUI
 /// - **listening** (`C-Voix-Ecoute-Anneau-Long-3L`): the listening pebble and
 ///   its rings, which swell with the voice (`ListeningPebble`), then the words,
 ///   as they are heard, in a box of three lines that scrolls — nothing before
-///   the first. A screen that paints the ambient background behind it keeps
-///   that background still (`.ambientBackground(followsScroll: false)`): the
-///   box is the element's first scroll view;
+///   the first. Its sheet is plain (`.sheetBackground()`), never the ambient
+///   background, which would follow that box's scrolling;
 /// - **downloading** (`C-Voix-Langue`), when the language is not on the device
 ///   yet: `LanguageDownloadView`, and "Cancel download" in place of the
 ///   screen's action, which closes the sheet.

@@ -17,21 +17,13 @@ import SwiftUI
 /// A screen holding several scrollables only reports the first one (SwiftUI's
 /// rule for `onScrollGeometryChange`): if that one scrolls sideways, the
 /// shapes stay where they hang on that screen.
-///
-/// - Screens whose scrolling is not the page's — the few lines of words in
-///   `TranscriptionView`'s box — pass `followsScroll: false`: the distance
-///   stays at zero whatever scrolls, and the shapes stay still, as on a
-///   static screen.
 private struct AmbientBackgroundModifier: ViewModifier {
-    let followsScroll: Bool
-
     @State private var scrollOffset: CGFloat = 0
 
     func body(content: Content) -> some View {
         content
             .scrollContentBackground(.hidden)
             .onScrollGeometryChange(for: CGFloat.self) { geometry in
-                guard followsScroll else { return 0 }
                 // From rest, not from the content's origin: under a navigation
                 // bar a scrollable at rest sits at minus its top inset.
                 let travelled = geometry.contentOffset.y + geometry.contentInsets.top
@@ -50,10 +42,9 @@ private struct AmbientBackgroundModifier: ViewModifier {
 
 extension View {
     /// Applies the app's ambient background behind this screen. Apply it to
-    /// the screen's outermost container — scrollable or not. `followsScroll:
-    /// false` for a screen whose scroll view is not its page: the shapes stay
-    /// still.
-    func ambientBackground(followsScroll: Bool = true) -> some View {
-        modifier(AmbientBackgroundModifier(followsScroll: followsScroll))
+    /// the screen's outermost container — scrollable or not. Not to a sheet:
+    /// a sheet is plain (`.sheetBackground()`).
+    func ambientBackground() -> some View {
+        modifier(AmbientBackgroundModifier())
     }
 }

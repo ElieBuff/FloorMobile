@@ -42,7 +42,7 @@ struct ClientSignatureSheet: View {
                 Spacer(minLength: 0)
             }
             .padding(AppSpacing.cardInset)
-            .ambientBackground()
+            .sheetBackground()
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbar }
         }
