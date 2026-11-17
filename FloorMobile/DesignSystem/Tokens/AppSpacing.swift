@@ -13,4 +13,9 @@ enum AppSpacing {
     /// where the hairline between two rows stops. Five components share it, so
     /// the card's left edge is one number rather than five.
     static let cardInset: CGFloat = 18
+    /// The margin between a screen's edge and its cards — the client list's
+    /// mockup (14/11). Shared by `.insetGroupedList()`'s sections and what
+    /// sits above them in line with them (the offline notice of
+    /// `ClientsView`).
+    static let screenInset: CGFloat = 16
 }

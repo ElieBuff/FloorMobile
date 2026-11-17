@@ -242,7 +242,8 @@ struct ClientAPITests {
     }
 }
 
-extension Tag {
+// `Testing.Tag`, not `Tag`: the app has a `Tag` of its own (DesignSystem/Tag).
+extension Testing.Tag {
     @Tag static var network: Self
     @Tag static var persistence: Self
 }

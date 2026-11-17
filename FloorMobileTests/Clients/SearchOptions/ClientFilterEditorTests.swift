@@ -8,7 +8,7 @@ import SwiftData
 import Testing
 @testable import FloorMobile
 
-/// The requests around "Filter"'s draft: its total, and the filters of a
+/// The requests around "Sort & filter"'s draft: its total, and the filters of a
 /// sentence. The network belongs to `ClientService`; what is under test here
 /// is what the sheet shows before, after, and when it fails.
 @Suite("Client filter editor")
@@ -20,10 +20,10 @@ struct ClientFilterEditorTests {
     @Test("The total is calculating until the count comes back, then shows it")
     func countShowsTheTotal() async throws {
         let world = try World { _ in (200, Data(#"{"total":664}"#.utf8)) }
-        let editor = ClientFilterEditor(filters: [.value(ref: "a")], debounce: .zero)
+        let editor = ClientFilterEditor(options: ClientSearchOptions(filters: [.value(ref: "a")]), debounce: .zero)
         #expect(editor.total.isLoading)
 
-        await editor.count(in: .mine, session: world.session, services: world.services)
+        await editor.count(session: world.session, services: world.services)
 
         #expect(editor.total.value == 664)
     }
@@ -32,10 +32,10 @@ struct ClientFilterEditorTests {
     func failedCountTakesTheTotalAway() async throws {
         let counted = try World { _ in (200, Data(#"{"total":664}"#.utf8)) }
         let pastTheLimit = try World { _ in (503, Data(#"{"error":"search_timeout"}"#.utf8)) }
-        let editor = ClientFilterEditor(filters: [.value(ref: "a")], debounce: .zero)
-        await editor.count(in: .mine, session: counted.session, services: counted.services)
+        let editor = ClientFilterEditor(options: ClientSearchOptions(filters: [.value(ref: "a")]), debounce: .zero)
+        await editor.count(session: counted.session, services: counted.services)
 
-        await editor.count(in: .mine, session: pastTheLimit.session, services: pastTheLimit.services)
+        await editor.count(session: pastTheLimit.session, services: pastTheLimit.services)
 
         #expect(editor.total.error != nil)
         #expect(editor.total.value == nil)
@@ -43,10 +43,10 @@ struct ClientFilterEditorTests {
 
     // MARK: - Sentence
 
-    @Test("A sentence's filters come back as pills, and the arrow stays away until it changes")
+    @Test("A sentence's filters come back as pills, and the same sentence is not sent again until it changes")
     func fetchGivesThePills() async throws {
         let world = try World { _ in (200, try Fixture.data("client_text_filters")) }
-        let editor = ClientFilterEditor(filters: [])
+        let editor = ClientFilterEditor(options: ClientSearchOptions())
         editor.draft.text = "VIP clients"
         editor.draft.send()
 
@@ -62,7 +62,7 @@ struct ClientFilterEditorTests {
     @Test("Without a connection, a sentence's request says so")
     func networkFailureSaysConnection() async throws {
         let world = try World { _ in throw URLError(.notConnectedToInternet) }
-        let editor = ClientFilterEditor(filters: [])
+        let editor = ClientFilterEditor(options: ClientSearchOptions())
         editor.draft.text = "VIP clients"
         editor.draft.send()
 
@@ -76,7 +76,7 @@ struct ClientFilterEditorTests {
     @Test("Any other failure of a sentence's request asks to try again")
     func serverFailureAsksToTryAgain() async throws {
         let world = try World { _ in (502, Data(#"{"error":"Failed to read the sentence"}"#.utf8)) }
-        let editor = ClientFilterEditor(filters: [])
+        let editor = ClientFilterEditor(options: ClientSearchOptions())
         editor.draft.text = "VIP clients"
         editor.draft.send()
 
@@ -92,7 +92,7 @@ struct ClientFilterEditorTests {
             Issue.record("No request expected")
             return (200, Data())
         }
-        let editor = ClientFilterEditor(filters: [])
+        let editor = ClientFilterEditor(options: ClientSearchOptions())
 
         await editor.fetchFilterItems(session: world.session, services: world.services)
 

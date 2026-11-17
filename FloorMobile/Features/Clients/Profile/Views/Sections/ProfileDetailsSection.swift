@@ -30,7 +30,7 @@ struct ProfileDetailsSection: View {
             if isLoading && client.address == nil {
                 // The address, on two lines.
                 SkeletonLines(widths: [0.8, 0.6])
-                    .listRowInsets(.cardRow)
+                    .listRowInsets(.insetGroupedRowInsets)
             } else {
                 address(client.address?.lines ?? [])
             }
@@ -47,7 +47,7 @@ struct ProfileDetailsSection: View {
     private func row(_ label: String, _ value: String?) -> some View {
         if let value, !value.isEmpty {
             DetailRow(label: label, value: value)
-                .listRowInsets(.cardRow)
+                .listRowInsets(.insetGroupedRowInsets)
         }
     }
 
@@ -56,7 +56,7 @@ struct ProfileDetailsSection: View {
     private func address(_ lines: [String]) -> some View {
         if !lines.isEmpty {
             DetailStackedRow(label: String(localized: "Address"), text: lines.joined(separator: "\n"))
-                .listRowInsets(.cardRow)
+                .listRowInsets(.insetGroupedRowInsets)
         }
     }
 }

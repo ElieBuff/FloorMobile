@@ -16,7 +16,7 @@ struct ProfileConsentsSection: View {
         Section {
             ForEach(ClientItem.OptIns.Channel.allCases, id: \.self) { channel in
                 DetailRow(label: channel.label, value: optIns.answer(for: channel))
-                    .listRowInsets(.cardRow)
+                    .listRowInsets(.insetGroupedRowInsets)
             }
         } header: {
             Text("Consents")

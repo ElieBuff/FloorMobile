@@ -98,7 +98,7 @@ struct FloorMobileApp: App {
                 .tint(Color(.Base.ink))
                 // Light only, deliberately, until the tokens have dark variants.
                 // They are all light today — ink on white surfaces over a light
-                // backdrop image — but system controls still follow the device,
+                // backdrop — but system controls still follow the device,
                 // so in dark mode the placeholders all but vanish and the date
                 // capsules go white-on-pale. A light-only app beats a half-dark
                 // one; this line comes out the day the colorsets gain their

@@ -6,21 +6,22 @@
 import Foundation
 import Observation
 
-/// The clients edited while their list is on screen, so the lists the server
-/// serves ("My Clients" online, "All Brand") show an edit without searching
-/// again: each row reads `current(_:)` rather than the card its page holds.
+/// The clients edited while the client list is on screen, so it shows an
+/// edit without searching again: each row reads `current(_:)` rather than
+/// the card its page holds — a page of the server's or, without a
+/// connection, of the device's.
 ///
-/// Lives only as long as those pages: a new search reads a server that has
-/// the edit already, so each list calls `removeAll()` when it asks for a
-/// first page — whatever started it: a new text, a sort or a filter, the
-/// other scope, "Try again" — and an edit never hides what changed elsewhere since (the console, the
-/// ingestion, a reassignment). The list the device keeps needs none of this:
-/// it reads `Client`, which the save updates (`ClientService.update`).
+/// Lives only as long as those pages: a new search reads a source that has
+/// the edit already — the server, or the device, which the save updates
+/// (`ClientService.update`) — so the list calls `removeAll()` when it asks
+/// for a first page, whatever started it: a sort or a filter, "Try again",
+/// the fallback on the device. An edit never hides what changed elsewhere
+/// since (the console, the ingestion, a reassignment).
 ///
 /// A type rather than a callback: the profile is a route's destination, and
 /// a route carries no closure — the list that pushed it cannot be called
-/// back. Held by `ClientsView`, above both the lists and the profiles they
-/// open, and handed to each: the profile records, the lists read.
+/// back. Held by `ClientsView`, above the list and the profiles it opens,
+/// and handed to each: the profile records, the list reads.
 @Observable
 final class ClientEdits {
     /// The saved cards, by client id.

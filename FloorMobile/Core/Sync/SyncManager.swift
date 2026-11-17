@@ -95,9 +95,9 @@ final class SyncManager {
 
     /// What the launch brings up to date, fanned out with `async let`:
     /// - the app's configuration (`GET setup`): the field vocabulary, which
-    ///   every picker reads, the tenant's "My Clients" filters, and the
-    ///   associate signed in with their store, handed on as soon as they are
-    ///   in;
+    ///   every picker reads, the tenant's "My Clients" filters and sorts, the
+    ///   brand's segments, and the associate signed in with their store,
+    ///   handed on as soon as they are in;
     /// - the store's clients — brought up to date, then cleared of those that
     ///   left the store, in that order: the prune only means something once
     ///   the delta is in.

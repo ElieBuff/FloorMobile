@@ -11,7 +11,7 @@ import Testing
 struct ClientSortWireTests {
 
     private static func sorts() throws -> [ClientSortWire.Response] {
-        try APIClient.makeDecoder().decode(SetupWire.Response.self, from: try Fixture.data("setup")).clients.sorts
+        try APIClient.makeDecoder().decode(SetupWire.Response.self, from: try Fixture.data("setup")).clientConfiguration.sorts
     }
 
     @Test("The setup's sorts decode in their positions, the name by default")

@@ -21,7 +21,7 @@ import SwiftUI
 /// FormPushRow(label: "Reason", value: draft.reason.displayLabel) {
 ///     ReasonPickerView(selection: $draft.reason)
 /// }
-/// .listRowInsets(.cardRow)
+/// .listRowInsets(.insetGroupedRowInsets)
 /// ```
 struct FormPushRow<Destination: View>: View {
     let label: String
@@ -64,12 +64,12 @@ struct FormPushRow<Destination: View>: View {
                 FormPushRow(label: "Reason", value: "Follow-up") {
                     Text(verbatim: "Reason picker")
                 }
-                .listRowInsets(.cardRow)
+                .listRowInsets(.insetGroupedRowInsets)
 
                 FormPushRow(label: "Client", value: "", placeholder: "Choose a client") {
                     Text(verbatim: "Client picker")
                 }
-                .listRowInsets(.cardRow)
+                .listRowInsets(.insetGroupedRowInsets)
             }
         }
         .listStyle(.insetGrouped)

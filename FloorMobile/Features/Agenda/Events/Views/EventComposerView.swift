@@ -123,7 +123,7 @@ struct EventComposerView: View {
                 ) {
                     ReasonPickerView(selection: $draft.reason, key: .eventReason)
                 }
-                .listRowInsets(.cardRow)
+                .listRowInsets(.insetGroupedRowInsets)
 
                 Picker(selection: $draft.meetingType) {
                     ForEach(meetingTypes, id: \.self) { type in
@@ -133,7 +133,7 @@ struct EventComposerView: View {
                 } label: {
                     FieldLabel(String(localized: "Type"))
                 }
-                .listRowInsets(.cardRow)
+                .listRowInsets(.insetGroupedRowInsets)
             }
 
             Section {
@@ -144,7 +144,7 @@ struct EventComposerView: View {
                 ) {
                     ClientPickerView(selection: $draft.clientName)
                 }
-                .listRowInsets(.cardRow)
+                .listRowInsets(.insetGroupedRowInsets)
 
                 DatePicker(
                     selection: $draft.startDate,
@@ -152,7 +152,7 @@ struct EventComposerView: View {
                 ) {
                     FieldLabel(String(localized: "Start"))
                 }
-                .listRowInsets(.cardRow)
+                .listRowInsets(.insetGroupedRowInsets)
 
                 Picker(selection: $draft.duration) {
                     ForEach(durations, id: \.self) { minutes in
@@ -161,7 +161,7 @@ struct EventComposerView: View {
                 } label: {
                     FieldLabel(String(localized: "Duration"))
                 }
-                .listRowInsets(.cardRow)
+                .listRowInsets(.insetGroupedRowInsets)
 
                 Picker(selection: $draft.reminderOffset) {
                     ForEach(reminderOffsets, id: \.self) { offset in
@@ -170,7 +170,7 @@ struct EventComposerView: View {
                 } label: {
                     FieldLabel(String(localized: "Reminder"))
                 }
-                .listRowInsets(.cardRow)
+                .listRowInsets(.insetGroupedRowInsets)
             }
 
             Section {

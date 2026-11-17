@@ -1,5 +1,5 @@
 {
-    "clients": {
+    "clientConfiguration": {
         "filters": [
             {
                 "id": "01M5CJ75QEKQR98JVNHCZ675TN",
@@ -108,6 +108,36 @@
                 "direction": "desc",
                 "isDefault": false,
                 "position": 5
+            }
+        ],
+        "segments": [
+            {
+                "code": "One Timer",
+                "style": {
+                    "textColor": "#1D5560",
+                    "backgroundColor": "#1454601A"
+                }
+            },
+            {
+                "code": "Connoisseur",
+                "style": {
+                    "textColor": "#2A5A63",
+                    "backgroundColor": "#1454600D"
+                }
+            },
+            {
+                "code": "VIP",
+                "style": {
+                    "textColor": "#ffffff",
+                    "backgroundColor": "#1454603D"
+                }
+            },
+            {
+                "code": "VIC",
+                "style": {
+                    "textColor": "#ffffff",
+                    "backgroundColor": "#14545F"
+                }
             }
         ]
     },

@@ -92,7 +92,4 @@ nonisolated enum StoredKey: String, Sendable {
     case signedInAssociate
     /// The store of the associate signed in, beside them.
     case signedInStore
-    /// The language last picked in the transcription sheet — a preference of
-    /// the device, kept across sign-outs. See `TranscriptionLanguage`.
-    case transcriptionLanguage
 }

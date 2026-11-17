@@ -39,7 +39,7 @@ struct EventDetailView: View {
                     text: event.title,
                     emphasis: .title
                 )
-                .listRowInsets(.cardRow)
+                .listRowInsets(.insetGroupedRowInsets)
             }
 
             Section {
@@ -47,14 +47,14 @@ struct EventDetailView: View {
                     label: String(localized: "Client"),
                     value: event.clientDisplayName ?? "—"
                 )
-                .listRowInsets(.cardRow)
+                .listRowInsets(.insetGroupedRowInsets)
 
                 // Hidden when absent, unlike the client: the server genuinely
                 // leaves this one unset, so an empty value would report a gap
                 // that is not one.
                 if let type = event.meetingType?.displayLabel {
                     DetailRow(label: String(localized: "Type"), value: type)
-                        .listRowInsets(.cardRow)
+                        .listRowInsets(.insetGroupedRowInsets)
                 }
             }
 
@@ -65,13 +65,13 @@ struct EventDetailView: View {
                     label: String(localized: "Start"),
                     value: event.startDate.formatted(date: .abbreviated, time: .shortened)
                 )
-                .listRowInsets(.cardRow)
+                .listRowInsets(.insetGroupedRowInsets)
 
                 DetailRow(
                     label: String(localized: "Duration"),
                     value: Duration.minutes(event.duration).hoursAndMinutes
                 )
-                .listRowInsets(.cardRow)
+                .listRowInsets(.insetGroupedRowInsets)
 
                 // The API stores an instant; nobody thinks in instants. Back to
                 // the offset the advisor picked, and out as "30 min before".
@@ -81,13 +81,13 @@ struct EventDetailView: View {
                         ReminderOffset.minutes(from: event.reminderDate, before: event.startDate)
                     )
                 )
-                .listRowInsets(.cardRow)
+                .listRowInsets(.insetGroupedRowInsets)
             }
 
             if let note = event.eventDescription, !note.isEmpty {
                 Section {
                     DetailStackedRow(label: String(localized: "Note"), text: note)
-                        .listRowInsets(.cardRow)
+                        .listRowInsets(.insetGroupedRowInsets)
                 }
             }
         }

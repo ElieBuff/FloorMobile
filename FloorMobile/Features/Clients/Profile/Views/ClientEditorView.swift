@@ -100,7 +100,7 @@ struct ClientEditorView: View {
                     Text("Enter a valid email")
                         .font(.footnote)
                         .foregroundStyle(Color(.Status.Tint.error))
-                        .listRowInsets(.cardRow)
+                        .listRowInsets(.insetGroupedRowInsets)
                 }
                 row(String(localized: "Phone"), $client.primaryPhone)
                     .keyboardType(.phonePad)
@@ -128,12 +128,12 @@ struct ClientEditorView: View {
                         Toggle(isOn: optIns[dynamicMember: channel.keyPath]) {
                             FieldLabel(channel.label)
                         }
-                        .listRowInsets(.cardRow)
+                        .listRowInsets(.insetGroupedRowInsets)
                     }
                 }
             }
         }
-        .cardList()
+        .insetGroupedList()
         .listSectionSpacing(16)
         .scrollDismissesKeyboard(.interactively)
     }
@@ -141,7 +141,7 @@ struct ClientEditorView: View {
     /// One field of the form, bound to an optional value of the card.
     private func row(_ label: String, _ value: Binding<String?>) -> some View {
         FormTextRow(label: label, text: value.replacingNil(with: ""))
-            .listRowInsets(.cardRow)
+            .listRowInsets(.insetGroupedRowInsets)
     }
 
     // MARK: - Saving

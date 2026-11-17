@@ -93,7 +93,7 @@ struct TaskComposerView: View {
                 ) {
                     ReasonPickerView(selection: $draft.reason, key: .taskReason)
                 }
-                .listRowInsets(.cardRow)
+                .listRowInsets(.insetGroupedRowInsets)
             }
 
             Section {
@@ -104,14 +104,14 @@ struct TaskComposerView: View {
                 ) {
                     ClientPickerView(selection: $draft.clientName)
                 }
-                .listRowInsets(.cardRow)
+                .listRowInsets(.insetGroupedRowInsets)
 
                 // A day, not a moment: a task is due *on* a date, and asking
                 // for an hour it does not have invites a meaningless answer.
                 DatePicker(selection: $draft.dueDate, displayedComponents: .date) {
                     FieldLabel(String(localized: "Due date"))
                 }
-                .listRowInsets(.cardRow)
+                .listRowInsets(.insetGroupedRowInsets)
             }
 
             Section {

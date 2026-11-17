@@ -105,10 +105,12 @@ struct AgendaView: View {
                         Label(String(localized: "New Task"), systemImage: "checklist")
                     }
                 } label: {
-                    Image(systemName: "plus")
-                        .font(.body.weight(.medium))
+                    // In an `HStack`: the bar draws a plain icon at its own
+                    // size, whatever its font or scale (`.barButtonStyle()`).
+                    HStack { Image(systemName: "plus") }
                 }
                 .accessibilityLabel(String(localized: "Add"))
+                .barButtonStyle()
             }
         }
         // The composers are seeded with the day on screen, not with today.

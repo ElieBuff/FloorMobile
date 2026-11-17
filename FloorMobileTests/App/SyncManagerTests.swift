@@ -185,8 +185,8 @@ struct SyncManagerTests {
 
     private static func inMemoryContainer() throws -> ModelContainer {
         try ModelContainer(
-            for: AIAction.self, AgendaEvent.self, AgendaTask.self, Client.self, ClientFilter.self, ClientSort.self,
-            EnumValue.self,
+            for: AIAction.self, AgendaEvent.self, AgendaTask.self, Client.self, ClientFilter.self, ClientSegment.self,
+            ClientSort.self, EnumValue.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
     }

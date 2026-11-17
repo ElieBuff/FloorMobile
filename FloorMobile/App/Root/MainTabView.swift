@@ -10,11 +10,12 @@ import SwiftData
 /// pushing a screen in one tab never leaks into another — the standard
 /// pattern for a `TabView`, not a single stack shared across tabs.
 ///
-/// The last tab uses the system search role (`role: .search`) rather than a
-/// regular tab: iOS renders it as a floating button separated from the rest
-/// and hands it the full-screen search transition for free — matching the
-/// "search-01" icon that sits unchanged in this same spot on every screen
-/// in the Figma file.
+/// The last tab, Search, sits apart from the rest, in its own round glass at
+/// the bar's trailing end, as the mockups draw it, and opens straight into
+/// typing: the keyboard comes up, the tab bar leaves, and the search field
+/// sits just above the keyboard. Both come from the system search role with
+/// `tabViewSearchActivation(.searchTabSelection)`: on iOS 27 a search tab
+/// stays inside the bar without it (measured on iOS 27.2, 15/11).
 struct MainTabView: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var selectedTab: AppTab = .home
@@ -67,14 +68,17 @@ struct MainTabView: View {
                 label(String(localized: "Agent"), systemImage: "sparkles", tab: .agent)
             }
 
-            // Search keeps the system role (floating button + full-screen
-            // transition); its icon color stays system-managed.
+            // Search keeps the system role; its icon color stays
+            // system-managed.
             Tab(value: .search, role: .search) {
                 NavigationStack {
                     SearchView()
                 }
             }
         }
+        // Selecting Search starts the search: field above the keyboard, and
+        // the tab set apart from the bar on iOS 27 too.
+        .tabViewSearchActivation(.searchTabSelection)
         // Icons carry their own baked color; this only sets the selected tab's
         // title (the system would otherwise tint it with the default accent).
         .tint(Color(.TabBar.iconActive))
@@ -120,6 +124,6 @@ enum AppTab: Hashable {
 
 #Preview {
     MainTabView()
-        .modelContainer(for: [AIAction.self, Client.self], inMemory: true)
+        .modelContainer(for: [AIAction.self, Client.self, ClientSegment.self, ClientSort.self], inMemory: true)
         .environment(AppSession(auth: .preview, api: .preview))
 }

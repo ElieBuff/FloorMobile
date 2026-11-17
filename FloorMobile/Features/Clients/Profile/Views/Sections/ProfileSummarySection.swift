@@ -21,14 +21,14 @@ struct ProfileSummarySection: View {
                     // Plain text: a stacked row would put an empty label above it.
                     Text(summary.brief)
                         .foregroundStyle(Color(.OnSurface.textPrimary))
-                        .listRowInsets(.cardRow)
+                        .listRowInsets(.insetGroupedRowInsets)
                     DetailStackedRow(label: String(localized: "Next step"), text: summary.nextStep)
-                        .listRowInsets(.cardRow)
+                        .listRowInsets(.insetGroupedRowInsets)
                 } else {
                     SkeletonLines(widths: [1, 0.9, 0.55])
-                        .listRowInsets(.cardRow)
+                        .listRowInsets(.insetGroupedRowInsets)
                     SkeletonLines(widths: [0.3, 0.8])
-                        .listRowInsets(.cardRow)
+                        .listRowInsets(.insetGroupedRowInsets)
                 }
             } header: {
                 Text("Summary")

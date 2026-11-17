@@ -44,7 +44,7 @@ struct FormTitleRow: View {
                     .focused($isFocused)
 
                 if let onDictate {
-                    FormDictateButton(action: onDictate)
+                    FieldIconButton(systemImage: "mic", label: String(localized: "Dictate"), action: onDictate)
                 }
             }
         }

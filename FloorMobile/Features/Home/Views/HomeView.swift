@@ -61,16 +61,42 @@ struct HomeView: View {
             if await loadHomePage() { lastLoad = .now }
         }
         .ambientBackground()
-        .appHeader {
-            ToolbarItem(placement: .topBarTrailing) {
-                AppHeaderButton(systemImage: "barcode.viewfinder", label: String(localized: "Scan")) {
-                    AppLog.ui.info("Home: 'Scan' tapped in header")
-                }
+        // The system navigation bar, not a custom view: the mockup is sized to
+        // Apple's bar (44pt under the status bar, 16pt side margins, 44pt round
+        // buttons), which is exactly what a title-less toolbar renders on iOS
+        // 26 with Liquid Glass.
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                AppAvatar()
             }
+            // The avatar is its own circle: opt it out of the glass background
+            // the bar would otherwise draw around it.
+            .sharedBackgroundVisibility(.hidden)
+
             ToolbarItem(placement: .topBarTrailing) {
-                AppHeaderButton(systemImage: "plus", label: String(localized: "Add")) {
-                    AppLog.ui.info("Home: 'Add' tapped in header")
+                Button {
+                    AppLog.ui.info("Home: 'Scan' tapped in header")
+                } label: {
+                    // In an `HStack`: the bar draws a plain icon at its own
+                    // size, whatever its font or scale (`.barButtonStyle()`).
+                    HStack { Image(systemName: "barcode.viewfinder") }
                 }
+                .accessibilityLabel(String(localized: "Scan"))
+                .barButtonStyle()
+            }
+            // Each in its own glass: scanning and adding are not the same kind
+            // of action.
+            ToolbarSpacer(.fixed, placement: .topBarTrailing)
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    AppLog.ui.info("Home: 'Add' tapped in header")
+                } label: {
+                    HStack { Image(systemName: "plus") }
+                }
+                .accessibilityLabel(String(localized: "Add"))
+                .barButtonStyle()
             }
         }
     }

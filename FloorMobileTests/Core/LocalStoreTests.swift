@@ -24,8 +24,8 @@ struct LocalStoreTests {
     /// next session. `wipedRowCount` below turns that into a failing test.
     private func seededContext() throws -> ModelContext {
         let container = try ModelContainer(
-            for: AIAction.self, AgendaEvent.self, AgendaTask.self, Client.self, ClientFilter.self, ClientSort.self,
-            EnumValue.self,
+            for: AIAction.self, AgendaEvent.self, AgendaTask.self, Client.self, ClientFilter.self, ClientSegment.self,
+            ClientSort.self, EnumValue.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
         let context = ModelContext(container)
@@ -40,6 +40,7 @@ struct LocalStoreTests {
                                   createdAt: epoch, updatedAt: epoch))
         context.insert(Client(id: "c", externalId: "c"))
         context.insert(ClientFilter(id: "f", titleKey: "client.filter.f", selectionRaw: "SINGLE", rank: 0, values: []))
+        context.insert(ClientSegment(code: "VIC", backgroundColorHex: "#14545F", textColorHex: "#ffffff", rank: 0))
         context.insert(ClientSort(value: "name", labelKey: "client.sort.name", directionRaw: "asc", isDefault: true, rank: 0))
         context.insert(EnumValue(entityName: "task", field: "reason", value: "CALL", rank: 0))
         try context.save()
@@ -53,6 +54,7 @@ struct LocalStoreTests {
             + context.fetchCount(FetchDescriptor<AgendaTask>())
             + context.fetchCount(FetchDescriptor<Client>())
             + context.fetchCount(FetchDescriptor<ClientFilter>())
+            + context.fetchCount(FetchDescriptor<ClientSegment>())
             + context.fetchCount(FetchDescriptor<ClientSort>())
             + context.fetchCount(FetchDescriptor<EnumValue>())
     }
@@ -65,7 +67,7 @@ struct LocalStoreTests {
 
         try makeStore(tenant: tenant, cursor: cursor).enforceTenant("org-1", context: context)
 
-        #expect(try remainingRowCount(in: context) == 7)
+        #expect(try remainingRowCount(in: context) == 8)
         #expect(tenant.get() == "org-1")
         #expect(cursor.get() == "cursor")
     }

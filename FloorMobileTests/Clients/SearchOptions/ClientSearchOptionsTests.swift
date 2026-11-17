@@ -10,15 +10,6 @@ import Testing
 @Suite("Client search options")
 struct ClientSearchOptionsTests {
 
-    @Test("Nothing picked is the server's default; any one pick is not")
-    func isDefault() {
-        #expect(ClientSearchOptions().isDefault)
-        #expect(!ClientSearchOptions(sortBy: "name").isDefault)
-        #expect(!ClientSearchOptions(direction: .desc).isDefault)
-        #expect(!ClientSearchOptions(filters: [.value(ref: "a")]).isDefault)
-        #expect(!ClientSearchOptions(filters: [.filter(Self.pill("Clients VIP"))]).isDefault)
-    }
-
     // MARK: - Sort
 
     @Test("Picking a sort takes its value and its stored direction, and leaves the filters")
@@ -40,7 +31,6 @@ struct ClientSearchOptionsTests {
 
         #expect(options.sortBy == "name")
         #expect(options.direction == .asc)
-        #expect(!options.isDefault)
     }
 
     @Test("While none is picked, the server's default sort is the ticked one")
@@ -75,11 +65,5 @@ struct ClientSearchOptionsTests {
         ClientSort(
             value: "lastPurchase", labelKey: "client.sort.lastPurchase", directionRaw: "desc", isDefault: false, rank: 1
         )
-    }
-
-    /// A pill as a sentence's filters give it, a new one at each call; its
-    /// condition is never read here.
-    private static func pill(_ label: String) -> ClientFilterItem {
-        ClientFilterItem(label: label, condition: .object(["field": .string("client.segment")]))
     }
 }

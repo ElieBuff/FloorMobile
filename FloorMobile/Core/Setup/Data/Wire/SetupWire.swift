@@ -12,7 +12,8 @@ nonisolated enum SetupWire {
         /// The values of the app's pickers, entity → field → values, decoded
         /// by `EnumsWire`.
         var enums: EnumsWire.Response
-        var clients: Clients
+        /// What the brand sets up for its clients' screens, never a client.
+        var clientConfiguration: ClientConfiguration
         /// `nil` only if the associate's record went between the token's
         /// check and this read.
         var salesAssociate: SalesAssociate?
@@ -39,12 +40,15 @@ nonisolated enum SetupWire {
         }
     }
 
-    /// The Clients feature's block.
-    struct Clients: Decodable, Sendable {
+    /// The Clients feature's configuration: the filters, sorts and segments
+    /// the brand sets up for its lists.
+    struct ClientConfiguration: Decodable, Sendable {
         /// The tenant's "My Clients" filters, in the order the screen shows
         /// them.
         var filters: [ClientFilterWire.Response]
         /// The tenant's "My Clients" sorts, each with its position.
         var sorts: [ClientSortWire.Response]
+        /// The brand's segments, in its order, each with its tag's colours.
+        var segments: [ClientSegmentWire.Response]
     }
 }

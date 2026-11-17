@@ -10,6 +10,10 @@ import SwiftUI
 /// a "Prepare" action on the right. Pulled out of `NextAppointmentSection`
 /// once it grew past a one-liner, the same way `AIActionRow` lives on its
 /// own next to `AIRecommendationsSection`.
+///
+/// The card is an ink surface: its text and hairline are shades of
+/// `Base.paper`, not the `OnCanvas` colours, which are dark for the light
+/// background the screens stand on.
 struct NextAppointmentCard: View {
     let event: AgendaEvent
     var onPrepare: () -> Void = {}
@@ -35,7 +39,7 @@ struct NextAppointmentCard: View {
         VStack(alignment: .leading, spacing: 5) {
             Text(event.startDate, format: .dateTime.hour().minute())
                 .font(.title3.weight(.semibold))
-                .foregroundStyle(Color(.OnCanvas.textPrimary))
+                .foregroundStyle(Color(.Base.paper))
 
             if let countdownLabel = event.countdownLabel(from: now) {
                 HStack(spacing: 5) {
@@ -53,7 +57,7 @@ struct NextAppointmentCard: View {
 
     private var divider: some View {
         Rectangle()
-            .fill(Color(.OnCanvas.surfaceSubtle))
+            .fill(Color(.Base.paper).opacity(0.12))
             .frame(width: 1)
     }
 
@@ -62,18 +66,18 @@ struct NextAppointmentCard: View {
             if let clientDisplayName = event.clientDisplayName {
                 Text(clientDisplayName)
                     .font(.subheadline.weight(.medium))
-                    .foregroundStyle(Color(.OnCanvas.textPrimary))
+                    .foregroundStyle(Color(.Base.paper))
                     .lineLimit(1)
             } else {
                 Text(event.title)
                     .font(.subheadline.weight(.medium))
-                    .foregroundStyle(Color(.OnCanvas.textPrimary))
+                    .foregroundStyle(Color(.Base.paper))
                     .lineLimit(1)
             }
             if let meetingSummary = event.meetingSummary {
                 Text(meetingSummary)
                     .font(.caption2)
-                    .foregroundStyle(Color(.OnCanvas.textTertiary))
+                    .foregroundStyle(Color(.Base.paper).opacity(0.55))
                     .lineLimit(1)
             }
         }

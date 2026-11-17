@@ -5,8 +5,9 @@
 
 import Foundation
 
-/// Wire format of a `ClientFilter`: one entry of the `clients.filters` block
-/// of `GET setup` (`SetupWire`). Read-only: there is no `Request`.
+/// Wire format of a `ClientFilter`: one entry of the
+/// `clientConfiguration.filters` block of `GET setup` (`SetupWire`).
+/// Read-only: there is no `Request`.
 nonisolated enum ClientFilterWire {
     struct Response: Decodable, Sendable {
         var id: String

@@ -52,7 +52,7 @@ struct TaskDetailView: View {
                     text: task.title,
                     emphasis: .title
                 )
-                .listRowInsets(.cardRow)
+                .listRowInsets(.insetGroupedRowInsets)
             }
 
             Section {
@@ -62,7 +62,7 @@ struct TaskDetailView: View {
                     label: String(localized: "Client"),
                     value: task.clientDisplayName ?? "—"
                 )
-                .listRowInsets(.cardRow)
+                .listRowInsets(.insetGroupedRowInsets)
 
                 // A day, not a moment: a task is due *on* a date, which is also
                 // all the composer offers to pick.
@@ -70,20 +70,20 @@ struct TaskDetailView: View {
                     label: String(localized: "Due date"),
                     value: task.startDate.formatted(date: .abbreviated, time: .omitted)
                 )
-                .listRowInsets(.cardRow)
+                .listRowInsets(.insetGroupedRowInsets)
 
                 DetailRow(
                     label: String(localized: "Created"),
                     value: task.createdAt.formatted(date: .abbreviated, time: .omitted)
                 )
-                .listRowInsets(.cardRow)
+                .listRowInsets(.insetGroupedRowInsets)
             }
 
             // No note, no card. An empty "Note" heading says nothing twice.
             if let note = task.taskDescription, !note.isEmpty {
                 Section {
                     DetailStackedRow(label: String(localized: "Note"), text: note)
-                        .listRowInsets(.cardRow)
+                        .listRowInsets(.insetGroupedRowInsets)
                 }
             }
 
@@ -94,7 +94,7 @@ struct TaskDetailView: View {
                 DetailStackedRow(label: String(localized: "Status")) {
                     TaskStatusSection(id: task.id, status: task.status)
                 }
-                .listRowInsets(.cardRow)
+                .listRowInsets(.insetGroupedRowInsets)
             }
         }
     }

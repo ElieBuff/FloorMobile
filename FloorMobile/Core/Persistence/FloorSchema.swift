@@ -13,8 +13,8 @@ nonisolated enum FloorSchemaV1: VersionedSchema {
 
     static var models: [any PersistentModel.Type] {
         [
-            AIAction.self, AgendaEvent.self, AgendaTask.self, Client.self, ClientFilter.self, ClientSort.self,
-            EnumValue.self,
+            AIAction.self, AgendaEvent.self, AgendaTask.self, Client.self, ClientFilter.self, ClientSegment.self,
+            ClientSort.self, EnumValue.self,
         ]
     }
 }

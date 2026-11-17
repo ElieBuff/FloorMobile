@@ -7,36 +7,37 @@ import Foundation
 import Speech
 import os
 
-/// Which language a transcription starts in, and which language models the
+/// Which language a transcription listens in, and which language models the
 /// device prepares ahead.
 ///
-/// Three candidates, in order: the language last picked in the sheet (a
-/// preference of the device), the associate's language from `GET setup`, the
+/// The associate's language — their profile's, from `GET setup` —, else the
 /// device's own. Each is brought to a language the transcriber knows — `"fr"`
-/// becomes `fr_FR` — and English closes the list.
+/// becomes `fr_FR` — and English closes the list. No choice on the
+/// transcription screen (decision of 16/11): the associate dictates in their
+/// own language, set in their profile.
 ///
 /// The models themselves are not in the app: iOS downloads them on demand and
 /// shares them between apps (`AssetInventory`), and it caps how many
-/// languages an app holds. So the device prepares two at most ahead — its
-/// own language and the associate's — and any other is downloaded when picked
-/// in the sheet.
+/// languages an app holds. So the device prepares two ahead, right after the
+/// launch sync — its own language and the associate's —, and the
+/// transcription element downloads one only when it is not there yet
+/// (`LanguageDownload`).
 nonisolated struct TranscriptionLanguage: Sendable {
+    /// What a transcription starts in when no candidate is supported.
+    static let fallback = Locale(identifier: "en_US")
+
     /// The associate's language, raw as `GET setup` sends it (`"Fr"`), or
     /// `nil`.
     var associateLanguage: String?
     /// The device's language.
     var deviceLocale: Locale
-    /// The language last picked in the sheet, as a locale identifier.
-    var lastPicked: StoredValue<String>
     /// The transcriber's own language for `locale`, or `nil` when it has none:
     /// `SpeechTranscriber.supportedLocale(equivalentTo:)`, swapped in tests.
     var supportedLocale: @Sendable (Locale) async -> Locale?
 
     /// The language a new transcription starts in.
     func startLocale() async -> Locale {
-        let last = lastPicked.get().map(Locale.init(identifier:))
-        return await resolved([last, associateLocale, deviceLocale].compactMap { $0 }).first
-            ?? Self.fallback
+        await resolved([associateLocale, deviceLocale].compactMap { $0 }).first ?? Self.fallback
     }
 
     /// The languages whose models are prepared ahead: the device's, and the
@@ -61,21 +62,17 @@ nonisolated struct TranscriptionLanguage: Sendable {
         }
         return locales
     }
-
-    /// What a transcription starts in when no candidate is supported.
-    static let fallback = Locale(identifier: "en_US")
 }
 
 nonisolated extension TranscriptionLanguage {
-    /// The app's: the language of the associate signed in, the device's, the
-    /// device's last pick. The associate is read where `AppSession.keep`
-    /// writes them (`StoredValue.signedInAssociate`), not through the session:
-    /// a value, not a view, with no environment to read it from.
+    /// The app's: the language of the associate signed in, and the device's.
+    /// The associate is read where `AppSession.keep` writes them
+    /// (`StoredValue.signedInAssociate`), not through the session: a value,
+    /// not a view, with no environment to read it from.
     static var live: TranscriptionLanguage {
         TranscriptionLanguage(
             associateLanguage: StoredValue<SalesAssociateSnapshot>.signedInAssociate.get()?.preferredLanguage,
             deviceLocale: .current,
-            lastPicked: .userDefaults(.transcriptionLanguage),
             supportedLocale: { await SpeechTranscriber.supportedLocale(equivalentTo: $0) }
         )
     }
@@ -85,7 +82,7 @@ nonisolated extension TranscriptionLanguage {
     /// Makes sure `locale`'s model is on the device, downloading it when it is
     /// not. `onDownload` gets the download's progress, on the main actor,
     /// before it starts — and is not called when the model is already there:
-    /// iOS shares it between apps.
+    /// iOS shares it between apps. What `LanguageDownload` asks, and shows.
     static func prepareModel(
         for locale: Locale,
         onDownload: @MainActor @Sendable (Progress) -> Void = { _ in }
@@ -99,7 +96,8 @@ nonisolated extension TranscriptionLanguage {
     }
 
     /// Prepares the models of `localesToPrepare()`, one after the other. A
-    /// failure is logged and skipped: the sheet tries again when it opens.
+    /// failure is logged and skipped: the transcription element tries again
+    /// when it shows (`LanguageDownload`).
     func prepareModels() async {
         for locale in await localesToPrepare() {
             do {

@@ -82,7 +82,7 @@ extension DetailStackedRow where Content == Text {
                     text: "Call about the Solène order, and the belt she asked to see",
                     emphasis: .title
                 )
-                .listRowInsets(.cardRow)
+                .listRowInsets(.insetGroupedRowInsets)
             }
 
             Section {
@@ -93,7 +93,7 @@ extension DetailStackedRow where Content == Text {
                         fitting room — and pull the matching belt in tan.
                         """
                 )
-                .listRowInsets(.cardRow)
+                .listRowInsets(.insetGroupedRowInsets)
             }
         }
         .listStyle(.insetGrouped)

@@ -47,9 +47,13 @@ struct DetailScreen<Edit: View>: ViewModifier {
                     // The same cross the composer wears at the root of its
                     // cover: one glyph, one meaning — this closes the modal.
                     Button { dismiss() } label: {
-                        Image(systemName: "xmark")
+                        // In an `HStack`: the bar draws a plain icon at its
+                        // own size, whatever its font or scale
+                        // (`.barButtonStyle()`).
+                        HStack { Image(systemName: "xmark") }
                     }
                     .accessibilityLabel(String(localized: "Close"))
+                    .barButtonStyle()
                 }
 
                 if let edit {
@@ -59,6 +63,7 @@ struct DetailScreen<Edit: View>: ViewModifier {
                         // announcement all come with it — the same reasoning
                         // as `FormPushRow`.
                         NavigationLink(String(localized: "Edit")) { edit }
+                            .barButtonStyle()
                     }
                 }
             }

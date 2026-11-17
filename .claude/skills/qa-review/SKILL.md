@@ -118,7 +118,7 @@ Log the round in the plan's "Journal QA", one line per finding, and end the roun
 ```
 Photo avant : c8baf0f…
 Tour 1 — À CORRIGER (renforcé) — photo de fin : 4ce978e…
-- Q1.1 [IMPORTANT] corrigé : la liste reprend .cardList() au lieu de recopier ses modificateurs (ClientsView.swift).
+- Q1.1 [IMPORTANT] corrigé : la liste reprend .insetGroupedList() au lieu de recopier ses modificateurs (ClientsView.swift).
 - Q1.2 [SUGGESTION] refusé : ClientRow sert déjà les deux listes, il n'y a rien à extraire.
 ```
 

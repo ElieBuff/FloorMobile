@@ -5,8 +5,8 @@
 
 import Foundation
 
-/// Wire format of a `ClientSort`: one entry of the `clients.sorts` block of
-/// `GET setup` (`SetupWire`). Read-only: there is no `Request`.
+/// Wire format of a `ClientSort`: one entry of the `clientConfiguration.sorts`
+/// block of `GET setup` (`SetupWire`). Read-only: there is no `Request`.
 nonisolated enum ClientSortWire {
     struct Response: Decodable, Sendable {
         var value: String

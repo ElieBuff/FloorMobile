@@ -13,9 +13,9 @@ import SwiftUI
 ///
 /// The tick, not a tint on the row: a row's content may own a colour (a
 /// reason's), and a selected-row fill would fight it. One row for the lists
-/// that pick — "Reason", "Filter" — so they read alike and cannot drift
-/// apart. Not the system's inline `Picker`, which "Sort by" uses: it neither
-/// lets go of a pick nor takes several.
+/// that pick — "Reason", a filter's values — so they read alike and cannot
+/// drift apart. Not the system's inline `Picker`: it neither lets go of a
+/// pick nor takes several.
 ///
 /// ```swift
 /// CheckmarkRow(isChecked: draft.isPicked(value)) {
@@ -51,7 +51,7 @@ struct CheckmarkRow<Label: View, Accessory: View>: View {
             // The row's insets inside the button, not around it: with `.plain`,
             // a list row's insets belong to the list, which does nothing with a
             // tap there, so a tap near an edge of the row would pick nothing.
-            .padding(.cardRow)
+            .padding(.insetGroupedRowInsets)
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
@@ -92,6 +92,6 @@ extension CheckmarkRow where Accessory == EmptyView {
                 .foregroundStyle(Color(.OnSurface.textSecondary))
         }
     }
-    .cardList()
+    .insetGroupedList()
     .ambientBackground()
 }

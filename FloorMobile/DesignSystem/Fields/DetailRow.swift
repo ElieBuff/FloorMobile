@@ -8,18 +8,18 @@ import SwiftUI
 /// A read-only row: the field's name on the left, what it holds on the right.
 ///
 /// The counterpart of the composer's rows, and deliberately their twin — same
-/// `FieldLabel`, same `.body` value, same `.cardRow` inset. The two screens show
+/// `FieldLabel`, same `.body` value, same `.insetGroupedRowInsets` inset. The two screens show
 /// the same client and the same date, one after the other, and "Edit" should
 /// change what you can do with them, not where they sit.
 ///
 /// Nothing here is tappable, so unlike `FormTitleRow` the row brings no padding
-/// of its own: the list's `.cardRow` is the only inset, and there is no tap
+/// of its own: the list's `.insetGroupedRowInsets` is the only inset, and there is no tap
 /// target to widen.
 ///
 /// ```swift
 /// Section {
 ///     DetailRow(label: String(localized: "Client"), value: name)
-///         .listRowInsets(.cardRow)
+///         .listRowInsets(.insetGroupedRowInsets)
 /// }
 /// ```
 ///
@@ -50,13 +50,13 @@ struct DetailRow: View {
         List {
             Section {
                 DetailRow(label: "Client", value: "Salomé Kaliny")
-                    .listRowInsets(.cardRow)
+                    .listRowInsets(.insetGroupedRowInsets)
                 DetailRow(label: "Start", value: "Sep 7, 2026 at 2:00 PM")
-                    .listRowInsets(.cardRow)
+                    .listRowInsets(.insetGroupedRowInsets)
                 DetailRow(label: "Duration", value: "1 h")
-                    .listRowInsets(.cardRow)
+                    .listRowInsets(.insetGroupedRowInsets)
                 DetailRow(label: "Reminder", value: "30 min before")
-                    .listRowInsets(.cardRow)
+                    .listRowInsets(.insetGroupedRowInsets)
             }
         }
         .listStyle(.insetGrouped)

@@ -13,7 +13,7 @@ nonisolated extension Endpoint {
     /// The BFF also expects it read again when `client/search` or
     /// `client/count` answers 409 `filters_changed` (the tenant changed its
     /// filters). The app deliberately does not: the case is too rare to be
-    /// worth the code. "Filter" then shows no total, "My Clients" shows
+    /// worth the code. "Sort & filter" then shows "Show" alone, "My Clients" shows
     /// "Search failed", and the next launch brings the filters back in line.
     static func setup() -> Endpoint {
         Endpoint(path: "setup")

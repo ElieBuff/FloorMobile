@@ -47,8 +47,8 @@ struct AlertCard: View {
         }
         .padding(24)
         .frame(maxWidth: 320)
-        // The shadow does the separating. `AppBorder.neutral` is white at 35%,
-        // drawn for the ambient canvas, and invisible on a paper surface.
+        // The shadow does the separating. `AppBorder.neutral` outlines a card
+        // lying on the ambient canvas, not one lifted above the screen.
         .cardStyle(surface: Color(.Base.paper), shadow: .high)
     }
 
@@ -99,7 +99,7 @@ struct AlertCard: View {
                 Capsule().fill(Color(.Base.ink))
             case .quiet:
                 // A faint fill, the way a `.bordered` button carries one. The
-                // hairline tokens are 8% ink, which on white is not a boundary
+                // hairline tokens are 10% ink, which on white is not a boundary
                 // anyone can see — and a button whose edge is invisible is not
                 // one.
                 Capsule().fill(Color(.OnSurface.surfaceFaint))

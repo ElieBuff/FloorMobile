@@ -7,93 +7,145 @@ import SwiftUI
 
 /// The app-wide two-layer ambient background:
 ///
-/// - **Pinned layer** — the designer's full composition exported from Figma
-///   (`AmbientBackdrop`: flat fill + backdrop photo + color halos). It never
-///   moves; the screen shows its top window, identical at any scroll depth.
-/// - **Moving layer** — the grain texture, travelling with the scrolling
-///   content and repeating forever.
+/// - **Pinned layer** — a flat ivory (`Base.canvas`). It never moves, so the
+///   content always scrolls over one colour and its text keeps one colour too.
+/// - **Moving layer** — four blurred shapes that breathe (`AmbientEllipse`),
+///   hung at the top of the page and travelling with the scrolling content.
+///   Once the content has scrolled past them, the page is plain ivory.
 ///
 /// Screens never place this view directly — they opt in through the
 /// `.ambientBackground()` modifier (see `AmbientBackgroundModifier`), which
-/// pins the backdrop, hides the scrollable's own background and feeds the
-/// live scroll offset.
+/// hides the scrollable's own background and feeds the distance scrolled.
 ///
-/// The exported image is the source of truth, not a native transcription:
-/// the composition's blurred shapes, blend modes and image-fill crops do not
-/// survive being rebuilt in SwiftUI closely enough to match the mockup.
-/// Re-export the Figma frame (grain hidden, PNG 2x) if the design changes.
+/// The shapes are drawn natively, from the mockup's own numbers: plain blurred
+/// ellipses over a flat fill, with no photo, blend mode or image crop to
+/// reproduce. The blur radii are the mockup's, used as they are.
+///
+/// Each shape is blurred once, into a picture the whole app shares, and the
+/// breath only moves, swells and fades that picture. Blurring the live shapes
+/// instead looks the same and was measured on an iPhone 18 Pro Max: 22
+/// offscreen passes and about 6 ms of GPU for every frame, thirty times a
+/// second for as long as a screen showed.
+///
+/// The breath is read off absolute time through `TimelineView` rather than
+/// played by an animation: each screen and each sheet draws its own background,
+/// and all of them must show the same instant of the same breath (see
+/// `AmbientEllipse`). It also gives one pause switch — Reduce Motion, where the
+/// shapes hold their still pose, and an app that is not active. A background
+/// whose shapes have scrolled out of sight draws none of them and runs no
+/// clock: a long list should not redraw thirty times a second for nothing.
 struct AmbientBackground: View {
-    /// How far the content above has scrolled; the grain moves against it.
+    /// How far past a shape's edge its picture goes, in blur radii. At three
+    /// the halo has faded to nothing, so the picture's border never shows.
+    private static let haloReach: CGFloat = 3
+
+    /// Pixels per reference point in a shape's picture. A blur this wide holds
+    /// no detail a quarter of the resolution would lose, and the four pictures
+    /// weigh 2 MB instead of 30.
+    private static let pictureScale: CGFloat = 0.25
+
+    /// Each shape with its blur, in the order of `AmbientEllipse.all`, drawn
+    /// the first time a background appears.
+    private static let pictures = AmbientEllipse.all.map { picture(of: $0) }
+
+    /// How far the content above has scrolled from rest, in screen points; the
+    /// shapes move up by as much.
     var scrollOffset: CGFloat = 0
 
-    /// Point size of the design's reference canvas. The Figma frame is
-    /// 393×1381 but positions the composition 288 pt lower than the Home
-    /// screen mockup shows it; since the backdrop is pinned top-aligned, that
-    /// top band would never be visible, so the asset is the export with its
-    /// top 288 pt cropped off (alignment measured by cross-correlating the
-    /// export against the mockup).
-    private static let referenceCanvasSize = CGSize(width: 393, height: 1093)
-
-    /// Size of the Figma grain image (727×1492). The grain repeats itself
-    /// vertically with this period, so scrolling can go on forever: noise is
-    /// statistically uniform, which makes the seam between two copies
-    /// invisible.
-    private static let grainSize = CGSize(width: 727, height: 1492)
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
-        // The grain is much larger than the screen; as an overlay it
-        // decorates without inflating the layout — the backdrop alone
-        // (which fills the screen) dictates the size.
-        fixedBackdrop
-            .overlay(alignment: .topLeading) { grain }
-            .allowsHitTesting(false)
+        GeometryReader { geometry in
+            let width = geometry.size.width
+
+            Color(.Base.canvas)
+                // As an overlay the shapes decorate without inflating the
+                // layout: the flat fill alone, which fills the screen,
+                // dictates the size.
+                .overlay(alignment: .topLeading) {
+                    if scrollOffset < AmbientEllipse.reach(forWidth: width) {
+                        shapes(scale: width / AmbientEllipse.referenceWidth)
+                            .offset(y: -scrollOffset)
+                    }
+                }
+        }
+        // The shapes are wider than the screen. Unclipped, they would paint
+        // over the neighbouring screen while a push slides it in.
+        .clipped()
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 
-    /// The designer's composition, pinned to the screen and scaled against
-    /// the screen width so wider phones keep the framing. The flat color
-    /// backs up any area the image would not cover.
-    private var fixedBackdrop: some View {
-        ZStack(alignment: .top) {
-            Color(.Base.canvas) // #F5F5F5, the flat fill under the composition
-            GeometryReader { geometry in
-                let scale = geometry.size.width / Self.referenceCanvasSize.width
-                Image("AmbientBackdrop")
-                    .resizable()
-                    .frame(
-                        width: geometry.size.width,
-                        height: Self.referenceCanvasSize.height * scale
-                    )
+    /// Stops the clock when motion is unwelcome (Reduce Motion) or unseen (the
+    /// app is not active). Resuming does not restart the breath: the shapes
+    /// pick it up wherever it would have been.
+    private var isPaused: Bool {
+        reduceMotion || scenePhase != .active
+    }
+
+    /// The four shapes, back to front, breathing.
+    ///
+    /// - Parameter scale: screen points per reference point, so wider phones
+    ///   keep the mockup's framing.
+    private func shapes(scale: CGFloat) -> some View {
+        // 30 fps is well above what a 14-second breath needs, and a quarter of
+        // the work of matching a 120 Hz display for no visible gain.
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: isPaused)) { context in
+            ZStack(alignment: .topLeading) {
+                ForEach(AmbientEllipse.all.indices, id: \.self) { index in
+                    if let picture = Self.pictures[index] {
+                        let ellipse = AmbientEllipse.all[index]
+                        shape(
+                            ellipse,
+                            picture: picture,
+                            pose: reduceMotion ? ellipse.still : ellipse.pose(at: context.date),
+                            scale: scale
+                        )
+                    }
+                }
             }
         }
-        .ignoresSafeArea()
     }
 
-    /// The grain texture, moving with the content and repeating forever.
-    ///
-    /// The offset is wrapped modulo the image height, and two stacked copies
-    /// always cover the screen — constant memory however far the user
-    /// scrolls, and the elastic bounce (negative offsets) is covered by
-    /// normalizing the wrap into [0, height).
-    private var grain: some View {
-        let height = Self.grainSize.height
-        let wrapped = (scrollOffset.truncatingRemainder(dividingBy: height) + height)
-            .truncatingRemainder(dividingBy: height)
+    /// One shape in a given pose. The picture already holds the blur, so a
+    /// shape that swells carries its halo with it, as in the mockup.
+    private func shape(
+        _ ellipse: AmbientEllipse,
+        picture: Image,
+        pose: AmbientEllipse.Pose,
+        scale: CGFloat
+    ) -> some View {
+        let halo = ellipse.blurRadius * Self.haloReach
 
-        return VStack(spacing: 0) {
-            grainTile
-            grainTile
-        }
-        // 0.18 rather than Figma's 0.15: measured against the mockup export,
-        // plain alpha compositing renders the grain ~20% weaker over the
-        // photo/halo area than Figma does, and this compensates.
-        .opacity(0.18)
-        .offset(x: -168, y: -111 - wrapped)
-    }
-
-    private var grainTile: some View {
-        Image("AmbientGrain")
+        return picture
             .resizable()
-            .frame(width: Self.grainSize.width, height: Self.grainSize.height)
+            .frame(
+                width: (ellipse.frame.width + 2 * halo) * scale,
+                height: (ellipse.frame.height + 2 * halo) * scale
+            )
+            .scaleEffect(pose.scale)
+            .opacity(pose.opacity)
+            .offset(
+                x: (ellipse.frame.minX - halo + pose.offset.width) * scale,
+                y: (ellipse.frame.minY - halo + pose.offset.height) * scale
+            )
+    }
+
+    /// A shape and its blur as a picture, in reference points, with room all
+    /// around for the halo. `nil` if SwiftUI cannot draw it: that shape is then
+    /// missing from the background, which stays a plain ivory there.
+    private static func picture(of ellipse: AmbientEllipse) -> Image? {
+        let renderer = ImageRenderer(
+            content: Ellipse()
+                .fill(Color(ellipse.color))
+                .frame(width: ellipse.frame.width, height: ellipse.frame.height)
+                .blur(radius: ellipse.blurRadius)
+                .padding(ellipse.blurRadius * haloReach)
+        )
+        renderer.scale = pictureScale
+        return renderer.cgImage.map { Image(decorative: $0, scale: pictureScale) }
     }
 }
 
@@ -103,7 +155,7 @@ struct AmbientBackground: View {
     VStack(spacing: 8) {
         Text("Static content")
             .font(.title2.bold())
-        Text("Nothing here scrolls, so only the grain would move.")
+        Text("Nothing here scrolls, so the shapes stay where they hang.")
             .foregroundStyle(.secondary)
             .multilineTextAlignment(.center)
     }
@@ -114,7 +166,7 @@ struct AmbientBackground: View {
     .ambientBackground()
 }
 
-#Preview("Long list — infinite grain") {
+#Preview("Long list — the shapes scroll away") {
     List(0..<100) { index in
         Text("Row \(index)")
             .listRowBackground(Color.clear)
@@ -123,8 +175,8 @@ struct AmbientBackground: View {
     .ambientBackground()
 }
 
-#Preview("Scrolled far away (offset 5000)") {
-    AmbientBackground(scrollOffset: 5000)
+#Preview("Scrolled part of the way (offset 300)") {
+    AmbientBackground(scrollOffset: 300)
 }
 
 #Preview("Background alone — mockup comparison") {

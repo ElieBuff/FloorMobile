@@ -1,0 +1,215 @@
+{
+    "items": [
+        {
+            "id": "f895e9f1-5abd-4690-8334-d9049ff7617a",
+            "externalId": "seed-client-000328",
+            "salutation": "mister",
+            "firstName": "Vincent",
+            "lastName": "Adam",
+            "segment": "One Timer",
+            "preferredLanguage": "fr",
+            "storeCode": "seed-store-01",
+            "store": {
+                "id": "c0fc8c70-6407-43b8-9652-a3794013340d",
+                "externalId": "seed-store-01",
+                "storeCode": "seed-store-01",
+                "name": "Floor Paris"
+            },
+            "SAExternalId": "378970372512460673",
+            "SA": {
+                "id": "01KTRSFERMNXK5FGSQW11M1478",
+                "externalId": "378970372512460673",
+                "firstName": "Elie",
+                "lastName": "Buff",
+                "preferredLanguage": null
+            },
+            "primaryEmail": "vincent.adam32@example.test",
+            "primaryPhone": null,
+            "searchWords": [
+                "adam",
+                "adam32",
+                "vincent",
+                "vincentadam32"
+            ],
+            "searchPhones": [],
+            "mainAddress": null,
+            "optins": {
+                "email": true,
+                "directMessage": false,
+                "call": false,
+                "wechat": false,
+                "line": false
+            },
+            "lastViewedAt": "2026-11-16T06:41:07.417Z"
+        },
+        {
+            "id": "5429adb3-a300-46a3-881e-7bd7fc6bcab9",
+            "externalId": "seed-client-036587",
+            "salutation": "mister",
+            "firstName": "Jean",
+            "lastName": "Bonnet",
+            "segment": "One Timer",
+            "preferredLanguage": "fr",
+            "storeCode": "seed-store-01",
+            "store": {
+                "id": "c0fc8c70-6407-43b8-9652-a3794013340d",
+                "externalId": "seed-store-01",
+                "storeCode": "seed-store-01",
+                "name": "Floor Paris"
+            },
+            "SAExternalId": "378970372512460673",
+            "SA": {
+                "id": "01KTRSFERMNXK5FGSQW11M1478",
+                "externalId": "378970372512460673",
+                "firstName": "Elie",
+                "lastName": "Buff",
+                "preferredLanguage": null
+            },
+            "primaryEmail": "jean.bonnet88@example.test",
+            "primaryPhone": null,
+            "searchWords": [
+                "bonnet",
+                "bonnet88",
+                "jean",
+                "jeanbonnet88"
+            ],
+            "searchPhones": [],
+            "mainAddress": null,
+            "optins": {
+                "email": true,
+                "directMessage": false,
+                "call": false,
+                "wechat": false,
+                "line": false
+            },
+            "lastViewedAt": "2026-11-15T21:05:14.230Z"
+        },
+        {
+            "id": "7d981e30-9d12-4d26-8006-e8a67f6cad62",
+            "externalId": "seed-client-036025",
+            "salutation": "misses",
+            "firstName": "Noura",
+            "lastName": "Al Ghamdi",
+            "segment": "One Timer",
+            "preferredLanguage": "ar",
+            "storeCode": "seed-store-01",
+            "store": {
+                "id": "c0fc8c70-6407-43b8-9652-a3794013340d",
+                "externalId": "seed-store-01",
+                "storeCode": "seed-store-01",
+                "name": "Floor Paris"
+            },
+            "SAExternalId": "378970372512460673",
+            "SA": {
+                "id": "01KTRSFERMNXK5FGSQW11M1478",
+                "externalId": "378970372512460673",
+                "firstName": "Elie",
+                "lastName": "Buff",
+                "preferredLanguage": null
+            },
+            "primaryEmail": "noura.alghamdi@example.test",
+            "primaryPhone": null,
+            "searchWords": [
+                "al",
+                "alghamdi",
+                "ghamdi",
+                "noura",
+                "nouraalghamdi"
+            ],
+            "searchPhones": [],
+            "mainAddress": null,
+            "optins": {
+                "email": true,
+                "directMessage": false,
+                "call": false,
+                "wechat": false,
+                "line": false
+            },
+            "lastViewedAt": "2026-11-15T19:36:07.148Z"
+        },
+        {
+            "id": "1bd72312-fe18-494a-a604-66de11d6225b",
+            "externalId": "seed-client-009336",
+            "salutation": "misses",
+            "firstName": "Aisha",
+            "lastName": "Al Abdullah",
+            "segment": "One Timer",
+            "preferredLanguage": "ar",
+            "storeCode": "seed-store-01",
+            "store": {
+                "id": "c0fc8c70-6407-43b8-9652-a3794013340d",
+                "externalId": "seed-store-01",
+                "storeCode": "seed-store-01",
+                "name": "Floor Paris"
+            },
+            "SAExternalId": "378970372512460673",
+            "SA": {
+                "id": "01KTRSFERMNXK5FGSQW11M1478",
+                "externalId": "378970372512460673",
+                "firstName": "Elie",
+                "lastName": "Buff",
+                "preferredLanguage": null
+            },
+            "primaryEmail": "aalabdullah@example.test",
+            "primaryPhone": null,
+            "searchWords": [
+                "aalabdullah",
+                "abdullah",
+                "aisha",
+                "al",
+                "alabdullah"
+            ],
+            "searchPhones": [],
+            "mainAddress": null,
+            "optins": {
+                "email": true,
+                "directMessage": false,
+                "call": false,
+                "wechat": false,
+                "line": false
+            },
+            "lastViewedAt": "2026-11-15T09:55:57.150Z"
+        },
+        {
+            "id": "1dd4d58d-c698-4902-9a2a-fcc65ea4932d",
+            "externalId": "seed-client-027292",
+            "salutation": "misses",
+            "firstName": "Myriam",
+            "lastName": "Bernard",
+            "segment": "Connoisseur",
+            "preferredLanguage": "fr",
+            "storeCode": "seed-store-01",
+            "store": {
+                "id": "c0fc8c70-6407-43b8-9652-a3794013340d",
+                "externalId": "seed-store-01",
+                "storeCode": "seed-store-01",
+                "name": "Floor Paris"
+            },
+            "SAExternalId": "378970372512460673",
+            "SA": {
+                "id": "01KTRSFERMNXK5FGSQW11M1478",
+                "externalId": "378970372512460673",
+                "firstName": "Elie",
+                "lastName": "Buff",
+                "preferredLanguage": null
+            },
+            "primaryEmail": "mbernard@example.test",
+            "primaryPhone": null,
+            "searchWords": [
+                "bernard",
+                "mbernard",
+                "myriam"
+            ],
+            "searchPhones": [],
+            "mainAddress": null,
+            "optins": {
+                "email": false,
+                "directMessage": false,
+                "call": false,
+                "wechat": false,
+                "line": false
+            },
+            "lastViewedAt": "2026-11-12T05:58:33.889Z"
+        }
+    ]
+}

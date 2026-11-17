@@ -7,15 +7,17 @@ import Foundation
 import SwiftData
 
 /// One of the tenant's "My Clients" filters, as the server sets it up — the
-/// `clients.filters` block of `GET setup` — kept for the filters screen.
+/// `clientConfiguration.filters` block of `GET setup` — kept for "Sort &
+/// filter".
 ///
 /// What a filter offers, not what an associate picked: the server owns the
-/// list, its order and each value's meaning. "Filter"
-/// (`ClientFilterPickerView`) lists them in `rank` order, each with its
-/// values; a value picked goes into the sheet's draft (`ClientFilterDraft`),
-/// then, applied, into `ClientSearchOptions`, which sends its `ref` back in
-/// `client/search`'s `filters`. Tied to the tenant like
-/// everything stored: `LocalStore.erase` wipes it.
+/// list, its order and each value's meaning. No screen lists them since
+/// 16/11 — "Sort & filter" (`ClientSortFilterSheet`) leaves them out until
+/// the mockup's pills (the user's decision) —; a value picked goes into the
+/// sheet's draft (`ClientFilterDraft`), then, shown, into
+/// `ClientSearchOptions`, which sends its `ref` back in `client/search`'s
+/// `filters`. Tied to the tenant like everything stored: `LocalStore.erase`
+/// wipes it.
 ///
 /// Not `Syncable`, like `EnumValue`: the block lands whole, so
 /// `SetupService` saves the complete set at once.
@@ -44,7 +46,7 @@ nonisolated final class ClientFilter {
     }
 }
 
-nonisolated extension ClientFilter: ContentComparable {
+nonisolated extension ClientFilter {
 
     // MARK: - Typed views
 
@@ -77,17 +79,6 @@ nonisolated extension ClientFilter: ContentComparable {
     /// filters.
     static func offering(_ ref: String, in filters: [ClientFilter]) -> ClientFilter? {
         filters.first { $0.values.contains { $0.ref == ref } }
-    }
-
-    // MARK: - Sync
-
-    /// Whether `other` holds the same content, field by field — what decides
-    /// that `ModelContext.replace` leaves the stored filters alone. Every stored field
-    /// above is compared here: one added to the class must be added here too,
-    /// or a server change to it alone would never be written.
-    func hasSameContent(as other: ClientFilter) -> Bool {
-        id == other.id && rank == other.rank && titleKey == other.titleKey
-            && selectionRaw == other.selectionRaw && values == other.values
     }
 }
 

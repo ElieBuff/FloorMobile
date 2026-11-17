@@ -12,13 +12,6 @@ struct TranscriptionLanguageTests {
 
     // MARK: - Where a transcription starts
 
-    @Test("The language last picked in the sheet comes before the associate's")
-    func lastPickComesFirst() async {
-        let language = Self.language(lastPicked: "it_IT", associate: "Fr", device: "en_US")
-
-        #expect(await language.startLocale().identifier == "it_IT")
-    }
-
     @Test("The associate's language comes before the device's")
     func associateComesBeforeDevice() async {
         let language = Self.language(associate: "Fr", device: "en_US")
@@ -68,15 +61,10 @@ struct TranscriptionLanguageTests {
     /// A transcriber that knows French, English and Italian, naming each by
     /// its full locale — as `SpeechTranscriber.supportedLocale(equivalentTo:)`
     /// does — and nothing else.
-    private static func language(
-        lastPicked: String? = nil,
-        associate: String? = nil,
-        device: String
-    ) -> TranscriptionLanguage {
+    private static func language(associate: String? = nil, device: String) -> TranscriptionLanguage {
         TranscriptionLanguage(
             associateLanguage: associate,
             deviceLocale: Locale(identifier: device),
-            lastPicked: .inMemory(lastPicked),
             supportedLocale: { locale in
                 let known = ["fr": "fr_FR", "en": "en_US", "it": "it_IT"]
                 return known[locale.language.languageCode?.identifier ?? ""].map(Locale.init(identifier:))

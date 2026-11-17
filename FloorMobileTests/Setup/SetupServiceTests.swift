@@ -75,23 +75,7 @@ struct SetupServiceTests {
         #expect(try context.fetchCount(FetchDescriptor<EnumValue>()) == (try Fixture.enumsValueCount()))
         #expect(try context.fetchCount(FetchDescriptor<ClientFilter>()) == 2)
         #expect(try context.fetchCount(FetchDescriptor<ClientSort>()) == 6)
-    }
-
-    @Test("An unchanged setup is not written to the store")
-    func synchronizeSkipsIdenticalPayload() async throws {
-        let client = Self.serving("setup")
-        let container = try Self.inMemoryContainer()
-        let service = SetupService(modelContainer: container)
-
-        try await service.synchronize(using: client)
-        let before = try Self.identities(in: container)
-
-        try await service.synchronize(using: client)
-
-        // Row identities survive only if the rows were left alone: the rewrite
-        // path deletes and re-inserts, which mints new ones. This is what keeps
-        // the launch from rewriting the whole configuration for nothing.
-        #expect(try Self.identities(in: container) == before)
+        #expect(try context.fetchCount(FetchDescriptor<ClientSegment>()) == 4)
     }
 
     @Test("A vocabulary the server reordered is rewritten")
@@ -110,7 +94,7 @@ struct SetupServiceTests {
         try await service.synchronize(using: client)
 
         // Same two values, listed the other way round: `rank` is what the
-        // pickers order by, so an identical *set* is still a real change.
+        // pickers order by, so the new order is the one they show.
         let reasons = try ModelContext(container).fetch(EnumValue.descriptor(for: .taskReason))
         #expect(reasons.map(\.value) == ["FOLLOW_UP", "BIRTHDAY"])
     }
@@ -185,28 +169,6 @@ struct SetupServiceTests {
         #expect(filters.map(\.id) == ["b"])
         #expect(filters.first?.titleKey == "client.filter.b.renamed")
         #expect(filters.first?.rank == 0)
-    }
-
-    @Test("As many filters as before, one of them changed: the change is written")
-    func synchronizeRewritesASameSizeChange() async throws {
-        let payloads = Mutex<[Data]>([
-            try Self.payload(filters: [("a", "client.filter.a"), ("b", "client.filter.b")]),
-            try Self.payload(filters: [("a", "client.filter.a"), ("b", "client.filter.b.renamed")]),
-        ])
-        let client = Self.makeClient { request in
-            (Self.response(request, statusCode: 200), payloads.withLock { $0.removeFirst() })
-        }
-        let container = try Self.inMemoryContainer()
-        let service = SetupService(modelContainer: container)
-
-        try await service.synchronize(using: client)
-        try await service.synchronize(using: client)
-
-        // Same count, so the comparison has to look inside each filter.
-        let filters = try ModelContext(container).fetch(
-            FetchDescriptor<ClientFilter>(sortBy: [SortDescriptor(\.rank)])
-        )
-        #expect(filters.map(\.titleKey) == ["client.filter.a", "client.filter.b.renamed"])
     }
 
     @Test("The same filters in another order: the new order is written")
@@ -291,25 +253,6 @@ struct SetupServiceTests {
         #expect(sorts.map(\.value) == ["a", "b"])
     }
 
-    @Test("As many sorts as before, the default moved: the change is written")
-    func synchronizeRewritesAChangedSort() async throws {
-        let payloads = Mutex<[Data]>([
-            try Self.payload(sorts: [("a", 0, true), ("b", 1, false)]),
-            try Self.payload(sorts: [("a", 0, false), ("b", 1, true)]),
-        ])
-        let client = Self.makeClient { request in
-            (Self.response(request, statusCode: 200), payloads.withLock { $0.removeFirst() })
-        }
-        let container = try Self.inMemoryContainer()
-        let service = SetupService(modelContainer: container)
-
-        try await service.synchronize(using: client)
-        try await service.synchronize(using: client)
-
-        let sorts = try ModelContext(container).fetch(FetchDescriptor<ClientSort>(sortBy: [SortDescriptor(\.rank)]))
-        #expect(sorts.filter(\.isDefault).map(\.value) == ["b"])
-    }
-
     @Test("A sort the server no longer offers disappears")
     func synchronizeDropsARetiredSort() async throws {
         let payloads = Mutex<[Data]>([
@@ -328,6 +271,44 @@ struct SetupServiceTests {
         #expect(try ModelContext(container).fetch(FetchDescriptor<ClientSort>()).map(\.value) == ["a"])
     }
 
+    // MARK: - Client segments
+
+    @Test("The brand's segments are kept in its order, with their colours")
+    func synchronizePersistsSegments() async throws {
+        let container = try Self.inMemoryContainer()
+
+        try await SetupService(modelContainer: container).synchronize(using: Self.serving("setup"))
+
+        let segments = try ModelContext(container).fetch(
+            FetchDescriptor<ClientSegment>(sortBy: [SortDescriptor(\.rank)])
+        )
+        #expect(segments.map(\.code) == ["One Timer", "Connoisseur", "VIP", "VIC"])
+        #expect(segments.map(\.rank) == Array(0..<4))
+        let vic = try #require(segments.last)
+        #expect(vic.backgroundColorHex == "#14545F")
+        #expect(vic.textColorHex == "#ffffff")
+    }
+
+    @Test("A segment the server no longer lists disappears, a new colour lands")
+    func synchronizeReplacesChangedSegments() async throws {
+        let payloads = Mutex<[Data]>([
+            try Self.payload(segments: [("VIC", "#14545F"), ("VIP", "#1454603D")]),
+            try Self.payload(segments: [("VIC", "#000000")]),
+        ])
+        let client = Self.makeClient { request in
+            (Self.response(request, statusCode: 200), payloads.withLock { $0.removeFirst() })
+        }
+        let container = try Self.inMemoryContainer()
+        let service = SetupService(modelContainer: container)
+
+        try await service.synchronize(using: client)
+        try await service.synchronize(using: client)
+
+        let segments = try ModelContext(container).fetch(FetchDescriptor<ClientSegment>())
+        #expect(segments.map(\.code) == ["VIC"])
+        #expect(segments.first?.backgroundColorHex == "#000000")
+    }
+
     @Test("A setup without an associate does not fail, and hands back none")
     func synchronizeWithoutAnAssociate() async throws {
         // The server sends null only if the record went between the token's check and the read.
@@ -343,24 +324,16 @@ struct SetupServiceTests {
 
     // MARK: - Helpers
 
-    /// The store's row identities, which change if and only if the rows were
-    /// deleted and re-inserted.
-    private static func identities(in container: ModelContainer) throws -> Set<PersistentIdentifier> {
-        let context = ModelContext(container)
-        let values = try context.fetch(FetchDescriptor<EnumValue>()).map(\.persistentModelID)
-        let filters = try context.fetch(FetchDescriptor<ClientFilter>()).map(\.persistentModelID)
-        let sorts = try context.fetch(FetchDescriptor<ClientSort>()).map(\.persistentModelID)
-        return Set(values + filters + sorts)
-    }
-
     /// A minimal `GET setup` body: one vocabulary field in the given order,
-    /// the given filters, each with no value, the given sorts, and the
-    /// associate of the real fixture with the given language, without a
-    /// store — or `null` for them.
+    /// the given filters, each with no value, the given sorts, the given
+    /// segments, each with its fill and a white text, and the associate of
+    /// the real fixture with the given language, without a store — or `null`
+    /// for them.
     private nonisolated static func payload(
         taskReasons: [String] = ["FOLLOW_UP"],
         filters: [(id: String, titleKey: String)] = [],
         sorts: [(value: String, position: Int, isDefault: Bool)] = [],
+        segments: [(code: String, backgroundColor: String)] = [],
         language: String? = "Fr",
         associate: Bool = true
     ) throws -> Data {
@@ -372,7 +345,7 @@ struct SetupServiceTests {
             : NSNull()
         let body: [String: Any] = [
             "enums": ["task": ["reason": taskReasons]],
-            "clients": [
+            "clientConfiguration": [
                 "filters": filters.map {
                     ["id": $0.id, "titleKey": $0.titleKey, "selection": "SINGLE", "values": [Any]()] as [String: Any]
                 },
@@ -380,6 +353,12 @@ struct SetupServiceTests {
                     [
                         "value": $0.value, "labelKey": "client.sort.\($0.value)", "direction": "desc",
                         "isDefault": $0.isDefault, "position": $0.position,
+                    ] as [String: Any]
+                },
+                "segments": segments.map {
+                    [
+                        "code": $0.code,
+                        "style": ["backgroundColor": $0.backgroundColor, "textColor": "#FFFFFF"],
                     ] as [String: Any]
                 },
             ],
@@ -390,7 +369,7 @@ struct SetupServiceTests {
 
     private static func inMemoryContainer() throws -> ModelContainer {
         try ModelContainer(
-            for: EnumValue.self, ClientFilter.self, ClientSort.self,
+            for: EnumValue.self, ClientFilter.self, ClientSegment.self, ClientSort.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
     }

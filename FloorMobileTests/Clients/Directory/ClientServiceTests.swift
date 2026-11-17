@@ -131,7 +131,7 @@ struct ClientServiceTests {
         }
 
         let page = try await ClientService(modelContainer: container)
-            .searchClients("aliette mar", in: .mine, after: "my-clients-cursor-1", using: api)
+            .searchClients("aliette mar", after: "my-clients-cursor-1", using: api)
 
         let url = try #require(requested.withLock { $0 })
         #expect(url.path.hasSuffix("client/search"))
@@ -155,16 +155,15 @@ struct ClientServiceTests {
         }
 
         let page = try await ClientService(modelContainer: try Self.inMemoryContainer())
-            .searchClients("aliette", in: .mine, using: api)
+            .searchClients("aliette", using: api)
 
         #expect(page.clients.isEmpty)
         #expect(page.nextCursor == nil)
     }
 
-    @Test("A search of my clients fails fast, being interactive; the brand's still waits")
-    func onlyMyClientsSearchIsInteractive() {
-        #expect(Endpoint.searchClients("aliette", in: .mine).interactive)
-        #expect(!Endpoint.searchClients("aliette", in: .brand).interactive)
+    @Test("A search of my clients fails fast, being interactive")
+    func myClientsSearchIsInteractive() {
+        #expect(Endpoint.searchClients("aliette").interactive)
     }
 
     /// A tenant value's entry, `{ ref, params }`, as the server reads it,
@@ -187,7 +186,7 @@ struct ClientServiceTests {
             ]
         )
 
-        let items = Endpoint.searchClients("aliette", in: .mine, options: options).query
+        let items = Endpoint.searchClients("aliette", options: options).query
 
         #expect(items.first { $0.name == "orderBy" }?.value == "lastPurchase")
         #expect(items.first { $0.name == "direction" }?.value == "desc")
@@ -203,7 +202,7 @@ struct ClientServiceTests {
     func pillIsSentWhole() throws {
         let options = ClientSearchOptions(filters: [.value(ref: "a"), .filter(Self.optOutPill)])
 
-        let items = Endpoint.searchClients(nil, in: .mine, options: options).query
+        let items = Endpoint.searchClients(nil, options: options).query
 
         let sent = try #require(items.first { $0.name == "filters" }?.value)
         let entries = try #require(JSONSerialization.jsonObject(with: Data(sent.utf8)) as? [NSDictionary])
@@ -213,26 +212,12 @@ struct ClientServiceTests {
         ])
     }
 
-    @Test("A brand search takes the sort but never the filters, which the server refuses there")
-    func brandSearchNeverSendsFilters() {
-        let options = ClientSearchOptions(sortBy: "name", direction: .asc, filters: [.value(ref: "a")])
-
-        let names = Endpoint.searchClients("nina", in: .brand, options: options).query.map(\.name)
-
-        #expect(names.contains("orderBy"))
-        #expect(names.contains("direction"))
-        #expect(!names.contains("filters"))
-        #expect(!names.contains("scope"))
-    }
-
     @Test("Without a text the search sends no q; with nothing picked, nothing beside it")
     func noTextNoOptions() {
-        let withoutText = Endpoint.searchClients(
-            nil, in: .mine, options: ClientSearchOptions(filters: [.value(ref: "a")])
-        )
+        let withoutText = Endpoint.searchClients(nil, options: ClientSearchOptions(filters: [.value(ref: "a")]))
         #expect(!withoutText.query.map(\.name).contains("q"))
 
-        let plain = Endpoint.searchClients("aliette", in: .mine).query.map(\.name)
+        let plain = Endpoint.searchClients("aliette").query.map(\.name)
         #expect(plain == ["scope", "q"])
     }
 
@@ -248,7 +233,7 @@ struct ClientServiceTests {
         let filters: [ClientFilterChoice] = [.value(ref: "a"), .value(ref: "b", parameters: ["since": "2026-07-01"])]
 
         let total = try await ClientService(modelContainer: try Self.inMemoryContainer())
-            .countClients("aliette", in: .mine, filters: filters, using: api)
+            .countClients("aliette", filters: filters, using: api)
 
         #expect(total == 473245)
         let url = try #require(requested.withLock { $0 })
@@ -268,31 +253,23 @@ struct ClientServiceTests {
         let filters: [ClientFilterChoice] = [.value(ref: "a"), .filter(Self.optOutPill)]
         let options = ClientSearchOptions(sortBy: "lastPurchase", direction: .desc, filters: filters)
 
-        let count = Endpoint.countClients("aliette", in: .mine, filters: filters).query
-        let search = Endpoint.searchClients("aliette", in: .mine, options: options, after: "cursor-1").query
+        let count = Endpoint.countClients("aliette", filters: filters).query
+        let search = Endpoint.searchClients("aliette", options: options, after: "cursor-1").query
 
         #expect(count.map(\.name) == ["scope", "q", "filters"])
         #expect(search.filter { count.map(\.name).contains($0.name) } == count)
     }
 
-    @Test("A count of the brand sends neither the scope nor the filters, which the server refuses there")
-    func brandCountNeverSendsFilters() {
-        let names = Endpoint.countClients("nina", in: .brand, filters: [.value(ref: "a")]).query.map(\.name)
-
-        #expect(names == ["q"])
-    }
-
-    @Test("Without a text the count sends no q: the whole scope, on its filters")
+    @Test("Without a text the count sends no q: all the associate's clients, on the filters")
     func countWithoutText() {
-        let names = Endpoint.countClients(nil, in: .mine, filters: [.value(ref: "a")]).query.map(\.name)
+        let names = Endpoint.countClients(nil, filters: [.value(ref: "a")]).query.map(\.name)
 
         #expect(names == ["scope", "filters"])
     }
 
-    @Test("A count fails fast in both scopes: the associate waits on it, and nothing on the device stands in")
+    @Test("A count fails fast: the associate waits on it, and nothing on the device stands in")
     func countIsInteractive() {
-        #expect(Endpoint.countClients("aliette", in: .mine).interactive)
-        #expect(Endpoint.countClients("aliette", in: .brand).interactive)
+        #expect(Endpoint.countClients("aliette").interactive)
     }
 
     @Test("A count past the server's time limit fails with its 503: what leaves \"Filter\" without a total")
@@ -303,7 +280,7 @@ struct ClientServiceTests {
 
         let error = await #expect(throws: AppError.self) {
             try await ClientService(modelContainer: try Self.inMemoryContainer())
-                .countClients(nil, in: .mine, filters: [.value(ref: "a")], using: api)
+                .countClients(nil, filters: [.value(ref: "a")], using: api)
         }
 
         guard case .server(statusCode: 503)? = error else {
@@ -322,7 +299,7 @@ struct ClientServiceTests {
 
         let error = await #expect(throws: AppError.self) {
             try await ClientService(modelContainer: try Self.inMemoryContainer())
-                .searchClients("aliette", in: .mine, using: api)
+                .searchClients("aliette", using: api)
         }
 
         guard case .network? = error else {
@@ -339,7 +316,7 @@ struct ClientServiceTests {
 
         let error = await #expect(throws: AppError.self) {
             try await ClientService(modelContainer: try Self.inMemoryContainer())
-                .searchClients("aliette", in: .mine, using: api)
+                .searchClients("aliette", using: api)
         }
 
         guard case .server(statusCode: 400)? = error else {
@@ -473,54 +450,24 @@ struct ClientServiceTests {
         }
     }
 
-    // MARK: - Brand search
+    // MARK: - Recent clients
 
-    @Test("A brand search sends the query and cursor, and hands back clients and where to go on")
-    func brandSearchSendsAndMaps() async throws {
-        let container = try Self.inMemoryContainer()
-        let requested = Mutex<URLComponents?>(nil)
-        let api = Self.makeClient { request in
-            requested.withLock { $0 = request.url.flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) } }
-            return (Self.response(request), try Fixture.data("client_search_page"))
-        }
-
-        let page = try await ClientService(modelContainer: container)
-            .searchClients("nina lar", in: .brand, after: "search-cursor-1", using: api)
-
-        let url = try #require(requested.withLock { $0 })
-        #expect(url.path.hasSuffix("client/search"))
-        #expect(url.queryItems?.first { $0.name == "scope" } == nil)
-        #expect(url.queryItems?.first { $0.name == "q" }?.value == "nina lar")
-        #expect(url.queryItems?.first { $0.name == "after" }?.value == "search-cursor-1")
-        #expect(page.clients.map(\.displayName) == ["Nina Larsen", nil])
-        // A client of the brand comes with no way to reach them.
-        #expect(page.clients.allSatisfy { $0.primaryEmail == nil && $0.primaryPhone == nil })
-        #expect(page.nextCursor == "search-cursor-2")
-        // Shown, never stored.
-        #expect(try ModelContext(container).fetchCount(FetchDescriptor<Client>()) == 0)
-    }
-
-    @Test("The last page of a brand search has nowhere to go on")
-    func lastBrandPageHasNoCursor() async throws {
-        let api = Self.makeClient { request in
-            let body = Data(#"{"items":[],"hasMore":false,"nextCursor":null}"#.utf8)
-            return (Self.response(request), body)
-        }
-
-        let page = try await ClientService(modelContainer: try Self.inMemoryContainer())
-            .searchClients("nina", in: .brand, using: api)
-
-        #expect(page.clients.isEmpty)
-        #expect(page.nextCursor == nil)
+    @Test("The recent clients are asked at their path, interactive: offline, they fail at once")
+    func recentClientsEndpoint() {
+        #expect(Endpoint.recentClients.path == "client/recent")
+        #expect(Endpoint.recentClients.method == .get)
+        #expect(Endpoint.recentClients.interactive)
     }
 
     // MARK: - Edit
 
-    /// Kimberly Robinson as `client_details.json` serves her — what a PATCH
-    /// answers with too.
+    /// The client `client_details.json` serves — the card `client/{id}`
+    /// sends, and what a PATCH answers with too. A real card of the dev
+    /// server, taken from a `GET client/recent` answer (17/11): the same
+    /// card (`clientCardResponseSchema`), without its `lastViewedAt`.
     private static func details() throws -> ClientItem {
         ClientItem(wire: try APIClient.makeDecoder().decode(
-            ClientDetailsWire.Response.self, from: try Fixture.data("client_details")
+            ClientWire.Response.self, from: try Fixture.data("client_details")
         ))
     }
 
@@ -528,7 +475,7 @@ struct ClientServiceTests {
     func updateEndpoint() {
         let endpoint = Endpoint.updateClient(
             id: "c1",
-            body: ClientDetailsWire.Request(edited: ClientItem(id: "c1"), original: ClientItem(id: "c1"), signature: nil)
+            body: ClientWire.Request(edited: ClientItem(id: "c1"), original: ClientItem(id: "c1"), signature: nil)
         )
 
         #expect(endpoint.path == "client/c1")
@@ -573,8 +520,8 @@ struct ClientServiceTests {
 
         let stored = try ModelContext(container).fetch(FetchDescriptor<Client>())
         #expect(stored.count == 1)
-        #expect(stored.first?.firstName == "Kimberly")
-        #expect(stored.first?.primaryEmail == "kimberly.robinson1971@outlook.com")
+        #expect(stored.first?.firstName == "Vincent")
+        #expect(stored.first?.primaryEmail == "vincent.adam32@example.test")
         #expect(stored.first?.searchWords == ["kim"])
     }
 
@@ -636,7 +583,7 @@ struct ClientServiceTests {
 
         #expect(saved == edited)
         let stored = try ModelContext(container).fetch(FetchDescriptor<Client>())
-        #expect(stored.first?.firstName == "Kimberly")
+        #expect(stored.first?.firstName == "Vincent")
     }
 
     @Test("An edit whose answer is lost fails when the server does not hold it")

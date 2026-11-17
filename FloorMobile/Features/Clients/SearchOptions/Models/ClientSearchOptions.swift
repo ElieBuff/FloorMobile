@@ -10,11 +10,11 @@ import Foundation
 /// alike — `nil` and an empty list leave each to the server's default (the
 /// sort `GET setup` marks `isDefault`, every client).
 ///
-/// "My Clients" keeps it whole, and its controls change it through one
-/// binding. Hashable so `PagedSearchList` starts the search over, without its
-/// cursor, when any of it changes: a cursor belongs to one search. The filters
-/// sheet composes its filters in a draft (`ClientFilterDraft`), and "Apply"
-/// writes them back.
+/// The Clients tab keeps it whole (`ClientsView`), and "Sort & filter"
+/// (`ClientSortFilterSheet`) changes it through one binding. Hashable so
+/// `PagedSearchList` starts the search over, without its cursor, when any of
+/// it changes: a cursor belongs to one search. The sheet composes it in a
+/// draft (`ClientFilterDraft`), and "Show" writes it back.
 nonisolated struct ClientSearchOptions: Hashable, Sendable {
     /// A sort's `value` (`ClientSort.value`), e.g. `"lastPurchase"`.
     var sortBy: String?
@@ -23,11 +23,6 @@ nonisolated struct ClientSearchOptions: Hashable, Sendable {
     /// The filters applied, one list as `client/search` takes it: the
     /// tenant's values picked (`.value`) and a sentence's pills (`.filter`).
     var filters: [ClientFilterChoice] = []
-
-    /// Whether nothing is picked: the server's defaults all round.
-    var isDefault: Bool {
-        sortBy == nil && direction == nil && filters.isEmpty
-    }
 
     // MARK: - Sort
 

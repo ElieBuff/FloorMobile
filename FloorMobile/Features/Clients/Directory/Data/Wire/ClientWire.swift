@@ -6,26 +6,27 @@
 import Foundation
 
 /// Wire format of a client: the one card the server sends for every client
-/// list — the store's clients the device keeps (`client/sync`), the
-/// associate's own clients a search finds (`client/search?scope=mine`), and
-/// any client of the brand (`client/search`). The app writes a client through
-/// their details (`ClientDetailsWire.Request`), not this card.
+/// route — one client (`client/{id}`, and an edit's answer), the store's
+/// clients the device keeps (`client/sync`), the associate's own clients a
+/// search finds (`client/search?scope=mine`), and their recent clients
+/// (`client/recent`) — and the edit the app sends (`Request`,
+/// `PATCH client/{id}`).
 ///
 /// One card for two readers, to keep in step with it: `Client` keeps it
 /// (`init(wire:)`, below), `ClientItem` shows it (`ClientItem.init(wire:)`,
-/// in its own file). Not a client's details (`client/{id}`), which have their
-/// own shape (`ClientDetailsWire`) but share this file's address and consents.
+/// in its own file).
 nonisolated enum ClientWire {
-    /// One client card of a page — the page itself decodes as a `CursorPage`
-    /// (the sync's `storeCode` on it is not needed). The store and the
-    /// associate come as the shared projections an agenda item embeds them
-    /// with.
+    /// One client card — of a page, which decodes as a `CursorPage` (the
+    /// sync's `storeCode` on it is not needed), of the recent clients
+    /// (`Recents`), or alone. The store and the associate come as the shared
+    /// projections an agenda item embeds them with.
     ///
     /// The email, the phone, the address, the consents and the search's
-    /// words — drawn from the name, the email and the phone — come only for
-    /// the associate's own clients (the sync, "My Clients"), never for a
-    /// client of the brand. The salutation, the language, the address and the
-    /// consents are absent from a BFF that does not send them yet.
+    /// words — drawn from the name, the email and the phone — are left out
+    /// of a card the server has none for (`client_search_page.json`, a card
+    /// read in tests, has no email or phone). The salutation, the language,
+    /// the address and the consents are absent from a BFF that does not send
+    /// them yet.
     struct Response: Decodable, Sendable {
         var id: String
         var externalId: String
@@ -65,12 +66,10 @@ nonisolated enum ClientWire {
         }
     }
 
-    /// A client's main address, as every client response sends it — this
-    /// card and a client's details (`ClientDetailsWire`). Among several, the
+    /// A client's main address, as the card sends it. Among several, the
     /// server sends the default one. The street holds both street lines,
     /// joined by a comma; the country is as the source wrote it, a code or a
-    /// name. Read-only: what the app writes is
-    /// `ClientDetailsWire.Request.Address`.
+    /// name. Read-only: what the app writes is `Request.Address`.
     struct Address: Decodable, Sendable {
         var street: String?
         var postalCode: String?
@@ -79,9 +78,8 @@ nonisolated enum ClientWire {
         var country: String?
     }
 
-    /// What a client agreed to be reached by, as every client response sends
-    /// it — this card and a client's details (`ClientDetailsWire`). Read-only:
-    /// what the app writes is `ClientDetailsWire.Request.OptIns`.
+    /// What a client agreed to be reached by, as the card sends it.
+    /// Read-only: what the app writes is `Request.OptIns`.
     struct OptIns: Decodable, Sendable {
         var email: Bool
         /// Instant messaging: WhatsApp, SMS.
@@ -90,6 +88,13 @@ nonisolated enum ClientWire {
         var call: Bool
         var wechat: Bool
         var line: Bool
+    }
+
+    /// The associate's recent clients, the latest view first, as
+    /// `client/recent` serves them. Each card also carries `lastViewedAt`,
+    /// which the app does not show.
+    struct Recents: Decodable, Sendable {
+        var items: [Response]
     }
 
     /// Every client id of the store, as `client/store-ids` serves it — what
@@ -102,6 +107,126 @@ nonisolated enum ClientWire {
     /// How many clients a search would list, as `client/count` serves it.
     struct Count: Decodable, Sendable {
         var total: Int
+    }
+
+    /// An edit, as `PATCH client/{id}` takes it — a true PATCH: only what
+    /// changed is sent. Each field is a double optional, encoded as Swift
+    /// synthesizes it: `nil` leaves the key out (unchanged), `.some(nil)`
+    /// sends `null` (cleared), `.some(value)` the value.
+    ///
+    /// The email and the phone go as `email` and `mobile`, the names the
+    /// `PATCH` route was specified with, where the card says `primaryEmail`
+    /// and `primaryPhone`: the route is not written yet, the names are the
+    /// server's to settle (skill `release`).
+    ///
+    /// The consents go only when they change, and then always with the
+    /// client's signature, beside them: the server refuses one without the
+    /// other (422).
+    struct Request: Encodable, Sendable {
+        var firstName: String?? = nil
+        var lastName: String?? = nil
+        var email: String?? = nil
+        var mobile: String?? = nil
+        /// Sent whole as soon as one of its lines changes; `null` once every
+        /// line is cleared.
+        var mainAddress: Address?? = nil
+        var optIns: OptIns? = nil
+        var signature: Signature? = nil
+
+        /// The server spells the consents `optins`.
+        enum CodingKeys: String, CodingKey {
+            case firstName, lastName, email, mobile, mainAddress
+            case optIns = "optins"
+            case signature
+        }
+
+        /// What `edited` changes from `original`, both compared as an edit
+        /// sends them (`ClientItem.normalized`) — the same rule the editor's
+        /// "Save" reads, so what it lets through is what goes. `signature`
+        /// goes only with changed consents.
+        init(edited: ClientItem, original: ClientItem, signature: ClientSignature?) {
+            let edited = edited.normalized
+            let original = original.normalized
+            firstName = Self.change(edited.firstName, from: original.firstName)
+            lastName = Self.change(edited.lastName, from: original.lastName)
+            email = Self.change(edited.primaryEmail, from: original.primaryEmail)
+            mobile = Self.change(edited.primaryPhone, from: original.primaryPhone)
+            if edited.address != original.address {
+                mainAddress = .some(edited.address.map(Address.init(address:)))
+            }
+            if let optIns = edited.optIns, optIns != original.optIns {
+                self.optIns = OptIns(optIns: optIns)
+                self.signature = signature.map(Signature.init(signature:))
+            }
+        }
+
+        /// The address as an edit writes it: its five keys always there, a
+        /// cleared line `null` — never a missing key, which the server would
+        /// read as "unchanged". By hand for that: Swift would drop a `nil`.
+        struct Address: Encodable, Sendable {
+            var street: String?
+            var postalCode: String?
+            var city: String?
+            var state: String?
+            var country: String?
+
+            init(address: ClientItem.Address) {
+                street = address.street
+                postalCode = address.postalCode
+                city = address.city
+                state = address.state
+                country = address.country
+            }
+
+            enum CodingKeys: String, CodingKey {
+                case street, postalCode, city, state, country
+            }
+
+            func encode(to encoder: any Encoder) throws {
+                var container = encoder.container(keyedBy: CodingKeys.self)
+                try container.encode(street, forKey: .street)
+                try container.encode(postalCode, forKey: .postalCode)
+                try container.encode(city, forKey: .city)
+                try container.encode(state, forKey: .state)
+                try container.encode(country, forKey: .country)
+            }
+        }
+
+        /// Every consent, as the client signed them.
+        struct OptIns: Encodable, Sendable {
+            var email: Bool
+            var directMessage: Bool
+            var call: Bool
+            var wechat: Bool
+            var line: Bool
+
+            init(optIns: ClientItem.OptIns) {
+                email = optIns.email
+                directMessage = optIns.directMessage
+                call = optIns.call
+                wechat = optIns.wechat
+                line = optIns.line
+            }
+        }
+
+        /// The client's signature: the PNG — base64 in the JSON, by
+        /// `JSONEncoder`'s default `Data` strategy, which `APIClient` keeps —
+        /// and when they signed, in ISO 8601.
+        struct Signature: Encodable, Sendable {
+            var image: Data
+            var signedAt: Date
+
+            init(signature: ClientSignature) {
+                image = signature.png
+                signedAt = signature.signedAt
+            }
+        }
+
+        /// `nil` when the value is unchanged — the key left out —, else the
+        /// new value, `nil` included.
+        private static func change(_ value: String?, from original: String?) -> String?? {
+            value == original ? nil : .some(value)
+        }
     }
 }
 

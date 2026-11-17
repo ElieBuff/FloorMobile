@@ -15,8 +15,8 @@ import Foundation
 /// restoration and deep links, like `HomeRoute`. The one exception is a value
 /// to show while waiting, optional, which the screen never relies on.
 nonisolated enum ClientsRoute: Hashable, Codable {
-    /// A client's profile, by the server's id: any client of the brand,
-    /// whichever list it was opened from. `card` is the row the list showed,
-    /// on screen until the client's details replace it; a deep link has none.
+    /// A client's profile, by the server's id: any client of the brand.
+    /// `card` is the row the list showed, on screen until the client's
+    /// details replace it; a deep link has none.
     case profile(id: String, card: ClientItem? = nil)
 }

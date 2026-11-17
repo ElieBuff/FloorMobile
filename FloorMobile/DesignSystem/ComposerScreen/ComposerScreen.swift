@@ -78,12 +78,16 @@ struct ComposerScreen: ViewModifier {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button { leave() } label: {
-                        Image(systemName: placement.leaveSymbol)
+                        // In an `HStack`: the bar draws a plain icon at its
+                        // own size, whatever its font or scale
+                        // (`.barButtonStyle()`).
+                        HStack { Image(systemName: placement.leaveSymbol) }
                     }
                     // Leaving mid-flight would abandon a save with nowhere
                     // left to report a failure.
                     .disabled(isSaving)
                     .accessibilityLabel(placement.leaveLabel)
+                    .barButtonStyle()
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
@@ -92,10 +96,11 @@ struct ComposerScreen: ViewModifier {
                             .accessibilityLabel(String(localized: "Saving"))
                     } else {
                         Button { onSave() } label: {
-                            Image(systemName: "checkmark")
+                            HStack { Image(systemName: "checkmark") }
                         }
                         .disabled(!canSave)
                         .accessibilityLabel(String(localized: "Save"))
+                        .barButtonStyle()
                     }
                 }
             }
@@ -192,7 +197,7 @@ private struct ComposerScreenPreview: View {
                 FormPushRow(label: String(localized: "Client"), value: "Léa Bonnet") {
                     Text(verbatim: "Clients")
                 }
-                .listRowInsets(.cardRow)
+                .listRowInsets(.insetGroupedRowInsets)
             }
         }
         .listStyle(.insetGrouped)

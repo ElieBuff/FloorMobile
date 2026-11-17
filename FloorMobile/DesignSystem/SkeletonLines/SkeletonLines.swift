@@ -17,7 +17,7 @@ import SwiftUI
 /// ```swift
 /// Section {
 ///     SkeletonLines(widths: [1, 0.85, 0.6])
-///         .listRowInsets(.cardRow)
+///         .listRowInsets(.insetGroupedRowInsets)
 /// }
 /// ```
 struct SkeletonLines: View {
@@ -47,15 +47,15 @@ struct SkeletonLines: View {
     List {
         Section("Summary") {
             SkeletonLines(widths: [1, 0.85, 0.6])
-                .listRowInsets(.cardRow)
+                .listRowInsets(.insetGroupedRowInsets)
         }
         Section("Activity") {
             ForEach(0..<3, id: \.self) { _ in
                 SkeletonLines(widths: [0.7, 0.45])
-                    .listRowInsets(.cardRow)
+                    .listRowInsets(.insetGroupedRowInsets)
             }
         }
     }
-    .cardList()
+    .insetGroupedList()
     .ambientBackground()
 }

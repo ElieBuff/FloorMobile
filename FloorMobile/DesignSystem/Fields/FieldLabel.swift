@@ -38,18 +38,19 @@ struct FieldLabel: View {
     }
 }
 
-/// The inset every row in a card shares.
+/// The inset every row of an `.insetGroupedList()` shares.
 ///
 /// `FormTitleRow` and `FormNoteRow` draw themselves edge to edge and bring
 /// their own `AppSpacing.cardInset`, because a tap anywhere on them has to
 /// reach their text field. Everything else — a `Picker`, a `DatePicker`, a
 /// `DetailRow` — is laid out by the list and sits at its default without this.
-/// Same token, so both start on the same vertical line.
+/// Same token, so both start on the same vertical line. 10 pt above and below,
+/// the client list's mockup (14/11).
 extension EdgeInsets {
-    static let cardRow = EdgeInsets(
-        top: 12,
+    static let insetGroupedRowInsets = EdgeInsets(
+        top: 10,
         leading: AppSpacing.cardInset,
-        bottom: 12,
+        bottom: 10,
         trailing: AppSpacing.cardInset
     )
 }

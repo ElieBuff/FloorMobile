@@ -65,6 +65,7 @@ struct ClientProfileView: View {
                 if editableDetails != nil {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button(String(localized: "Edit")) { editing = editableDetails }
+                            .barButtonStyle()
                     }
                 }
             }
@@ -228,7 +229,7 @@ private struct ClientProfileContent: View {
                 )
             }
         }
-        .cardList()
+        .insetGroupedList()
     }
 
     /// The client's avatar, name and segment, above the tabs.
@@ -254,14 +255,14 @@ private struct ClientProfileContent: View {
             // One element for VoiceOver: the name, then the segment. The
             // avatar stays hidden, the name it abbreviates is beside it.
             .accessibilityElement(children: .combine)
-            .listRowInsets(.cardRow)
+            .listRowInsets(.insetGroupedRowInsets)
         }
     }
 
     /// The one notice for every part that failed — their sections hidden —
     /// with why, and "Try again", which asks for all of them again. An
     /// `EmptySectionCard` on the background like the tabs, mounted as
-    /// `MyClientsList.fallbackNotice` mounts it for a silent server: keep the
+    /// `ClientsView.fallbackNotice` mounts it for a silent server: keep the
     /// two alike.
     private func failureNotice(_ error: any Error) -> some View {
         Section {
@@ -286,7 +287,7 @@ private struct ClientProfileContent: View {
 
 // MARK: - Previews
 
-/// A card of the brand, as a search shows it: no address nor consents.
+/// A card as the client list shows it, before the details: no address nor consents.
 private let previewClient = ClientItem(
     id: "1", firstName: "Alice", lastName: "Martinez", segment: "VIC",
     storeCode: "90917634296", storeName: "Regent Street",

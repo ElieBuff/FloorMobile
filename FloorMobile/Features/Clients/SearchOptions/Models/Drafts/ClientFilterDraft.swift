@@ -5,46 +5,65 @@
 
 import Foundation
 
-/// What the associate composes in "Filter" (`ClientFilterPickerView`): the
-/// filters picked — the tenant's values ticked and a sentence's pills —, the
-/// sentence, and where its filters stand: the one on its way to
-/// `client/text-filters`, the one the pills came from, and what the last
-/// answer said beside them.
+/// What the associate composes in "Sort & filter" (`ClientSortFilterSheet`):
+/// the sort and the filters picked — the tenant's values ticked and a
+/// sentence's pills —, the sentence, and where its filters stand: the one on
+/// its way to `client/text-filters`, the one the pills came from, and what the
+/// last answer said beside them.
 ///
-/// Made from the list's filters (`ClientSearchOptions.filters`) when the
-/// sheet opens; "Apply" writes `filters` back, and the rest goes with the
-/// sheet. Not in `ClientSearchOptions`: that is what a search asks the
-/// server, and the list starts its search over whenever it changes.
+/// Made from the list's options (`ClientSearchOptions`) when the sheet opens;
+/// "Show" writes `options` back, and the rest goes with the sheet. The
+/// sentence's state beside them rather than in `ClientSearchOptions`: that is
+/// what a search asks the server, and the list starts its search over
+/// whenever it changes.
+///
+/// The sentence is only drawn since 16/11 (the user's decision): typed or
+/// dictated, never sent. Its rules below — sending it, its answer, its pills
+/// — have no caller until the sentence's arrow sends it
+/// (`ClientSortFilterSheet`).
 nonisolated struct ClientFilterDraft: Equatable, Sendable {
-    /// The filters picked, one list as `client/search` takes it: the tenant's
-    /// values ticked (`.value`) and a sentence's pills (`.filter`).
-    var filters: [ClientFilterChoice] = []
-    /// The sentence: the clients wanted, in the associate's words, what the
-    /// arrow sends.
-    var text = ""
+    /// The longest sentence `client/text-filters` takes, in characters
+    /// (`clientTextFiltersRequestSchema`, 500 once trimmed): the field stops
+    /// there, and so does its dictation (`ClientVoiceSearchSheet`).
+    static let maximumTextLength = 500
+
+    /// The sort and the filters picked, as `client/search` takes them: the
+    /// sort through `ClientSearchOptions.pick`, the filters in one list — the
+    /// tenant's values ticked (`.value`) and a sentence's pills (`.filter`).
+    var options = ClientSearchOptions()
+    /// The sentence: the clients wanted, in the associate's words — typed or
+    /// dictated, cut at `maximumTextLength`.
+    var text = "" {
+        didSet {
+            if text.count > Self.maximumTextLength {
+                text = String(text.prefix(Self.maximumTextLength))
+            }
+        }
+    }
     /// The text sent, trimmed, waiting for the server's answer; `nil` the
     /// rest of the time.
     var pendingText: String?
-    /// The sentence the pills came from, while they are all there: the arrow
-    /// does not send it again. `nil` once "Clear" or an X takes pills off, for
-    /// the same words to bring them back.
+    /// The sentence the pills came from, while they are all there: it is not
+    /// sent again. `nil` once "Clear" or an X takes pills off, for the same
+    /// words to bring them back.
     var lastFetched: String?
-    /// What the last sentence sent left uncovered, said under its pills.
+    /// What the last sentence sent left uncovered.
     var notUnderstood: [String] = []
-    /// Why the last request failed, said under the card until the next one.
+    /// Why the last request for a sentence's filters failed, until the next
+    /// one.
     var failure: String?
 
-    /// Whether there is anything for "Clear" to take away: filters, or what
-    /// the last answer said under the card.
+    /// Whether there is anything for "Clear" to take away: a sort picked,
+    /// filters, or what the last answer said.
     var canClear: Bool {
-        !filters.isEmpty || !notUnderstood.isEmpty || failure != nil
+        options != ClientSearchOptions() || !notUnderstood.isEmpty || failure != nil
     }
 
-    /// Takes off every filter, ticked or pill, with what the last answer said
-    /// and the sentence the pills came from. The field stays, and a sentence
-    /// on its way goes on.
+    /// Puts the server's default sort back and takes off every filter, ticked
+    /// or pill, with what the last answer said and the sentence the pills came
+    /// from. The field stays, and a sentence on its way goes on.
     mutating func clear() {
-        filters = []
+        options = ClientSearchOptions()
         lastFetched = nil
         notUnderstood = []
         failure = nil
@@ -54,14 +73,14 @@ nonisolated struct ClientFilterDraft: Equatable, Sendable {
 
     /// Whether `value` is among the filter values picked.
     func isPicked(_ value: ClientFilterValue) -> Bool {
-        filters.contains { $0.ref == value.ref }
+        options.filters.contains { $0.ref == value.ref }
     }
 
     /// The day picked for `value` — "Since a date" —, or `nil` while it is
     /// not picked or asks for no day.
     func day(pickedFor value: ClientFilterValue) -> Date? {
         guard let parameter = value.dateParameter,
-              case .value(_, let parameters)? = filters.first(where: { $0.ref == value.ref }),
+              case .value(_, let parameters)? = options.filters.first(where: { $0.ref == value.ref }),
               let text = parameters[parameter.name]
         else { return nil }
         return Date(calendarDay: text)
@@ -75,11 +94,11 @@ nonisolated struct ClientFilterDraft: Equatable, Sendable {
     mutating func pick(_ value: ClientFilterValue, of filter: ClientFilter, parameters: [String: String] = [:]) {
         if filter.selection == .single {
             let siblings = Set(filter.values.map(\.ref))
-            filters.removeAll { $0.ref.map(siblings.contains) == true }
+            options.filters.removeAll { $0.ref.map(siblings.contains) == true }
         } else {
-            filters.removeAll { $0.ref == value.ref }
+            options.filters.removeAll { $0.ref == value.ref }
         }
-        filters.append(.value(ref: value.ref, parameters: parameters))
+        options.filters.append(.value(ref: value.ref, parameters: parameters))
     }
 
     /// Picks the value `ref` with `day`, the day the calendar confirmed for
@@ -97,7 +116,7 @@ nonisolated struct ClientFilterDraft: Equatable, Sendable {
 
     /// Lets go of `value`.
     mutating func unpick(_ value: ClientFilterValue) {
-        filters.removeAll { $0.ref == value.ref }
+        options.filters.removeAll { $0.ref == value.ref }
     }
 
     // MARK: - Pills
@@ -105,27 +124,26 @@ nonisolated struct ClientFilterDraft: Equatable, Sendable {
     /// The pills of the sentence, in their order: the filters it described,
     /// beside the values picked.
     var filterItems: [ClientFilterItem] {
-        filters.compactMap(\.item)
+        options.filters.compactMap(\.item)
     }
 
     /// Lets go of the pill `item`, by its `id` — two pills may read alike —,
     /// and lets the same sentence be sent again, to bring it back.
     mutating func remove(_ item: ClientFilterItem) {
-        filters.removeAll { $0.item?.id == item.id }
+        options.filters.removeAll { $0.item?.id == item.id }
         lastFetched = nil
     }
 
     // MARK: - Sentence
 
-    /// Whether a text is waiting for the server's answer: the arrow and
-    /// "Apply" wait.
+    /// Whether a text is waiting for the server's answer.
     var hasPendingText: Bool {
         pendingText != nil
     }
 
-    /// Whether the arrow sends the text: words — spaces and line breaks alone
-    /// are none —, other than those the pills came from, and no other text
-    /// waiting for its answer.
+    /// Whether the text can be sent: words — spaces and line breaks alone are
+    /// none —, other than those the pills came from, and no other text waiting
+    /// for its answer.
     var canSend: Bool {
         let words = trimmedText
         return !hasPendingText && !words.isEmpty && words != lastFetched
@@ -139,24 +157,24 @@ nonisolated struct ClientFilterDraft: Equatable, Sendable {
 
     /// Takes the answer for the sentence sent: its filters in place of the
     /// last sentence's pills, the values picked left as they are, and what
-    /// no filter covers. The arrow then stays away until the sentence
-    /// changes.
+    /// no filter covers. The same words are then not sent again until the
+    /// sentence changes.
     mutating func receive(_ answer: ClientFilterItems) {
-        filters.removeAll { $0.item != nil }
-        filters.append(contentsOf: answer.items.map(ClientFilterChoice.filter))
+        options.filters.removeAll { $0.item != nil }
+        options.filters.append(contentsOf: answer.items.map(ClientFilterChoice.filter))
         notUnderstood = answer.notUnderstood
         lastFetched = pendingText
         pendingText = nil
     }
 
-    /// Ends the request for the sentence sent on `failure`, said under the
-    /// card: the pills stay as they were, and the sentence can be sent again.
+    /// Ends the request for the sentence sent on `failure`: the pills stay as
+    /// they were, and the sentence can be sent again.
     mutating func fail(_ failure: String) {
         self.failure = failure
         pendingText = nil
     }
 
-    /// The text as the arrow sends it: trimmed.
+    /// The text as it is sent: trimmed.
     private var trimmedText: String {
         text.trimmingCharacters(in: .whitespacesAndNewlines)
     }

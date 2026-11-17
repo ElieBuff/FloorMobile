@@ -14,7 +14,7 @@ import SwiftUI
 /// it, not only on the few points an empty field covers. The keyboard is the
 /// caller's: `.keyboardType(.emailAddress)`, `.textContentType(.givenName)`
 /// on the row reach the field inside. The insets too, as for any row a list
-/// draws: `.listRowInsets(.cardRow)`.
+/// draws: `.listRowInsets(.insetGroupedRowInsets)`.
 ///
 /// ```swift
 /// FormTextRow(label: String(localized: "Email"), text: $client.primaryEmail.replacingNil(with: ""))
@@ -50,10 +50,10 @@ struct FormTextRow: View {
     List {
         Section {
             FormTextRow(label: "First name", text: $firstName)
-                .listRowInsets(.cardRow)
+                .listRowInsets(.insetGroupedRowInsets)
             FormTextRow(label: "Email", text: $email)
                 .keyboardType(.emailAddress)
-                .listRowInsets(.cardRow)
+                .listRowInsets(.insetGroupedRowInsets)
         }
     }
     .listStyle(.insetGrouped)

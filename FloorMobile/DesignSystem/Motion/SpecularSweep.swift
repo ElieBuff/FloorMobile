@@ -8,7 +8,7 @@ import SwiftUI
 /// A slow band of light crossing an open card, every 8 seconds.
 ///
 /// **Why white shows on a white card.** The card is not opaque — it is white at
-/// 85% over the ambient backdrop. Adding white therefore has somewhere to go:
+/// 84% over the ambient backdrop. Adding white therefore has somewhere to go:
 /// the surface turns briefly more opaque and lifts off the background, exactly
 /// the way light behaves on a translucent panel. Nothing dark is involved, and
 /// no hue: a shade would read as something passing in front of the card, and a
@@ -42,7 +42,7 @@ struct SpecularSweep: ViewModifier {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
 
-    /// The bright leading edge. The card is white at 85% opacity over the
+    /// The bright leading edge. The card is white at 84% opacity over the
     /// ambient backdrop, so adding white genuinely reads: the surface turns
     /// briefly more opaque and lifts away from the background, which is what
     /// light actually does to a translucent panel.

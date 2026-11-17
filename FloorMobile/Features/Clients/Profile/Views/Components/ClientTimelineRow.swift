@@ -65,19 +65,19 @@ struct ClientTimelineRow: View {
                 title: "VESTE ACACIA · T-SHIRT CESAR",
                 subtitle: [.itemCount(2), .amount(237.9, currency: "EUR")]
             ))
-            .listRowInsets(.cardRow)
+            .listRowInsets(.insetGroupedRowInsets)
             ClientTimelineRow(item: ClientTimelineItem(
                 id: "2", kind: .event, date: .now, status: "PLANNED", title: "Fitting",
                 subtitle: [.reason("BACK_IN_STOCK"), .meetingType("IN_PERSON"), .text("New season pieces")]
             ))
-            .listRowInsets(.cardRow)
+            .listRowInsets(.insetGroupedRowInsets)
             ClientTimelineRow(item: ClientTimelineItem(
                 id: "3", kind: .conversation, date: .now, status: "ACTIVE", title: nil,
                 subtitle: [.text("Perfect, thank you")]
             ))
-            .listRowInsets(.cardRow)
+            .listRowInsets(.insetGroupedRowInsets)
         }
     }
-    .cardList()
+    .insetGroupedList()
     .ambientBackground()
 }

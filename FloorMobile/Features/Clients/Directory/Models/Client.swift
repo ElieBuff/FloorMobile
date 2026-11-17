@@ -12,8 +12,10 @@ import SwiftData
 /// and what they agreed to, and the words a future search on the device will
 /// read.
 ///
-/// Local-first: the store's clients are loaded in full once, then only what
-/// changed (`ClientService`), and read by the views through `@Query`. Every
+/// Kept for when the server cannot be reached: the store's clients are loaded
+/// in full once, then only what changed (`ClientService`); the Clients tab
+/// asks the server first, and reads them — a page at a time (`page`) — only
+/// without a connection (decision of 12/11). Every
 /// field a list may filter or sort on sits at the top level — a composite
 /// attribute's members cannot appear in a predicate. `nonisolated` so the
 /// import can run off the main actor.
@@ -105,24 +107,28 @@ nonisolated extension Client {
         PersonName.display(first: firstName, last: lastName)
     }
 
-    // MARK: - Search
+    // MARK: - Pages
 
-    /// The clients whose first name, last name, email or phone contains
-    /// `query`, case and accents aside — "mart" finds Martinez, "helene"
-    /// finds Hélène. A blank query matches everyone.
+    /// One page of the store's clients, by last name then first name: `size`
+    /// of them from `cursor` — an offset into that order, `nil` for the first
+    /// page — as cards, like the server's pages, and where the next one
+    /// starts: `nil` once a page comes back short. The Clients tab's list
+    /// without a connection, through `PagedSearchList`. No filter: the device
+    /// does not search (decision of 12/11).
     ///
-    /// A predicate, so the store does the filtering and a list loads only the
-    /// matches. `localizedStandardContains` is the comparison iOS itself uses
-    /// (Contacts, Spotlight), and the one a SwiftData predicate can express.
-    static func matching(_ query: String) -> Predicate<Client> {
-        let query = query.trimmingCharacters(in: .whitespaces)
-        return #Predicate { client in
-            query.isEmpty
-                || client.firstName?.localizedStandardContains(query) == true
-                || client.lastName?.localizedStandardContains(query) == true
-                || client.primaryEmail?.localizedStandardContains(query) == true
-                || client.primaryPhone?.localizedStandardContains(query) == true
-        }
+    /// The id breaks ties between two clients of the same name: without it,
+    /// two pages could each take the same one, or neither.
+    static func page(
+        after cursor: String?, size: Int, in context: ModelContext
+    ) throws -> (clients: [ClientItem], next: String?) {
+        let offset = cursor.flatMap { Int($0) } ?? 0
+        var descriptor = FetchDescriptor<Client>(
+            sortBy: [SortDescriptor(\.lastName), SortDescriptor(\.firstName), SortDescriptor(\.id)]
+        )
+        descriptor.fetchOffset = offset
+        descriptor.fetchLimit = size
+        let clients = try context.fetch(descriptor)
+        return (clients.map { ClientItem(client: $0) }, clients.count == size ? String(offset + size) : nil)
     }
 
     // MARK: - Edit

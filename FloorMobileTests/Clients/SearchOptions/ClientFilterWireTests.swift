@@ -16,7 +16,7 @@ struct ClientFilterWireTests {
 
     @Test("The setup's filters decode with their values, in the server's order")
     func setupDecodes() throws {
-        let filters = try Self.setup().clients.filters
+        let filters = try Self.setup().clientConfiguration.filters
 
         #expect(filters.map(\.id) == ["01M5CJ75QEKQR98JVNHCZ675TN", "01M5CJ75QP16918M3WRY9FYBEB"])
         #expect(filters.allSatisfy { $0.values.count == 4 && $0.selection == "SINGLE" })
@@ -24,7 +24,7 @@ struct ClientFilterWireTests {
 
     @Test("A filter maps with its rank, and a value with its date parameter")
     func filterMaps() throws {
-        let wire = try #require(try Self.setup().clients.filters.last)
+        let wire = try #require(try Self.setup().clientConfiguration.filters.last)
 
         let filter = ClientFilter(wire: wire, rank: 1)
 

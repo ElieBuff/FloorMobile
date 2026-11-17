@@ -13,7 +13,7 @@ struct ProfileMetricsSection: View {
         Section {
             Text("Coming soon")
                 .foregroundStyle(Color(.OnSurface.textSecondary))
-                .listRowInsets(.cardRow)
+                .listRowInsets(.insetGroupedRowInsets)
         } header: {
             Text("Key figures")
         }

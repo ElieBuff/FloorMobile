@@ -29,18 +29,18 @@ struct ProfileTimelineSection: View {
                     if items.isEmpty {
                         Text(emptyMessage)
                             .foregroundStyle(Color(.OnSurface.textSecondary))
-                            .listRowInsets(.cardRow)
+                            .listRowInsets(.insetGroupedRowInsets)
                     } else {
                         ForEach(items) { item in
                             ClientTimelineRow(item: item)
-                                .listRowInsets(.cardRow)
+                                .listRowInsets(.insetGroupedRowInsets)
                         }
                     }
                 } else {
                     // A row's title over its subtitle, three times.
                     ForEach(0..<3, id: \.self) { _ in
                         SkeletonLines(widths: [0.7, 0.45])
-                            .listRowInsets(.cardRow)
+                            .listRowInsets(.insetGroupedRowInsets)
                     }
                 }
             } header: {

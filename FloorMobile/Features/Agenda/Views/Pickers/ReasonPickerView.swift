@@ -46,7 +46,7 @@ struct ReasonPickerView: View {
                 }
             }
         }
-        .cardList()
+        .insetGroupedList()
         .ambientBackground()
         .navigationTitle(Text("Reason"))
         .navigationBarTitleDisplayMode(.inline)

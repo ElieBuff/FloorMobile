@@ -5,11 +5,10 @@
 
 import SwiftUI
 
-/// A label in a capsule: a filter applied, under the sentence of "Filter" —
-/// each filter the sentence described —, with an X that takes it off when
-/// the caller says what removing does (`onRemove`). The card's fill on the
-/// canvas, like the sentence's card above, so a row of them reads as part of
-/// the screen. Only the X removes it; its 44pt target (`tapTarget`) reaches
+/// A label in a capsule: a filter applied — each filter a sentence described
+/// —, with an X that takes it off when the caller says what removing does
+/// (`onRemove`). The card's fill on the canvas, so a row of them reads as
+/// part of the screen. Only the X removes it; its 44pt target (`tapTarget`) reaches
 /// past the capsule, 6pt above and below — (44 − `removeSize`) / 2, less the
 /// capsule's vertical padding —: a scroll view holding pills, which takes no
 /// tap past its edges, leaves them that room.
@@ -18,6 +17,9 @@ import SwiftUI
 /// search field, before its text, and go with the delete key, where a pill
 /// here sits under a multi-line field, dictated as often as typed, and must
 /// say how to take it off.
+///
+/// No caller since 16/11: the sentence of "Sort & filter" is only drawn,
+/// until the voice screens (the user's decision).
 ///
 /// ```swift
 /// Pill(label: item.label) {

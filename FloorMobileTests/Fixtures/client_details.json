@@ -1,34 +1,41 @@
 {
-  "id": "001cfde7-0c26-48ae-990c-68bbd710211b",
-  "externalId": "seed-client-000289",
-  "salutation": null,
-  "firstName": "Kimberly",
-  "lastName": "Robinson",
-  "email": "kimberly.robinson1971@outlook.com",
-  "mobile": null,
-  "mainAddress": null,
-  "preferredLanguage": null,
-  "salesAssociate": {
-    "id": "0e8a5207-0a8a-4716-beb4-ea3865123899",
-    "externalId": "seed-sa-102",
-    "firstName": "Oliver",
-    "lastName": "Rossi",
-    "preferredLanguage": null
-  },
-  "store": {
-    "id": "b3befef8-4148-4d84-a2f7-eea47d9671ba",
-    "externalId": "seed-store-28",
-    "storeCode": "seed-store-28",
-    "name": "Emeria Lisbon"
-  },
-  "optins": {
-    "email": true,
-    "directMessage": true,
-    "call": true,
-    "wechat": false,
-    "line": false
-  },
-  "importantDates": [],
-  "household": [],
-  "preferences": []
+    "id": "f895e9f1-5abd-4690-8334-d9049ff7617a",
+    "externalId": "seed-client-000328",
+    "salutation": "mister",
+    "firstName": "Vincent",
+    "lastName": "Adam",
+    "segment": "One Timer",
+    "preferredLanguage": "fr",
+    "storeCode": "seed-store-01",
+    "store": {
+        "id": "c0fc8c70-6407-43b8-9652-a3794013340d",
+        "externalId": "seed-store-01",
+        "storeCode": "seed-store-01",
+        "name": "Floor Paris"
+    },
+    "SAExternalId": "378970372512460673",
+    "SA": {
+        "id": "01KTRSFERMNXK5FGSQW11M1478",
+        "externalId": "378970372512460673",
+        "firstName": "Elie",
+        "lastName": "Buff",
+        "preferredLanguage": null
+    },
+    "primaryEmail": "vincent.adam32@example.test",
+    "primaryPhone": null,
+    "searchWords": [
+        "adam",
+        "adam32",
+        "vincent",
+        "vincentadam32"
+    ],
+    "searchPhones": [],
+    "mainAddress": null,
+    "optins": {
+        "email": true,
+        "directMessage": false,
+        "call": false,
+        "wechat": false,
+        "line": false
+    }
 }

@@ -90,12 +90,14 @@ struct ClientSignatureSheet: View {
             Button(String(localized: "Cancel"), role: .cancel) {
                 dismiss()
             }
+            .barButtonStyle()
         }
         ToolbarItem(placement: .bottomBar) {
             Button(String(localized: "Clear")) {
                 drawing = PKDrawing()
             }
             .disabled(drawing.strokes.isEmpty)
+            .barButtonStyle()
         }
         ToolbarItem(placement: .confirmationAction) {
             Button(String(localized: "Confirm")) {

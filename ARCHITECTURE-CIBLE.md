@@ -6,7 +6,7 @@
 
 Ton intuition est correcte et alignée avec la position d'Apple : MVVM + Clean Architecture n'est pas adapté à SwiftUI. Aujourd'hui, une action simple (ex. créer une tâche d'agenda) traverse : View → ViewModel/Store → UseCase → Repository (protocole + impl) → DataSource (protocole + impl) → DTO → Entity Domain → Entity SwiftData. Soit 6 à 8 fichiers par opération, pour ~20 000 lignes dont l'essentiel est de la plomberie de mapping.
 
-La position Apple (docs "Managing model data", WWDC "Discover Observation") : **« In SwiftUI, the views are the view model »**. La vue EST la couche de présentation ; on ne duplique pas son état dans un objet intermédiaire. C'est exactement le pattern déjà atteint par `ClientsView` (`@Query` direct, zéro ViewModel) — la seule feature du projet où ajouter un champ ne demande de toucher qu'un fichier.
+La position Apple (docs "Managing model data", WWDC "Discover Observation") : **« In SwiftUI, the views are the view model »**. La vue EST la couche de présentation ; on ne duplique pas son état dans un objet intermédiaire. C'est exactement le pattern déjà atteint par `ClientsView` (zéro ViewModel) — la seule feature du projet où ajouter un champ ne demande de toucher qu'un fichier.
 
 ## 2. La stack recommandée par Apple en 2026
 
@@ -96,7 +96,7 @@ Un seul objet, observable au niveau propriété (une vue qui lit `generalInfo` n
 
 **b) Données de référence / offline → SwiftData, les vues lisent via `@Query` :**
 
-Clients, Products/Categories/Variants, ReferenceValues, ThemeColors/Assets restent des `@Model`. La vue lit `@Query` (local-first, offline gratuit), le `SyncEngine` remplit en arrière-plan. C'est le pattern `ClientsView` généralisé. Pour un accès hors vue (ex. `ReferenceValueHelper`), un fetch direct sur le `ModelContext` suffit — et en iOS 27, `ResultsObserver` le rend observable.
+Clients, Products/Categories/Variants, ReferenceValues, ThemeColors/Assets restent des `@Model`. La vue lit `@Query` (local-first, offline gratuit), le `SyncEngine` remplit en arrière-plan. Exception décidée le 12/11 : la liste des clients lit le serveur d'abord, et le store seulement sans connexion (`Client.page`). Pour un accès hors vue (ex. `ReferenceValueHelper`), un fetch direct sur le `ModelContext` suffit — et en iOS 27, `ResultsObserver` le rend observable.
 
 Reste online-only (cache RAM dans le store de la feature) : Feeds, Conversations, Agenda — sauf si tu veux l'agenda offline, auquel cas `Activity` devient un `@Model` de plus.
 
@@ -440,7 +440,7 @@ Le formulaire : `@State private var draft = ActivityDraft()` dans la vue, valida
 - **Relations** : `@Relationship(deleteRule: .cascade)` déclaré d'un seul côté, l'inverse est inféré. Éviter les tableaux non-relationnels de types complexes (stockés en blob).
 - **Migrations** : dès la v1 livrée, versionner (`VersionedSchema` + `SchemaMigrationPlan`). Tant que l'app n'est pas en prod, changer le schéma librement (delete + resync — tu as déjà `clearLocalData`).
 - **Threading** : le `ModelContext` du `mainContext` sur le MainActor pour les vues ; TOUTES les écritures de masse dans un `@ModelActor` (jamais le pattern actuel `backgroundContext` recréé à chaque accès). Un objet `@Model` ne traverse jamais les acteurs : passer des `PersistentIdentifier` ou des valeurs.
-- **`@Query` avec filtre dynamique** : initialiser la query dans `init(...)` de la vue (`_clients = Query(filter: #Predicate { ... })`) — pattern pour la recherche/filtres de `ClientsView`.
+- **`@Query` avec filtre dynamique** : initialiser la query dans `init(...)` de la vue (`_clients = Query(filter: #Predicate { ... })`) — pattern pour une liste locale filtrée.
 - **Preview** : `ModelContainer` in-memory pré-rempli dans un `PreviewModifier` réutilisable — remplace les Mock DataSources.
 - ⚠️ iOS 27 : `sectionBy:` (groupement natif — agenda par jour), `ResultsObserver` (query observable hors vue), `HistoryObserver` (réagir aux changements pour push serveur), `@Attribute(.codable)`.
 

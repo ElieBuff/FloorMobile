@@ -71,45 +71,43 @@ actor ClientService {
         try modelContext.save()
     }
 
-    /// One page of the clients `scope` holds matching `query` — or, without
+    /// One page of the associate's own clients matching `query` — or, without
     /// it, in the sort's order — and where the next page starts: `nil` once
     /// `hasMore` says there is none, whatever cursor the last page carries.
     ///
     /// Straight from the server and not stored: the device already keeps the
-    /// store's clients ("My Clients" is what the server found among them,
-    /// typos and all), and the brand runs to far more clients than a device
-    /// should hold. See `Endpoint.searchClients` for what each scope sends.
+    /// store's clients, and the list is what the server finds among them,
+    /// typos and all. See `Endpoint.searchClients` for what it sends.
     func searchClients(
         _ query: String?,
-        in scope: ClientSearchScope,
         options: ClientSearchOptions = ClientSearchOptions(),
         after cursor: String? = nil,
         using client: APIClient
     ) async throws -> (clients: [ClientItem], nextCursor: String?) {
         let page: CursorPage<ClientWire.Response> = try await client.send(
-            .searchClients(query, in: scope, options: options, after: cursor)
+            .searchClients(query, options: options, after: cursor)
         )
         return (page.items.map(ClientItem.init(wire:)), page.hasMore ? page.nextCursor : nil)
     }
 
-    /// How many clients `searchClients` would list for the same text, scope
-    /// and filters — the total "Filter" shows under its sentence. Straight
+    /// How many clients `searchClients` would list for the same text and
+    /// filters — the total "Sort & filter" says on its "Show" button. Straight
     /// from the server, like a search. A refusal (409 `filters_changed`, 503
     /// `search_timeout`) is thrown as `AppError.server(statusCode:)`, its
     /// body dropped, and a network failure as `AppError.network`, for the
     /// caller to show. See `Endpoint.countClients`.
     func countClients(
         _ query: String?,
-        in scope: ClientSearchScope,
         filters: [ClientFilterChoice] = [],
         using client: APIClient
     ) async throws -> Int {
-        let count: ClientWire.Count = try await client.send(.countClients(query, in: scope, filters: filters))
+        let count: ClientWire.Count = try await client.send(.countClients(query, filters: filters))
         return count.total
     }
 
     /// The filters a sentence describes, as the server reads it — the sentence
-    /// of "Filter"'s field. Straight from the server, kept nowhere: the caller
+    /// of "Sort & filter"'s field, once it is sent again (only drawn since
+    /// 16/11). Straight from the server, kept nowhere: the caller
     /// shows the items, and sends back with the search the ones still there.
     /// A failure — 502, intelligence failed or did not answer within the BFF's
     /// 80 s, whatever the sentence; 400, a sentence out of bounds — is thrown
@@ -129,11 +127,11 @@ actor ClientService {
     /// is thrown as `AppError.server(statusCode: 404)`, a network failure as
     /// `AppError.network`. See `Endpoint.clientDetails`.
     func details(id: String, using client: APIClient) async throws -> ClientItem {
-        let wire: ClientDetailsWire.Response = try await client.send(.clientDetails(id: id))
+        let wire: ClientWire.Response = try await client.send(.clientDetails(id: id))
         return ClientItem(wire: wire)
     }
 
-    /// Sends what `edited` changes from `original` (`ClientDetailsWire.Request`)
+    /// Sends what `edited` changes from `original` (`ClientWire.Request`)
     /// and returns the client as the server now has them. The signature goes
     /// with changed consents, which the server refuses without one
     /// (`AppError.server(statusCode: 422)`); not their client is a 403, a
@@ -152,10 +150,10 @@ actor ClientService {
         signature: ClientSignature?,
         using client: APIClient
     ) async throws -> ClientItem {
-        let body = ClientDetailsWire.Request(edited: edited, original: original, signature: signature)
+        let body = ClientWire.Request(edited: edited, original: original, signature: signature)
         let saved: ClientItem
         do {
-            let wire: ClientDetailsWire.Response = try await client.send(.updateClient(id: original.id, body: body))
+            let wire: ClientWire.Response = try await client.send(.updateClient(id: original.id, body: body))
             saved = ClientItem(wire: wire)
         } catch let error as AppError {
             // A network failure may come after the server's write: read the client
@@ -196,11 +194,21 @@ actor ClientService {
         return ClientTimeline(wire: wire)
     }
 
+    /// The associate's recent clients, the latest view first, straight from
+    /// the server: the device stores none — the client list keeps them in
+    /// memory (`RecentClients`). A network failure is thrown as
+    /// `AppError.network`. See `Endpoint.recentClients`.
+    func recentClients(using client: APIClient) async throws -> [ClientItem] {
+        let wire: ClientWire.Recents = try await client.send(.recentClients)
+        return wire.items.map(ClientItem.init(wire:))
+    }
+
     /// Records that the associate opened this client's profile, for their
-    /// recent clients, which the server keeps. The device keeps nothing: the
-    /// list the server answers with is not read. A view the server refuses
-    /// (404) or that never leaves (offline, see `Endpoint.recordClientView`)
-    /// throws.
+    /// recent clients, which the server keeps. The list the server answers
+    /// with is not read: the client list asks for the recent clients again
+    /// once the profile closes (`RecentClients.refresh`). A view the server
+    /// refuses (404) or that never leaves (offline, see
+    /// `Endpoint.recordClientView`) throws.
     func recordView(of id: String, using client: APIClient) async throws {
         try await client.send(.recordClientView(id: id))
     }

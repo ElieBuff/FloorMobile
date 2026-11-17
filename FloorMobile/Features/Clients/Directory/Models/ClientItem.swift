@@ -11,9 +11,9 @@ import Foundation
 /// every list, the profile and its editor read.
 ///
 /// A plain value: it lives as long as the list, or the profile page, that
-/// shows it. A field can be missing for a client of the brand: a search never
-/// sends their email, phone, address or consents — the associate's own
-/// clients (the sync, "My Clients") and any client's details have them.
+/// shows it. A field can be missing — the server sends only what it has on
+/// file; the associate's own clients (the sync, the client list) and any
+/// client's details have the most.
 /// `storeCode` and `salesAssociateExternalId` say whose client it is, by the
 /// server's ids (`isAssigned(to:)`).
 ///
@@ -49,8 +49,7 @@ nonisolated struct ClientItem: Identifiable, Sendable, Hashable, Codable {
     var address: Address?
     /// An ISO 639-1 code ("fr", "en", "zh").
     let preferredLanguage: String?
-    /// What they agreed to be reached by; `nil` when the server sent none — a
-    /// client of the brand found by a search.
+    /// What they agreed to be reached by; `nil` when the server sent none.
     var optIns: OptIns?
 
     init(
@@ -199,31 +198,6 @@ nonisolated extension ClientItem {
             optIns: wire.optIns.map(OptIns.init(wire:))
         )
     }
-
-    /// A client's details (`client/{id}`): the same card, from the details'
-    /// own shape — the email and the phone under their names there, the
-    /// store's code and the associate's external id inside the projections
-    /// they come in.
-    init(wire: ClientDetailsWire.Response) {
-        self.init(
-            id: wire.id,
-            firstName: wire.firstName,
-            lastName: wire.lastName,
-            segment: wire.segment,
-            storeCode: wire.store?.storeCode,
-            storeName: wire.store?.name,
-            salesAssociateExternalId: wire.salesAssociate?.externalId,
-            salesAssociateName: wire.salesAssociate.flatMap {
-                PersonName.display(first: $0.firstName, last: $0.lastName)
-            },
-            primaryEmail: wire.email,
-            primaryPhone: wire.mobile,
-            salutation: wire.salutation,
-            address: wire.mainAddress.map(Address.init(wire:)),
-            preferredLanguage: wire.preferredLanguage,
-            optIns: OptIns(wire: wire.optIns)
-        )
-    }
 }
 
 nonisolated extension ClientItem.Address {
@@ -251,7 +225,7 @@ nonisolated extension ClientItem {
     /// The client as an edit sends them: each editable field without its
     /// surrounding spaces, a blank one `nil`, an address left with no line
     /// `nil`. The one rule of what changed — the editor's "Save" and the
-    /// request (`ClientDetailsWire.Request`) both compare on it, so a space
+    /// request (`ClientWire.Request`) both compare on it, so a space
     /// typed after a name changes nothing.
     var normalized: ClientItem {
         var client = self
@@ -318,12 +292,28 @@ nonisolated extension ClientItem {
         PersonName.display(first: firstName, last: lastName)
     }
 
-    /// The name to write: the client's, or "Unnamed client" when the server
-    /// has none — never a blank line. What every row, title and header reads;
-    /// an avatar keeps `displayName`, so a client with no name gets an empty
-    /// circle rather than the placeholder's initials.
+    /// The name to write, the salutation before it: "Mrs Alice Martinez";
+    /// "Alice Martinez" without a salutation this build knows; "Unnamed
+    /// client", alone, when the server has no name — never a blank line, and
+    /// no salutation before the placeholder, which would not read. What every
+    /// row, title and header reads (the salutation everywhere, decision of
+    /// 13/11, to revisit); an avatar keeps `displayName`, so a client with no
+    /// name gets an empty circle rather than the placeholder's initials.
+    ///
+    /// Built on `salutationLabel` and `displayName`, not on Foundation's
+    /// `PersonNameComponents`, which would compose them too: one rule for a
+    /// name in the app, `PersonName`.
     var displayLabel: String {
-        displayName ?? String(localized: "Unnamed client")
+        guard let displayName else { return String(localized: "Unnamed client") }
+        return [salutationLabel, displayName].compactMap { $0 }.joined(separator: " ")
+    }
+
+    /// How to reach the client, on one line: "alice@example.com · +33 6 12 34
+    /// 56 78", either alone when the other is missing, `nil` when neither is
+    /// there. A value left blank counts as missing.
+    var contactLine: String? {
+        let parts = [primaryEmail?.trimmedNonBlank, primaryPhone?.trimmedNonBlank].compactMap { $0 }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
     /// "Mr", "Mrs" or "Miss"; `nil` without a salutation, or for one this
@@ -340,7 +330,7 @@ nonisolated extension ClientItem {
     /// The language's name in the device's ("French" for "fr"); the code
     /// itself when the system does not know it.
     var languageName: String? {
-        preferredLanguage.map { Locale.current.localizedString(forLanguageCode: $0) ?? $0 }
+        preferredLanguage.map { Locale(identifier: $0).languageName() }
     }
 }
 

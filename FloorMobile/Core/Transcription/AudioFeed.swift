@@ -8,7 +8,7 @@ import Speech
 
 /// The microphone, as `SpeechAnalyzer` wants it: every buffer converted to the
 /// analyzer's format and handed to `onInput`, with the voice's level beside
-/// it for the sheet's bars.
+/// it for the rings around `TranscriptionView`'s pebble.
 ///
 /// Nonisolated on purpose: the tap runs on the audio thread, and a closure
 /// built on the main actor would assert there. Started and stopped by

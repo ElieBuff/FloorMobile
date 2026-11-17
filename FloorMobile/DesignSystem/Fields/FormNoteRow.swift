@@ -49,7 +49,7 @@ struct FormNoteRow: View {
             if let onDictate {
                 HStack(spacing: 0) {
                     Spacer(minLength: 0)
-                    FormDictateButton(action: onDictate)
+                    FieldIconButton(systemImage: "mic", label: String(localized: "Dictate"), action: onDictate)
                 }
             }
         }

@@ -7,27 +7,8 @@
     "%@ before" : {
 
     },
-    "%lld clients" : {
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld client"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld clients"
-                }
-              }
-            }
-          }
-        }
-      }
+    "%lld in your book" : {
+
     },
     "%lld items" : {
       "localizations" : {
@@ -73,10 +54,19 @@
         }
       }
     },
+    "Active" : {
+
+    },
     "Activity" : {
 
     },
     "Add" : {
+
+    },
+    "Add a client" : {
+
+    },
+    "Address" : {
 
     },
     "Agenda" : {
@@ -88,13 +78,13 @@
     "AI recommendations" : {
 
     },
-    "All Brand" : {
+    "All my clients" : {
 
     },
     "Allow the microphone in Settings to dictate." : {
 
     },
-    "Apply" : {
+    "Appointment" : {
 
     },
     "Appointment not booked" : {
@@ -109,6 +99,12 @@
     "Appointments" : {
 
     },
+    "Archived" : {
+
+    },
+    "Ask the client to sign with their finger" : {
+
+    },
     "Back" : {
 
     },
@@ -118,13 +114,13 @@
     "Birthday" : {
 
     },
-    "Calculating…" : {
-
-    },
     "Call" : {
 
     },
     "Cancel" : {
+
+    },
+    "Cancel download" : {
 
     },
     "Canceled" : {
@@ -145,10 +141,19 @@
     "Choose this day" : {
 
     },
+    "City" : {
+
+    },
     "Clear" : {
 
     },
+    "Clear text" : {
+
+    },
     "Client" : {
+
+    },
+    "Client not saved" : {
 
     },
     "Client search arrives with the Clients tab." : {
@@ -328,6 +333,9 @@
     "Close" : {
 
     },
+    "Closed" : {
+
+    },
     "Collapsed" : {
 
     },
@@ -340,6 +348,24 @@
     "Completed" : {
 
     },
+    "Confirm" : {
+
+    },
+    "Confirmed" : {
+
+    },
+    "Consents" : {
+
+    },
+    "Contact" : {
+
+    },
+    "Contact preferences of %@" : {
+
+    },
+    "Conversation" : {
+
+    },
     "Couldn't load this client" : {
 
     },
@@ -347,6 +373,9 @@
 
     },
     "Couldn't start dictation" : {
+
+    },
+    "Country" : {
 
     },
     "Created" : {
@@ -370,6 +399,9 @@
     "Done" : {
 
     },
+    "Downloading %@" : {
+
+    },
     "Due date" : {
 
     },
@@ -377,6 +409,9 @@
 
     },
     "Edit" : {
+
+    },
+    "Edit client" : {
 
     },
     "Edit Event" : {
@@ -388,6 +423,9 @@
     "Email" : {
 
     },
+    "Enter a valid email" : {
+
+    },
     "Event" : {
 
     },
@@ -397,13 +435,10 @@
     "Expanded" : {
 
     },
-    "Filter" : {
-
-    },
-    "Filter (%lld)" : {
-
-    },
     "Filters need a connection" : {
+
+    },
+    "First name" : {
 
     },
     "FloorMobile" : {
@@ -451,7 +486,19 @@
     "Language" : {
 
     },
+    "Last name" : {
+
+    },
     "Leave without saving?" : {
+
+    },
+    "LINE" : {
+
+    },
+    "Listening" : {
+
+    },
+    "Lists" : {
 
     },
     "Loading…" : {
@@ -460,16 +507,25 @@
     "Message" : {
 
     },
+    "Messages" : {
+
+    },
     "Microphone access is off" : {
+
+    },
+    "Miss" : {
 
     },
     "More" : {
 
     },
-    "My Clients" : {
+    "Mr" : {
 
     },
-    "Name, email or phone" : {
+    "Mrs" : {
+
+    },
+    "Name" : {
 
     },
     "New Event" : {
@@ -484,7 +540,16 @@
     "Next month" : {
 
     },
+    "Next step" : {
+
+    },
     "Next week" : {
+
+    },
+    "No" : {
+
+    },
+    "No activity yet" : {
 
     },
     "No appointment" : {
@@ -493,16 +558,13 @@
     "No appointment today" : {
 
     },
+    "No clients match these filters" : {
+
+    },
     "No clients yet" : {
 
     },
-    "No filters yet" : {
-
-    },
     "No recommendation yet" : {
-
-    },
-    "No sorts yet" : {
 
     },
     "No task" : {
@@ -517,13 +579,13 @@
     "Not now" : {
 
     },
-    "Not understood: %@" : {
-
-    },
     "Note" : {
 
     },
     "Notes" : {
+
+    },
+    "Nothing planned" : {
 
     },
     "Now, %@" : {
@@ -538,16 +600,37 @@
     "Other" : {
 
     },
+    "Paid" : {
+
+    },
+    "Part of this profile couldn't be loaded. %@" : {
+
+    },
+    "Partially paid" : {
+
+    },
+    "Partially refunded" : {
+
+    },
+    "Pending" : {
+
+    },
     "Phone" : {
+
+    },
+    "Phone call" : {
+
+    },
+    "Planned" : {
+
+    },
+    "Postal code" : {
 
     },
     "Preferences" : {
 
     },
     "Prepare" : {
-
-    },
-    "Preparing %@…" : {
 
     },
     "Previous month" : {
@@ -559,22 +642,31 @@
     "Profile" : {
 
     },
+    "Purchase" : {
+
+    },
     "Purchases" : {
 
     },
     "Reading a sentence needs a connection" : {
 
     },
-    "Reading the sentence" : {
+    "Reason" : {
 
     },
-    "Reason" : {
+    "Recent" : {
 
     },
     "Recent activity" : {
 
     },
     "Réessayer" : {
+
+    },
+    "Refunded" : {
+
+    },
+    "Region" : {
 
     },
     "Reminder" : {
@@ -584,6 +676,9 @@
 
     },
     "Sales associate" : {
+
+    },
+    "Salutation" : {
 
     },
     "Save" : {
@@ -601,7 +696,7 @@
     "Search failed" : {
 
     },
-    "Search the whole brand" : {
+    "Search needs a connection" : {
 
     },
     "Section" : {
@@ -610,10 +705,38 @@
     "Send" : {
 
     },
+    "Show" : {
+
+    },
+    "Show %lld clients" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Show %lld client"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Show %lld clients"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "Show the month" : {
 
     },
     "Show the week" : {
+
+    },
+    "Sign above" : {
 
     },
     "Sign in" : {
@@ -628,13 +751,19 @@
     "Sign-in was cancelled." : {
 
     },
+    "Signature area" : {
+
+    },
     "Something went wrong. Please try again." : {
 
     },
-    "Sort by" : {
+    "Sort & filter" : {
 
     },
-    "Speak: the text appears here." : {
+    "Sort and filter" : {
+
+    },
+    "Sort by" : {
 
     },
     "Start" : {
@@ -647,6 +776,9 @@
 
     },
     "Store" : {
+
+    },
+    "Street" : {
 
     },
     "Summary" : {
@@ -694,9 +826,6 @@
     "Type" : {
 
     },
-    "Type at least 3 characters of a name, an email or a phone number." : {
-
-    },
     "Unable to reach the server. Check your connection and try again." : {
 
     },
@@ -718,7 +847,16 @@
     "VIP event" : {
 
     },
+    "Voice search" : {
+
+    },
+    "Voided" : {
+
+    },
     "Waitlist" : {
+
+    },
+    "WeChat" : {
 
     },
     "What you typed will not be kept." : {
@@ -730,6 +868,9 @@
     "Wishlist available" : {
 
     },
+    "Yes" : {
+
+    },
     "Your data could not be saved on this device." : {
 
     },
@@ -737,9 +878,6 @@
 
     },
     "Your session has expired. Please sign in again." : {
-
-    },
-    "Your store's clients appear here once they are synchronized." : {
 
     }
   },

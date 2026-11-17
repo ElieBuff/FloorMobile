@@ -12,6 +12,6 @@ enum AppRadius {
     static let small: CGFloat = 12
     /// Thumbnails.
     static let medium: CGFloat = 16
-    /// Cards.
-    static let large: CGFloat = 24
+    /// Cards — the client list's mockup (14/11).
+    static let large: CGFloat = 26
 }

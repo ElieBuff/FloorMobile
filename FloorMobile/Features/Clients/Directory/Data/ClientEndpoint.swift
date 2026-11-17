@@ -23,50 +23,43 @@ nonisolated extension Endpoint {
     /// the device prunes its copy against.
     static let storeClientIDs = Endpoint(path: "client/store-ids")
 
-    /// A page of clients, 50 at most, from one route for both lists:
-    /// - `.mine`, the associate's own clients, each with their email and
-    ///   phone. Whose clients they are is the server's to set (their store
-    ///   today, from the token): the app only says `scope=mine`. Interactive:
-    ///   the associate waits on it, so it fails fast, and the list falls back
-    ///   on the device — or, with filters picked, which the device cannot
-    ///   apply, shows the failure.
-    /// - `.brand`, any client of the brand, as a card without contacts.
+    /// A page of the associate's own clients, 50 at most, each with their
+    /// email and phone. Whose clients they are is the server's to set (their
+    /// store today, from the token): the app only says `scope=mine`.
+    /// Interactive: the associate waits on it, so it fails fast — without a
+    /// connection, the list falls back on the device, or, with filters
+    /// picked, which the device cannot apply, shows the failure
+    /// (`ClientsView.showsDevice`).
     ///
-    /// The text, the scope and the filters as `scopeItems` sends them; then
-    /// the sort, which goes with both scopes, and the cursor. Without a text,
-    /// the clients in the sort's order.
+    /// The text and the filters as `scopeItems` sends them; then the sort and
+    /// the cursor. Without a text, the clients in the sort's order.
     static func searchClients(
         _ query: String?,
-        in scope: ClientSearchScope,
         options: ClientSearchOptions = ClientSearchOptions(),
         after cursor: String? = nil
     ) -> Endpoint {
-        var items = scopeItems(query, in: scope, filters: options.filters)
+        var items = scopeItems(query, filters: options.filters)
         if let sortBy = options.sortBy {
             items.append(URLQueryItem(name: "orderBy", value: sortBy))
         }
         if let direction = options.direction {
             items.append(URLQueryItem(name: "direction", value: direction.rawValue))
         }
-        return Endpoint(path: "client/search", query: items + after(cursor), interactive: scope == .mine)
+        return Endpoint(path: "client/search", query: items + after(cursor), interactive: true)
     }
 
     /// How many clients `searchClients` would list, page after page, for the
-    /// same text, scope and filters (`scopeItems`): the total "My Clients"'
-    /// filters sheet shows under its sentence. Neither a sort nor a cursor:
-    /// neither changes a total.
+    /// same text and filters (`scopeItems`): the total "Sort & filter" says on
+    /// its "Show" button. Neither a sort nor a cursor: neither changes a
+    /// total.
     ///
-    /// Asked once the associate pauses in their ticks, for the last state only:
+    /// Asked once the associate pauses in their changes, for the last state only:
     /// a request given up on runs on, server side, until its time limit. A 503
     /// (`search_timeout`) means a total too long to count: none is shown.
-    /// Interactive in both scopes: the associate waits on it, and a count has
-    /// no list on the device to fall back on.
-    static func countClients(
-        _ query: String?,
-        in scope: ClientSearchScope,
-        filters: [ClientFilterChoice] = []
-    ) -> Endpoint {
-        Endpoint(path: "client/count", query: scopeItems(query, in: scope, filters: filters), interactive: true)
+    /// Interactive: the associate waits on it, and a count has no list on the
+    /// device to fall back on.
+    static func countClients(_ query: String?, filters: [ClientFilterChoice] = []) -> Endpoint {
+        Endpoint(path: "client/count", query: scopeItems(query, filters: filters), interactive: true)
     }
 
     /// The filters a sentence the associate typed or dictated describes
@@ -93,7 +86,8 @@ nonisolated extension Endpoint {
         )
     }
 
-    /// Who one client of the brand is (`ClientDetailsWire`): their contacts
+    /// Who one client of the brand is (`ClientWire.Response`, the card every
+    /// client route sends): their contacts
     /// and consents, language, associate, store and main address — bounded,
     /// their purchases and messages are `clientTimeline`'s. One of the three
     /// parts of their profile (`ClientProfile`). Interactive: the associate
@@ -103,13 +97,13 @@ nonisolated extension Endpoint {
         Endpoint(path: "client/\(id)", interactive: true)
     }
 
-    /// Edits one of the associate's own clients (`ClientDetailsWire.Request`),
-    /// and answers with their details as they now stand — the shape of
+    /// Edits one of the associate's own clients (`ClientWire.Request`), and
+    /// answers with their card as it now stands — the shape of
     /// `clientDetails`. Interactive: the associate waits on it, so without a
     /// connection it fails at once and the form offers to try again; 30 s
     /// rather than the interactive default, for a body that carries a
     /// signature and a server that writes several tables.
-    static func updateClient(id: String, body: ClientDetailsWire.Request) -> Endpoint {
+    static func updateClient(id: String, body: ClientWire.Request) -> Endpoint {
         Endpoint(path: "client/\(id)", method: .patch, body: body, interactive: true, timeout: 30)
     }
 
@@ -134,7 +128,8 @@ nonisolated extension Endpoint {
     /// Records that the connected associate opened this client's profile: one
     /// line in the server's views journal, at the server's time. Answers with
     /// the recent clients as they now stand — `recentClients`' list, this
-    /// client first —, which the app does not read.
+    /// client first —, which the app does not read: the client list asks
+    /// `recentClients` again once the profile closes.
     ///
     /// Interactive although no one waits on its answer: the route forbids
     /// queuing a view offline — a view made without network is lost, by
@@ -146,10 +141,15 @@ nonisolated extension Endpoint {
         Endpoint(path: "client/\(id)/view", method: .post, interactive: true)
     }
 
-    /// The associate's last viewed clients, each once, the latest view first —
-    /// as many as the server keeps, its call alone. Nothing calls it yet: the
-    /// screen of the recent clients will, when it shows, without keeping them.
-    static let recentClients = Endpoint(path: "client/recent")
+    /// The associate's last viewed clients, each once, the latest view first
+    /// (`ClientWire.Recents`) — as many as the server keeps, its call alone.
+    /// Asked each time the client list comes on screen, for its search field
+    /// to show them at once (`RecentClients`).
+    ///
+    /// Interactive: without a connection it fails at once instead of waiting
+    /// for one — the field then says so and offers to try again, where it
+    /// would otherwise spin until the network came back.
+    static let recentClients = Endpoint(path: "client/recent", interactive: true)
 
     /// `after` when there is a cursor to send, nothing otherwise.
     private static func after(_ cursor: String?) -> [URLQueryItem] {
@@ -159,25 +159,17 @@ nonisolated extension Endpoint {
     /// What a client search and its count share, so that a count reads what
     /// the search lists — the BFF's `clientScopeQuery`, shared by
     /// `/client/search` and `/client/count` (`client.route.ts`), to keep in
-    /// step with it: `scope=mine` for the associate's own clients, nothing
-    /// for the brand; `q`, matching a name, an email or a phone, the closest
-    /// first, sent as given — whether a text is long enough for the server is
-    /// the view's call (`ClientsView.searchMinimumLength`); and with `.mine`
-    /// only — the server refuses them otherwise — the filters picked, as a
-    /// JSON list (`ClientFilterChoiceWire`).
-    private static func scopeItems(
-        _ query: String?,
-        in scope: ClientSearchScope,
-        filters: [ClientFilterChoice]
-    ) -> [URLQueryItem] {
-        var items: [URLQueryItem] = []
-        if scope == .mine {
-            items.append(URLQueryItem(name: "scope", value: "mine"))
-        }
+    /// step with it: `scope=mine`, the associate's own clients; `q`, matching
+    /// a name, an email or a phone, the closest first, sent as given —
+    /// whether a text is long enough for the server is the view's call
+    /// (`ClientsView.searchMinimumLength`); and the filters picked, as a JSON
+    /// list (`ClientFilterChoiceWire`).
+    private static func scopeItems(_ query: String?, filters: [ClientFilterChoice]) -> [URLQueryItem] {
+        var items = [URLQueryItem(name: "scope", value: "mine")]
         if let query {
             items.append(URLQueryItem(name: "q", value: query))
         }
-        if scope == .mine, !filters.isEmpty,
+        if !filters.isEmpty,
            let json = URLQueryItem(name: "filters", json: filters.map(ClientFilterChoiceWire.Request.init(choice:))) {
             items.append(json)
         }

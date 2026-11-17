@@ -12,7 +12,7 @@ struct ProfilePurchasesSection: View {
         Section {
             Text("Coming soon")
                 .foregroundStyle(Color(.OnSurface.textSecondary))
-                .listRowInsets(.cardRow)
+                .listRowInsets(.insetGroupedRowInsets)
         } header: {
             Text("Purchases")
         }

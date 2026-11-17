@@ -9,8 +9,9 @@ import SwiftUI
 /// what failed, the error's own message, and "Try again", which hands back to
 /// the caller to start the load again.
 ///
-/// One view for every load that fails as a whole — a list's first page ("All
-/// Brand"), a client's profile — so they read alike and cannot drift apart.
+/// One view for every load that fails as a whole — a list's first page (the
+/// client list with filters), a client's profile — so they read alike and
+/// cannot drift apart.
 /// Native inside: a `ContentUnavailableView`.
 ///
 /// ```swift

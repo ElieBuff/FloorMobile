@@ -7,12 +7,14 @@ import Foundation
 import SwiftData
 
 /// One of the tenant's "My Clients" sorts, as the server sets it up — the
-/// `clients.sorts` block of `GET setup` — kept for the sort screen.
+/// `clientConfiguration.sorts` block of `GET setup` — kept for "Sort &
+/// filter".
 ///
 /// What a sort offers, not what an associate picked: the server owns the
-/// list, its order and which one applies by default. "Sort by"
-/// (`ClientSortPickerView`) lists them in `rank` order; the one picked goes
-/// into `ClientSearchOptions`, which sends its `value` to `client/search`.
+/// list, its order and which one applies by default. "Sort by", in "Sort &
+/// filter" (`ClientSortFilterSheet`), lists them in `rank` order; the one
+/// picked goes into `ClientSearchOptions`, which sends its `value` to
+/// `client/search`.
 /// Tied to the tenant like everything stored: `LocalStore.erase` wipes it.
 ///
 /// Not `Syncable`, like `ClientFilter`: the block lands whole, so
@@ -41,7 +43,7 @@ nonisolated final class ClientSort {
     }
 }
 
-nonisolated extension ClientSort: ContentComparable {
+nonisolated extension ClientSort {
 
     // MARK: - Typed views
 
@@ -64,16 +66,5 @@ nonisolated extension ClientSort: ContentComparable {
     /// picker, the button showing the current one) reads the same.
     var title: LocalizedStringResource {
         LocalizedStringResource(stringLiteral: labelKey)
-    }
-
-    // MARK: - Sync
-
-    /// Whether `other` holds the same content, field by field — what decides
-    /// that `ModelContext.replace` leaves the stored sorts alone. Every stored
-    /// field above is compared here: one added to the class must be added here
-    /// too, or a server change to it alone would never be written.
-    func hasSameContent(as other: ClientSort) -> Bool {
-        value == other.value && labelKey == other.labelKey && directionRaw == other.directionRaw
-            && isDefault == other.isDefault && rank == other.rank
     }
 }

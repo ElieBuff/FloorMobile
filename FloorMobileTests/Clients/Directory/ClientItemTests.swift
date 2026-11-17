@@ -24,8 +24,8 @@ struct ClientItemTests {
 
     // MARK: - From a server card
 
-    @Test("A brand card maps onto names, store and associate, with no way to reach the client")
-    func brandCardMaps() throws {
+    @Test("A card without contacts maps onto names, store and associate, with no way to reach the client")
+    func cardWithoutContactsMaps() throws {
         let item = ClientItem(wire: try #require(try Self.page("client_search_page").items.first))
 
         #expect(item.id == "01JBRAND0000000000000000A1")
@@ -35,7 +35,7 @@ struct ClientItemTests {
         #expect(item.storeName == "My Custom Location")
         #expect(item.salesAssociateExternalId == "378970372512460673")
         #expect(item.salesAssociateName == "Elie Buff")
-        // The search never sends them for a client of the brand (their profile does).
+        // This card, from a search of the brand, came without them (their profile has them).
         #expect(item.primaryEmail == nil)
         #expect(item.primaryPhone == nil)
         #expect(item.address == nil)
@@ -229,6 +229,34 @@ struct ClientItemTests {
     )
     func salutationLabel(salutation: String?, label: String?) {
         #expect(ClientItem(id: "1", salutation: salutation).salutationLabel == label)
+    }
+
+    @Test(
+        "The name reads with its salutation before it; without one this build knows, the name alone",
+        arguments: [("misses", "Mrs Alice Martinez"), ("doctor", "Alice Martinez"), (nil, "Alice Martinez")]
+            as [(String?, String)]
+    )
+    func displayLabelWithSalutation(salutation: String?, label: String) {
+        let client = ClientItem(id: "1", firstName: "Alice", lastName: "Martinez", salutation: salutation)
+
+        #expect(client.displayLabel == label)
+    }
+
+    @Test("Without a name, the placeholder alone: no salutation before it")
+    func displayLabelWithoutName() {
+        #expect(ClientItem(id: "1", salutation: "misses").displayLabel == String(localized: "Unnamed client"))
+    }
+
+    @Test("Email and phone share one line; either alone when the other is missing or blank; none, no line")
+    func contactLine() {
+        let both = ClientItem(id: "1", primaryEmail: "alice@example.com", primaryPhone: "+33 6 12 34 56 78")
+        let emailOnly = ClientItem(id: "1", primaryEmail: "alice@example.com", primaryPhone: "  ")
+        let phoneOnly = ClientItem(id: "1", primaryPhone: " +33 6 12 34 56 78 ")
+
+        #expect(both.contactLine == "alice@example.com · +33 6 12 34 56 78")
+        #expect(emailOnly.contactLine == "alice@example.com")
+        #expect(phoneOnly.contactLine == "+33 6 12 34 56 78")
+        #expect(ClientItem(id: "1", primaryEmail: "", primaryPhone: nil).contactLine == nil)
     }
 
     @Test("A language reads as its name in the device's language")

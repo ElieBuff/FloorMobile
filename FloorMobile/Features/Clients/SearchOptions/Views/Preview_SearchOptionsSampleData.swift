@@ -8,17 +8,17 @@ import SwiftUI
 
 /// "My Clients"' catalogue as `GET setup` serves it in dev — its sorts, and
 /// the filters the dev seed writes — in an in-memory store, for the previews
-/// that open "Sort by" or "Filter": `#Preview(traits: .searchOptionsSampleData)`.
+/// that open "Sort & filter": `#Preview(traits: .searchOptionsSampleData)`.
 ///
 /// A `PreviewModifier`, so the preview system builds the store once and shares
 /// it across the previews that apply the trait; none of them writes to it. The
 /// filters mirror `seed-client-filters.ts` (FloorPlatform's console API): the
 /// Tier with the segments its header gives as an example, Created and Last
-/// purchase with their four values. `MyClientsList`'s previews keep their own
+/// purchase with their four values. `ClientsView`'s previews keep their own
 /// store: they insert clients, which a shared one would show to every preview.
-/// The previews that apply it also get the session and the services "Filter"
-/// reads for its total — the previews' own, which no server answers: no
-/// total shows. Not under `#if DEBUG`: a `#Preview` compiles in Release
+/// The previews that apply it also get the session and the services "Sort &
+/// filter" reads for its total — the previews' own, which no server answers:
+/// "Show" stays alone. Not under `#if DEBUG`: a `#Preview` compiles in Release
 /// builds too.
 struct SearchOptionsSampleData: PreviewModifier {
     static func makeSharedContext() throws -> ModelContainer {

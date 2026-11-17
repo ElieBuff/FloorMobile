@@ -22,15 +22,6 @@ nonisolated protocol Syncable: PersistentModel {
     static func stale(token: String) -> Predicate<Self>
 }
 
-/// A persistent model whose stored set is replaced whole — and only when it
-/// changed (`ModelContext.replace(with:order:)`). `hasSameContent(as:)` lives
-/// beside the model's stored fields, so a field added there is not forgotten
-/// here.
-nonisolated protocol ContentComparable: PersistentModel {
-    /// Whether `other` holds the same content, every stored field compared.
-    func hasSameContent(as other: Self) -> Bool
-}
-
 extension ModelContext {
     /// Inserts (upserts) a batch and saves. Upsert relies on the model's
     /// identity key being `@Attribute(.unique)`, so re-inserting a known id
@@ -63,12 +54,17 @@ extension ModelContext {
     }
 
     /// Replaces every stored `Model` with `incoming`, a set the server sends
-    /// whole — but only when the two differ. Returns whether it wrote.
+    /// whole: the stored rows are deleted, the incoming ones inserted, then
+    /// saved — every time, changed or not (decision of 15/11). Comparing
+    /// first saved about 3 ms a launch: rewriting the 35 rows of `GET setup`
+    /// took 3.2 ms against 0.5 ms to compare them, and 100 rows 7.2 ms against
+    /// 1.2 (measured on a Mac, 15/11).
     ///
-    /// `incoming` comes in `order`, the order the stored side is read in, so
-    /// the two compare row by row: a reordering is a change. An unchanged set
-    /// costs one fetch and no write, which matters for what is fetched at
-    /// every launch and nearly never changes.
+    /// Safe because what it rewrites is read only once the launch is over:
+    /// `GET setup` runs while `RootView` shows its loading screen, before any
+    /// view holds one of these rows. A refresh while the tabs are on screen
+    /// (a 409 `filters_changed` handled one day) would delete rows a view
+    /// still reads, and has to think this again.
     ///
     /// No mark-and-sweep token, unlike `refresh`: that protects data arriving
     /// in pages, where deleting first would empty the store if a page failed.
@@ -76,24 +72,14 @@ extension ModelContext {
     /// by row rather than with `delete(model:)`: a batch delete reaches the
     /// store at once, and a reader landing before the save would see an empty
     /// list; per-object deletes wait for the save.
-    @discardableResult
-    nonisolated func replace<Model: ContentComparable>(
-        with incoming: [Model],
-        order: SortDescriptor<Model>
-    ) throws -> Bool {
-        let stored = try fetch(FetchDescriptor<Model>(sortBy: [order]))
-        let unchanged = stored.count == incoming.count
-            && zip(stored, incoming).allSatisfy { $0.hasSameContent(as: $1) }
-        guard !unchanged else { return false }
-
-        for model in stored {
+    nonisolated func replace<Model: PersistentModel>(with incoming: [Model]) throws {
+        for model in try fetch(FetchDescriptor<Model>()) {
             delete(model)
         }
         for model in incoming {
             insert(model)
         }
         try save()
-        return true
     }
 
     /// Batch-deletes every row matching `predicate`, then saves.

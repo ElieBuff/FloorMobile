@@ -64,8 +64,8 @@ carries without ever reading it — a filter's condition from a sentence (`clien
 - **UI.** An element that can serve more than once (a row, an avatar, a search field, a card, a list style) is a
   component from its first use: in `DesignSystem/<Component>/` if it speaks no feature's vocabulary, in
   `Features/<Feature>/Views/Components/` otherwise. One that almost fits is extracted or parameterized
-  (`AppAvatar` → `InitialsAvatar`), never copied; a modifier chain that a component already spells (`.cardList()`)
-  is used, not re-spelled.
+  (`AppAvatar` → `InitialsAvatar`), never copied; a modifier chain that a component already spells
+  (`.insetGroupedList()`, `.insetGroupedRow()`) is used, not re-spelled.
 - **Logic** (the user's decision, 2026-10-16). Logic that can serve more than once goes, from its first use, where
   every caller will find it: the model's `nonisolated extension`, a shared value in `Core/Models/`, an extension in
   `Core/Extensions/` — never in a view, never in a helper named after a screen. Duplicated logic is a finding. But no
@@ -111,8 +111,11 @@ comment that paraphrases the code, no history ("used to…"). In English, like t
 - Every user-facing string in `Localizable.xcstrings`, never hard-coded. English only until the app ships French
   (`knownRegions` holds `en` alone): one French string would switch a French device's app to French for it alone.
 - Colours from the asset catalog's generated symbols (`Color(.Base.ink)`, `Color(.OnSurface.textSecondary)`…), fonts
-  as SwiftUI text styles (Dynamic Type), and the `DesignSystem/Tokens/` values (`AppRadius`, `AppShadow`,
-  `AppBorder`, `AppSpacing.cardInset`). A number used once stays a literal in the view: `AppSpacing`'s own rule.
+  as SwiftUI text styles (Dynamic Type) — a text role of the new design through `.appFont(_:)` (`AppFont`), which keeps
+  the text style when one matches the mockup, scales its own numbers otherwise, and sets every role's line height (a
+  text style's own grows with the device's languages) —, and the
+  `DesignSystem/Tokens/` values (`AppRadius`, `AppShadow`, `AppBorder`, `AppSpacing`). A number used once stays a
+  literal in the view: `AppSpacing`'s own rule.
 - An `accessibilityLabel` on every icon button; empty, loading and error states (`ContentUnavailableView`,
   `EmptySectionCard`).
 - What only the screen shows — the rendering, a sheet's height, the larger text sizes — is the user's to look at, on
@@ -144,13 +147,19 @@ such cost. In both cases, the evidence is the existing code or the `floor-dev` r
   `../FloorPlatform/floor/packages/types/src/schemas/`. A wire type is checked against those, not against the route.
   Fixtures are copied from real responses, never invented. A change that needs the server to change says so and
   names the change.
-- **Client search.** The server searches, typos and all. "My Clients" asks `client/search?scope=mine` from
-  `ClientsView.searchMinimumLength` characters (the views' call, never the endpoint's) or once a sort or a filter is
-  picked, interactive (`Endpoint.interactive`). It searches the device's copy otherwise (`Client.matching`, a plain
-  `localizedStandardContains` predicate, `fetchLimit` grown by pages), and when the server does not answer, unless
-  filters are picked: the device cannot apply them, so the failure shows instead. "All Brand" asks `client/search`.
-  Both server lists go through `PagedSearchList`. The device does not reimplement the server's rules: a future search
-  on the device follows them (`floor_search_fold`, the shared vectors in
+- **Client search.** The server searches, typos and all. The Clients tab always asks it first:
+  `client/search?scope=mine`, with or without a sort or filters, its text from `ClientsView.searchMinimumLength`
+  characters (the view's call, never the endpoint's — `ClientsView.searchText`, tested), interactive
+  (`Endpoint.interactive`). The text comes from the list's own search field, under the title and folded as the list
+  scrolls (`.searchable`, navigation bar drawer, 15/11). Touched, the field shows the associate's recent clients
+  (`client/recent`, kept in memory by `RecentClients`, asked again each time the list comes on screen, a failure
+  ignored) until the text is long enough — none, the list stays (`ClientsView.showsRecents`, tested); the device
+  stores no recent client. Without a connection, without a text and
+  without filters, the device's copy stands in, read a page at a time (`Client.page`), unfiltered: the device does not
+  search. With a text or filters, which the device cannot apply, or after any other error — a 503 `search_timeout` must not fall
+  back silently — the failure shows (`ClientsView.showsDevice`, tested). "All Brand" is gone (12/11): nothing asks
+  `client/search` without a scope. Both sources go through `PagedSearchList`. The device does not reimplement the
+  server's rules: a future search on the device follows them (`floor_search_fold`, the shared vectors in
   `../FloorPlatform/floor/packages/domain/test/client-search.vectors.json`), never invents its own.
 - **SPM dependencies** only with a real added value over the native APIs.
 - **Swift files live in `FloorMobile/`**, never at the root of the repository.

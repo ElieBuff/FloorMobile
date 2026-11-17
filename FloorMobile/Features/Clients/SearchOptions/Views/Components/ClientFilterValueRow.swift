@@ -5,10 +5,13 @@
 
 import SwiftUI
 
-/// A value of one of the tenant's filters, in "Filter"
-/// (`ClientFilterPickerView`): ticked while the draft holds it
+/// A value of one of the tenant's filters: ticked while the draft holds it
 /// (`CheckmarkRow`). A value that asks for a day — "Since a date" — ends on
 /// the day picked, or on the chevron that says a tap opens the calendar.
+///
+/// Shown by no screen since 16/11: "Sort & filter" (`ClientSortFilterSheet`)
+/// leaves the tenant's filters out until the mockup's pills (the user's
+/// decision).
 struct ClientFilterValueRow: View {
     let value: ClientFilterValue
     let isPicked: Bool
