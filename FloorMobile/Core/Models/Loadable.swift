@@ -10,8 +10,9 @@ import Foundation
 /// Not an `Optional`: a `nil` would mean both "on its way" and "failed",
 /// while a screen shows a spinner for one and a message — or nothing — for
 /// the other. Kept for each value a screen asks for on its own: the parts of
-/// a client's profile (`ClientProfile`), the total of "Sort & filter"
-/// (`ClientFilterEditor`).
+/// a client's profile (`ClientProfile`). Not for a value that stays on screen
+/// while it is asked for again: "Sort & filter" keeps its last total and says
+/// it is counting (`ClientFilterEditor`).
 nonisolated enum Loadable<Value> {
     case loading
     case loaded(Value)

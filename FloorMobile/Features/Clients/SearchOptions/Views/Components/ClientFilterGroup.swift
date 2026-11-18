@@ -5,13 +5,13 @@
 
 import SwiftUI
 
-/// A group of filter pills in "Sort & filter" (`ClientSortFilterSheet`), as
+/// A group of filter pills in "Sort & filter" (`ClientSortFilterView`), as
 /// the mockups draw it (canvas « Tolby - App », `C-Filtres-Texte`,
 /// `C-Filtres-Applique-Noir`): its title, how many of its pills are picked on
 /// the trailing edge — "2 selected", nothing while none is —, and under them
 /// its pills, wrapping over as many lines as they need (`FlowLayout`).
 ///
-/// The layout only, shared by the sheet's two kinds of group so they cannot
+/// The layout only, shared by the screen's two kinds of group so they cannot
 /// drift: one of the tenant's filters, its values to pick, and "Powered by
 /// Tolby", the filters a description gave, to take off. The caller builds
 /// each pill (`Pill`) — what it shows, what a touch does. The group sets the
@@ -20,7 +20,7 @@ import SwiftUI
 ///
 /// In the feature rather than in the design system: it speaks "Sort &
 /// filter"'s vocabulary — a group of filters, its "N selected" —, and its two
-/// callers are rows of that one sheet.
+/// callers are rows of that one screen.
 ///
 /// ```swift
 /// ClientFilterGroup(title: filter.title, pickedCount: draft.pickedCount(in: filter)) {

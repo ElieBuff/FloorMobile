@@ -15,7 +15,7 @@ nonisolated enum ClientFilterChoice: Hashable, Sendable {
     /// as a string; empty for a value that asks for none.
     case value(ref: String, parameters: [String: String] = [:])
     /// A filter a sentence described, as a pill: its label, to show it again
-    /// when the sheet reopens, and its condition, sent back whole.
+    /// when "Sort & filter" reopens, and its condition, sent back whole.
     case filter(ClientFilterItem)
 
     /// The value's `ref`; `nil` for a sentence's filter, which has none, so a

@@ -6,7 +6,7 @@
 import SwiftUI
 
 /// "Your description", opened by the arrow of "Sort & filter"'s sentence
-/// (`ClientSortFilterSheet`): the clients wanted, in the associate's own
+/// (`ClientSortFilterView`): the clients wanted, in the associate's own
 /// words, read back while Tolby translates them into filters. Under the title
 /// and the close button, the sentence in quotes, on three lines at most — a
 /// longer one is cut with an ellipsis —, then Tolby's card

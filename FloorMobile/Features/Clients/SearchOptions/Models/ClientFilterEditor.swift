@@ -9,8 +9,8 @@ import Foundation
 /// around it: the draft's total (`client/count`), and the filters of its
 /// sentence (`client/text-filters`).
 ///
-/// Held as `@State` by each of the two sheets, one instance each:
-/// - "Sort & filter" (`ClientSortFilterSheet`), on the draft made from the
+/// Held as `@State` by each of the two screens, one instance each:
+/// - "Sort & filter" (`ClientSortFilterView`), on the draft made from the
 ///   list's options, whose "Show" button says the total;
 /// - "Your description" (`ClientFiltersDescriptionSheet`), on a draft made of
 ///   the sentence alone, where the sentence is read; its "Apply" hands the
@@ -21,21 +21,26 @@ import Foundation
 /// dropped once its request is cancelled, what a failure says. The draft
 /// stays a value type, its rules tested on their own.
 ///
-/// Not a sheet's own `@State`: there, the requests and their choreography
+/// Not a screen's own `@State`: there, the requests and their choreography
 /// would sit in the view, untested. Not a `Service` either: a service is
 /// built once and shared by the whole app, while this state belongs to one
-/// open sheet.
+/// open screen.
 ///
-/// A sheet's `.task(id:)` runs each request: a newer change, or the sheet
+/// A screen's `.task(id:)` runs each request: a newer change, or the screen
 /// closing, cancels the one running, and what comes back for it is dropped
 /// here, as `PagedSearchList` does.
 @Observable
 final class ClientFilterEditor {
     /// The sort and the filters being picked, and the sentence.
     var draft: ClientFilterDraft
-    /// The draft's total: on its way from a change to its answer — and from
-    /// the start, for the first count —, then counted, or failed.
-    private(set) var total: Loadable<Int> = .loading
+    /// The draft's total, as last counted: kept while a newer count is on
+    /// its way, so "Show" never loses its number between two filters; `nil`
+    /// until the first count comes back, and after one that failed.
+    private(set) var total: Int?
+    /// Whether a count is on its way: from a change to its answer or its
+    /// failure — and from the start, for the first count. The total shown
+    /// meanwhile is the last one's.
+    private(set) var isCounting = true
 
     /// How long the changes must pause before the total is asked for: the
     /// search's own pause (`PagedSearchList`). Injectable so a test need not
@@ -54,28 +59,31 @@ final class ClientFilterEditor {
         self.init(draft: ClientFilterDraft(options: options), debounce: debounce)
     }
 
-    /// Counts the draft's clients once the changes pause, "Show" alone from
-    /// the change on. One `client/count` for the last state, as the route
-    /// asks — a request given up on runs on, server side. It counts what the
-    /// filters keep among the associate's own clients, whatever text the list
-    /// has: how far the filters reach. The sort changes no total.
+    /// Counts the draft's clients once the changes pause; the last total
+    /// stays meanwhile (`isCounting`). One `client/count` for the last state,
+    /// as the route asks — a request given up on runs on, server side. It
+    /// counts what the filters keep among the associate's own clients,
+    /// whatever text the list has: how far the filters reach. The sort
+    /// changes no total.
     ///
     /// A newer change cancels the wait — that total is never asked for —, and
-    /// the newer count keeps "Show" alone. Any failure — no connection, past
-    /// the server's limit, refused — takes the total away. A 409
-    /// `filters_changed`, the tenant's filters changed since the app's launch,
-    /// is deliberately not handled: too rare to be worth the code.
+    /// the newer count goes on counting: a count cancelled writes nothing.
+    /// Any failure — no connection, past the server's limit, refused — takes
+    /// the total away. A 409 `filters_changed`, the tenant's filters changed
+    /// since the app's launch, is deliberately not handled: too rare to be
+    /// worth the code.
     func count(session: AppSession, services: AppServices) async {
-        total = .loading
+        isCounting = true
         do {
             try await Task.sleep(for: debounce)
             let count = try await services.clients.countClients(nil, filters: draft.options.filters, using: session.api)
             guard !Task.isCancelled else { return }
-            total = .loaded(count)
+            total = count
         } catch {
             guard !Task.isCancelled else { return }
-            total = .failed(error)
+            total = nil
         }
+        isCounting = false
     }
 
     /// Reads the draft's sentence: sends it when it can be

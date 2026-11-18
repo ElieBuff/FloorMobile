@@ -15,11 +15,11 @@ import SwiftUI
 /// Tolby). A client's `segment` names one by its `code`, written the same
 /// way. Two readers: the list's rows, which draw a client's segment as a tag
 /// (`ClientsView`, the profile one day), and "Sort & filter", which draws a
-/// dot in the same colours on the pills of the filter whose values are the
-/// segments (`ClientFilter.valueField`, `ClientSortFilterSheet`'s own
-/// `@Query`). In `Directory` all the same: it describes a client's segment,
-/// and `SearchOptions` only reads it. Tied to the tenant like everything
-/// stored: `LocalStore.erase` wipes it.
+/// dot in colours drawn from the tag's (`dotColors`) on the pills of the
+/// filter whose values are the segments (`ClientFilter.valueField`,
+/// `ClientSortFilterView`'s own `@Query`). In `Directory` all the same: it
+/// describes a client's segment, and `SearchOptions` only reads it. Tied to
+/// the tenant like everything stored: `LocalStore.erase` wipes it.
 ///
 /// Not `Syncable`, like `ClientSort`: the block lands whole, so
 /// `SetupService` saves the complete set at once.
@@ -61,17 +61,36 @@ nonisolated extension ClientSegment {
 
     // MARK: - Display
 
-    /// The tag's fill and text colours, or `nil` when either one is missing
-    /// or does not read. `nil` means no tag at all (decision of 15/11): the
-    /// console has not coloured the segment yet. One pair for light and dark
-    /// alike, as the server serves it. The same pair colours the segment's
-    /// dot in "Sort & filter" (`ClientSortFilterSheet`).
-    var tagColors: (background: Color, foreground: Color)? {
+    /// The segment's two colours as the server sends them, read; `nil` when
+    /// either one is missing or does not read: the console has not coloured
+    /// the segment yet. One pair for light and dark alike.
+    private var resolvedColors: (background: Color.Resolved, text: Color.Resolved)? {
         guard let backgroundHex = backgroundColorHex,
               let background = Color.Resolved(hex: backgroundHex),
               let textHex = textColorHex,
-              let foreground = Color.Resolved(hex: textHex)
+              let text = Color.Resolved(hex: textHex)
         else { return nil }
-        return (Color(background), Color(foreground))
+        return (background, text)
+    }
+
+    /// The tag's fill and text colours, or `nil` when either one is missing
+    /// or does not read. `nil` means no tag at all (decision of 15/11). The
+    /// segment's dot in "Sort & filter" takes its own from them (`dotColors`).
+    var tagColors: (background: Color, foreground: Color)? {
+        resolvedColors.map { (Color($0.background), Color($0.text)) }
+    }
+
+    /// The colours of the segment's dot in "Sort & filter"
+    /// (`ClientSortFilterView`), drawn from the tag's (decision of 18/11):
+    /// its fill is the tag's background 2.5 times as opaque, up to opaque —
+    /// the mockup's dots against its tags (25, 55 and 100 % for 10, 24 and
+    /// 100 %) —, its ring the tag's text colour at 35 %, a soft edge rather
+    /// than a dark circle around a pale centre. `nil` as `tagColors` is: no
+    /// dot for a segment without its colours.
+    var dotColors: (fill: Color, ring: Color)? {
+        guard var (fill, ring) = resolvedColors else { return nil }
+        fill.opacity = min(1, fill.opacity * 2.5)
+        ring.opacity *= 0.35
+        return (Color(fill), Color(ring))
     }
 }

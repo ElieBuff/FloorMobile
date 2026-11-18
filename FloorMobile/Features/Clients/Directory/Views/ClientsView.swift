@@ -65,7 +65,7 @@ struct ClientsView: View {
     /// the profiles it opens.
     @State private var edits = ClientEdits()
     /// The sort and the filters picked, as the server's search sends them:
-    /// written by "Sort & filter"'s "Show" (`ClientSortFilterSheet`), opened
+    /// written by "Sort & filter"'s "Show" (`ClientSortFilterView`), opened
     /// by the bar's button.
     @State private var options = ClientSearchOptions()
     /// Whether "Sort & filter" is open.
@@ -143,13 +143,12 @@ struct ClientsView: View {
                 prompt: Text("Search")
             )
             .toolbar { headerButtons }
-            // At full height only, as the mockup draws it: the system's sheet,
-            // closed by a swipe down too (decision of 16/11). `.large` is iOS's
-            // default, written out for that decision.
-            .sheet(isPresented: $isSortingAndFiltering) {
-                ClientSortFilterSheet(options: $options)
-                    .presentationDetents([.large])
-                    .presentationDragIndicator(.visible)
+            // Full screen, not a sheet (decision of 18/11): closed by its
+            // cross or by "Show", never by a swipe down, which would drop the
+            // filters being picked. Its two sheets — "Voice search", "Your
+            // description" — open over it at half height.
+            .fullScreenCover(isPresented: $isSortingAndFiltering) {
+                ClientSortFilterView(options: $options)
             }
             .onAppear {
                 // Read again on every appearance: a sync may have changed it.

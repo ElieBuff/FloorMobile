@@ -12,7 +12,7 @@ import SwiftData
 ///
 /// What a sort offers, not what an associate picked: the server owns the
 /// list, its order and which one applies by default. "Sort by", in "Sort &
-/// filter" (`ClientSortFilterSheet`), lists them in `rank` order; the one
+/// filter" (`ClientSortFilterView`), lists them in `rank` order; the one
 /// picked goes into `ClientSearchOptions`, which sends its `value` to
 /// `client/search`.
 /// Tied to the tenant like everything stored: `LocalStore.erase` wipes it.

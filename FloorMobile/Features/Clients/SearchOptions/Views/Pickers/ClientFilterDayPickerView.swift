@@ -6,7 +6,7 @@
 import SwiftUI
 
 /// The day a filter value asks for — "Since a date" —, pushed inside the
-/// sheet that lists the filters ("Sort & filter", `ClientSortFilterSheet`):
+/// screen that lists the filters ("Sort & filter", `ClientSortFilterView`):
 /// a calendar that ends today, opened on today, titled with the filter's
 /// name.
 ///
@@ -16,7 +16,7 @@ import SwiftUI
 /// picked. Going back without confirming picks nothing.
 ///
 /// Hands the day back (`onPick`) rather than writing it: the draft is the
-/// sheet's, which picks the day into it.
+/// screen's, which picks the day into it.
 struct ClientFilterDayPickerView: View {
     let title: LocalizedStringResource
     let onPick: (Date) -> Void

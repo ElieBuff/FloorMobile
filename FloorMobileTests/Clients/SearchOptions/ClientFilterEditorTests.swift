@@ -12,7 +12,7 @@ import Testing
 /// shows, and the filters of its sentence, which "Your description" reads on
 /// a draft made of the sentence alone, then hands to "Sort & filter"'s. The
 /// network belongs to `ClientService`; what is under test here is what a
-/// sheet shows before, after, and when it fails.
+/// screen shows before, after, and when it fails.
 @Suite("Client filter editor")
 @MainActor
 struct ClientFilterEditorTests {
@@ -33,15 +33,33 @@ struct ClientFilterEditorTests {
 
     // MARK: - Count
 
-    @Test("The total is calculating until the count comes back, then shows it")
+    @Test("A count is on its way from the start, then the total shows")
     func countShowsTheTotal() async throws {
         let world = try World { _ in (200, Data(#"{"total":664}"#.utf8)) }
         let editor = ClientFilterEditor(options: ClientSearchOptions(filters: [.value(ref: "a")]), debounce: .zero)
-        #expect(editor.total.isLoading)
+        #expect(editor.isCounting)
+        #expect(editor.total == nil)
 
         await editor.count(session: world.session, services: world.services)
 
-        #expect(editor.total.value == 664)
+        #expect(editor.total == 664)
+        #expect(!editor.isCounting)
+    }
+
+    @Test("A newer count keeps the last total while it runs")
+    func newerCountKeepsTheLastTotal() async throws {
+        let world = try World { _ in (200, Data(#"{"total":664}"#.utf8)) }
+        let editor = ClientFilterEditor(options: ClientSearchOptions(filters: [.value(ref: "a")]), debounce: .zero)
+        await editor.count(session: world.session, services: world.services)
+
+        // A count cancelled as it starts stops before it writes an answer:
+        // what it leaves is what shows while a newer count runs.
+        let newer = Task { await editor.count(session: world.session, services: world.services) }
+        newer.cancel()
+        await newer.value
+
+        #expect(editor.isCounting)
+        #expect(editor.total == 664)
     }
 
     @Test("A count that fails takes the last total away")
@@ -53,8 +71,8 @@ struct ClientFilterEditorTests {
 
         await editor.count(session: pastTheLimit.session, services: pastTheLimit.services)
 
-        #expect(editor.total.error != nil)
-        #expect(editor.total.value == nil)
+        #expect(editor.total == nil)
+        #expect(!editor.isCounting)
     }
 
     // MARK: - Sentence

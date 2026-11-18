@@ -12,8 +12,8 @@ import SwiftData
 ///
 /// What a filter offers, not what an associate picked: the server owns the
 /// list, its order and each value's meaning. "Sort & filter"
-/// (`ClientSortFilterSheet`) lists them, each a group of its values to pick
-/// (`ClientFilterGroup`); a value picked goes into the sheet's draft
+/// (`ClientSortFilterView`) lists them, each a group of its values to pick
+/// (`ClientFilterGroup`); a value picked goes into the screen's draft
 /// (`ClientFilterDraft`), then, shown, into `ClientSearchOptions`, which
 /// sends its `ref` back in `client/search`'s `filters`. Tied to the tenant
 /// like everything stored: `LocalStore.erase` wipes it.

@@ -5,15 +5,15 @@
 
 import Foundation
 
-/// What the associate composes in "Sort & filter" (`ClientSortFilterSheet`),
+/// What the associate composes in "Sort & filter" (`ClientSortFilterView`),
 /// and what "Your description" (`ClientFiltersDescriptionSheet`) reads a
 /// sentence on: one type, two drafts that never meet.
 ///
 /// - "Sort & filter"'s holds `options` — the sort and the filters picked: the
 ///   tenant's values and the pills Tolby understood — and the sentence in its
 ///   field (`text`). Made from the list's options (`ClientSearchOptions`)
-///   when the sheet opens; "Show" writes `options` back, and the rest goes
-///   with the sheet. Its pills come from "Your description"'s "Apply"
+///   when the screen opens; "Show" writes `options` back, and the rest goes
+///   with the screen. Its pills come from "Your description"'s "Apply"
 ///   (`apply`); nothing of a reading — `pendingText`, `lastFetched`,
 ///   `notUnderstood`, `failure` — is ever set in it.
 /// - "Your description"'s is made of the sentence alone, which its arrow

@@ -6,7 +6,7 @@
 import SwiftUI
 
 /// "Voice search", opened by the microphone of "Sort & filter"'s sentence
-/// (`ClientSortFilterSheet`): the clients wanted, said rather than typed.
+/// (`ClientSortFilterView`): the clients wanted, said rather than typed.
 /// The listening element (`TranscriptionView`) under the title and the close
 /// button; "Done", the action the element places at the bottom, stops the
 /// listening, waits for the last words, hands the text back and closes — the

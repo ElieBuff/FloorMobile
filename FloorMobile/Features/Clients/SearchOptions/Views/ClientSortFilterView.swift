@@ -1,14 +1,15 @@
 //
-//  ClientSortFilterSheet.swift
+//  ClientSortFilterView.swift
 //  FloorMobile
 //
 
 import SwiftData
 import SwiftUI
 
-/// "Sort & filter" for the Clients tab's list, opened by the bar's button
-/// (`ClientsView`). From top to bottom: the close button, the title and
-/// "Clear"; the sentence; "Sort by"; the groups of filter pills
+/// "Sort & filter" for the Clients tab's list, opened full screen by the
+/// bar's button (`ClientsView`; decision of 18/11). From top to bottom: the
+/// close button, the title and "Clear"; the sentence; "Sort by"; the groups
+/// of filter pills
 /// (`ClientFilterGroup`) — "Powered by Tolby" first, the filters a
 /// description gave, when there are any, then the tenant's filters
 /// (`ClientFilter`) in the server's order, a segment's pill with a dot in
@@ -17,16 +18,16 @@ import SwiftUI
 /// Everything picked goes into a draft (`ClientFilterDraft`, held by
 /// `ClientFilterEditor`), made from the list's options once, in `init` —
 /// `onAppear` would make it again on the way back from the calendar. Only
-/// "Show" writes them back, and closes the sheet; the close button and a
-/// swipe down drop them. "Clear" puts the server's default sort back and
-/// takes the filters off, in the draft.
+/// "Show" writes them back, and closes the screen; the close button drops
+/// them — no swipe down closes a full screen. "Clear" puts the server's
+/// default sort back and takes the filters off, in the draft.
 ///
 /// The sentence's arrow opens "Your description"
 /// (`ClientFiltersDescriptionSheet`), which reads it on a draft of its own;
 /// its "Apply" hands the filters Tolby understood back, the draft adds them
 /// to its pills and empties the field (`ClientFilterDraft.apply`), and the
 /// count starts over on its own.
-struct ClientSortFilterSheet: View {
+struct ClientSortFilterView: View {
     /// The list's options: written only by "Show".
     @Binding var options: ClientSearchOptions
 
@@ -112,7 +113,7 @@ struct ClientSortFilterSheet: View {
             .scrollDismissesKeyboard(.immediately)
             // On the list rather than on the sentence's row: a sheet inside
             // a lazy container may never present. At half height, as the
-            // mockup draws it over this sheet.
+            // mockup draws it over this screen.
             .sheet(isPresented: $isDictating) {
                 ClientVoiceSearchSheet { dictated in
                     editor.draft.text.append(dictation: dictated)
@@ -427,26 +428,27 @@ struct ClientSortFilterSheet: View {
     /// A segment's content, in the filter whose values are the brand's
     /// segments: its dot, then its name. A value's `label` is its segment's
     /// code; no dot for a segment the brand does not list or has not
-    /// coloured (`ClientSegment.tagColors`), as it has no tag in the list.
+    /// coloured (`ClientSegment.dotColors`), as it has no tag in the list.
     private func segmentValueContent(_ value: ClientFilterValue, isPicked: Bool) -> some View {
         // 7 pt between the dot and the name, the mockup's gap in a pill.
         HStack(spacing: 7) {
-            if let colors = ClientSegment.named(value.label, in: segments)?.tagColors {
+            if let colors = ClientSegment.named(value.label, in: segments)?.dotColors {
                 segmentDot(colors, isPicked: isPicked)
             }
             Text(value.title)
         }
     }
 
-    /// A segment's dot, before its name in its pill: the segment's tag in
-    /// small (decision of 18/11) — filled with the tag's background and
-    /// ringed, inside, with its text colour, so a pale segment still shows.
-    /// On a picked pill, the ink, the ring is white at 75 % and outside the
-    /// dot instead, as the mockup draws it (`C-Filtres`), the name staying
-    /// where it is.
-    private func segmentDot(_ colors: (background: Color, foreground: Color), isPicked: Bool) -> some View {
+    /// A segment's dot, before its name in its pill, in the colours its
+    /// segment gives it (`ClientSegment.dotColors`, decision of 18/11): the
+    /// tag's background made stronger, ringed inside with a soft edge of its
+    /// text colour, so a pale segment still shows without a dark circle. On
+    /// a picked pill, the ink, the ring is white at 75 % and outside the dot
+    /// instead, as the mockup draws it (`C-Filtres`), the name staying where
+    /// it is.
+    private func segmentDot(_ colors: (fill: Color, ring: Color), isPicked: Bool) -> some View {
         Circle()
-            .fill(colors.background)
+            .fill(colors.fill)
             .frame(width: segmentDotSize, height: segmentDotSize)
             .overlay {
                 if isPicked {
@@ -455,7 +457,7 @@ struct ClientSortFilterSheet: View {
                         .padding(-Self.segmentDotRing)
                 } else {
                     Circle()
-                        .strokeBorder(colors.foreground, lineWidth: Self.segmentDotRing)
+                        .strokeBorder(colors.ring, lineWidth: Self.segmentDotRing)
                 }
             }
     }
@@ -475,7 +477,8 @@ struct ClientSortFilterSheet: View {
 
     // MARK: - Toolbar
 
-    /// iOS's places for a sheet's bar (decision of 17/11, the mockup's too):
+    /// iOS's places for a modal screen's bar (decision of 17/11, the mockup's
+    /// too):
     /// what closes it on the leading edge, its other action on the trailing
     /// one.
     @ToolbarContentBuilder
@@ -508,10 +511,13 @@ struct ClientSortFilterSheet: View {
     // MARK: - Show
 
     /// "Show 42 clients" once the draft's clients are counted, "Show" alone
-    /// while they are and when the count failed — active all the while: the
-    /// total is a hint, not a gate. Writes the draft's sort and filters into
-    /// the list's options, which starts its search over if they changed, and
-    /// closes the sheet.
+    /// until the first count comes back and when a count failed — active all
+    /// the while: the total is a hint, not a gate. The last total stays while
+    /// a newer one is counted, faded, then its digits roll to the new one
+    /// (decision of 18/11); VoiceOver reads that last total meanwhile, the
+    /// fading being for the eye only. Writes the draft's sort and filters
+    /// into the list's options, which starts its search over if they changed,
+    /// and closes the screen.
     ///
     /// The list's search then fails ("Search failed") on a value the tenant
     /// removed since the app's launch (409 `filters_changed`), until it is
@@ -522,17 +528,28 @@ struct ClientSortFilterSheet: View {
             dismiss()
         } label: {
             Text(showLabel)
+                // The digits roll from the last total to the new one.
+                .contentTransition(.numericText(value: Double(editor.total ?? 0)))
+                .animation(.default, value: editor.total)
         }
         .bottomActionStyle()
     }
 
-    /// "Show 42 clients" with the total, "Show" without it.
-    private var showLabel: String {
-        if let total = editor.total.value {
-            String(localized: "Show \(total) clients")
-        } else {
-            String(localized: "Show")
+    /// "Show 42 clients" with the last total counted, "Show" without one. The
+    /// number alone fades while a newer count is on its way: fading the whole
+    /// label would read as a disabled button. The catalog's own string, its
+    /// plural included; the number's range is the one Foundation marks as the
+    /// value put in. Its colour is the white `bottomActionStyle()` gives the
+    /// label on the ink, at half: to change with it.
+    private var showLabel: AttributedString {
+        guard let total = editor.total else { return AttributedString(localized: "Show") }
+        var label = AttributedString(localized: "Show \(total) clients", options: .applyReplacementIndexAttribute)
+        if editor.isCounting {
+            for run in label.runs where run.replacementIndex != nil {
+                label[run.range].foregroundColor = Color(.Base.paper).opacity(0.5)
+            }
         }
+        return label
     }
 }
 
@@ -547,10 +564,8 @@ struct ClientSortFilterSheet: View {
     ])
 
     Color.clear
-        .sheet(isPresented: .constant(true)) {
-            ClientSortFilterSheet(options: $options)
-                .presentationDetents([.large])
-                .presentationDragIndicator(.visible)
+        .fullScreenCover(isPresented: .constant(true)) {
+            ClientSortFilterView(options: $options)
         }
 }
 
@@ -558,9 +573,7 @@ struct ClientSortFilterSheet: View {
     @Previewable @State var options = ClientSearchOptions()
 
     Color.clear
-        .sheet(isPresented: .constant(true)) {
-            ClientSortFilterSheet(options: $options)
-                .presentationDetents([.large])
-                .presentationDragIndicator(.visible)
+        .fullScreenCover(isPresented: .constant(true)) {
+            ClientSortFilterView(options: $options)
         }
 }

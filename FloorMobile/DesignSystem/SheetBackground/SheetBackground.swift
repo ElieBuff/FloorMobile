@@ -13,8 +13,9 @@ extension View {
     /// background hidden so a list shows it. Apply it to the sheet's root
     /// view.
     ///
-    /// "Voice search" and the signature sheet wear it; "Sort & filter" keeps
-    /// the ambient background, as its mockup draws it.
+    /// "Voice search" and the signature sheet wear it; "Sort & filter", a
+    /// full screen (18/11), keeps the screens' ambient background, as its
+    /// mockup draws it.
     ///
     /// ```swift
     /// NavigationStack { … }

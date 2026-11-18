@@ -6,7 +6,7 @@
 import SwiftUI
 
 extension View {
-    /// The look of a sheet's main action, pinned at its bottom
+    /// The look of a modal screen's main action, pinned at its bottom
     /// (`.safeAreaBar(edge: .bottom)`): the mockup's ink capsule, full width
     /// at the screen's inset — "Show N clients" in "Sort & filter", "Done" in
     /// "Voice search". Not `prominent`, the one action left at the bottom when
@@ -18,7 +18,7 @@ extension View {
     /// `.barButtonStyle()`: the control stays the system's —
     /// `.borderedProminent`, its large size, its pressed and disabled looks,
     /// VoiceOver — and only its tint and its place are the app's. One place
-    /// to change them for every sheet.
+    /// to change them for every one — a sheet or a full screen.
     ///
     /// ```swift
     /// .safeAreaBar(edge: .bottom) {
