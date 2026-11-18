@@ -28,7 +28,8 @@ nonisolated struct ClientFilterItem: Identifiable, Hashable, Sendable {
     let id = UUID()
     /// Shown as is: already in the associate's language, never a key.
     var label: String
-    /// The server's condition, never read here: sent back whole to the search
-    /// (`{ "filter": … }`), which checks it again.
+    /// The server's condition, never interpreted here: compared whole, to
+    /// tell a filter already applied (`ClientFilterDraft.apply`), and sent
+    /// back whole to the search (`{ "filter": … }`), which checks it again.
     var condition: JSONValue
 }

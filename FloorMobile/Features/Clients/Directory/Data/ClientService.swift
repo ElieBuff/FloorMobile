@@ -106,9 +106,10 @@ actor ClientService {
     }
 
     /// The filters a sentence describes, as the server reads it — the sentence
-    /// of "Sort & filter"'s field, once it is sent again (only drawn since
-    /// 16/11). Straight from the server, kept nowhere: the caller
-    /// shows the items, and sends back with the search the ones still there.
+    /// of "Sort & filter"'s field, read when "Your description" opens
+    /// (`ClientFilterEditor.readSentence`). Straight from the server, kept
+    /// nowhere: the caller shows the items, and sends back with the search
+    /// the ones still there.
     /// A failure — 502, intelligence failed or did not answer within the BFF's
     /// 80 s, whatever the sentence; 400, a sentence out of bounds — is thrown
     /// as `AppError.server(statusCode:)`, a network failure as

@@ -30,16 +30,24 @@ nonisolated final class ClientFilter {
     /// `ClientFilterDraft.pick`), never the server's, which ORs a filter's
     /// picked values either way. Kept raw, like `statusRaw` elsewhere.
     var selectionRaw: String
+    /// The vocabulary field the server generates its values from, e.g.
+    /// `"client.segment"` (`GET setup`'s `valueField`); `nil` for a filter
+    /// whose values are written by hand. Kept raw, like `selectionRaw`.
+    var valueFieldRaw: String?
     /// The position the server listed it at: the order the screen shows.
     var rank: Int
     /// Its values, in the server's order. Embedded rather than a relationship:
     /// a value has no life outside its filter.
     var values: [ClientFilterValue]
 
-    init(id: String, titleKey: String, selectionRaw: String, rank: Int, values: [ClientFilterValue]) {
+    init(
+        id: String, titleKey: String, selectionRaw: String, valueFieldRaw: String? = nil, rank: Int,
+        values: [ClientFilterValue]
+    ) {
         self.id = id
         self.titleKey = titleKey
         self.selectionRaw = selectionRaw
+        self.valueFieldRaw = valueFieldRaw
         self.rank = rank
         self.values = values
     }
@@ -60,6 +68,19 @@ nonisolated extension ClientFilter {
     /// Typed view of `selectionRaw`; `nil` for a value this app does not
     /// know, which then picks like `multiple`, as the server reads it.
     var selection: Selection? { Selection(rawValue: selectionRaw) }
+
+    /// The list a filter's values are generated from, among those this app
+    /// draws in their own way.
+    nonisolated enum ValueField: String, Sendable {
+        /// The brand's segments (`ClientSegment`): each value's `label` is a
+        /// segment's code.
+        case segment = "client.segment"
+    }
+
+    /// Typed view of `valueFieldRaw`; `nil` for a filter written by hand,
+    /// and for a list this app does not know — its values then show as any
+    /// other filter's.
+    var valueField: ValueField? { valueFieldRaw.flatMap(ValueField.init(rawValue:)) }
 
     // MARK: - Display
 

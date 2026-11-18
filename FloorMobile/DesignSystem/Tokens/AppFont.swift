@@ -11,13 +11,14 @@ import SwiftUI
 ///
 /// A role an iOS text style matches keeps that style, which carries its size
 /// and Dynamic Type: a row's detail is `.footnote` (13 pt), a tag's word
-/// `.caption2` Medium (11 pt). A row's title alone is numbers — 16 pt
+/// `.caption2` Medium (11 pt), a large tag's `.footnote` Medium (13 pt). A
+/// row's title alone is numbers — 16 pt
 /// Medium, tracked −0.2, the mockup's (18 pt semibold until 15/11, too
 /// heavy on screen) — no iOS style being that; its size
 /// scales with the reader's text size (`@ScaledMetric`, relative to
 /// `.headline`).
 ///
-/// Every role sets its line height too — 24, 18 and 14 pt, the mockup's,
+/// Every role sets its line height too — 24, 18, 14 and 18 pt, the mockup's,
 /// scaled like its text — rather than leave it to the font: a text style's
 /// own line grows with the device's languages (3 pt taller once Thai is
 /// among them, 2 pt with Arabic), and the same row was 97 pt high on one
@@ -39,8 +40,11 @@ enum AppFont {
     /// A list row's detail line — a client's email and phone: 13 pt, on an
     /// 18 pt line.
     case rowDetail
-    /// The word in a `Tag`: 11 pt Medium, on a 14 pt line.
+    /// The word in a tag (`.tagStyle()`): 11 pt Medium, on a 14 pt line.
     case tag
+    /// The words in a large tag (`.tagStyle(.large)`): 13 pt Medium, on an
+    /// 18 pt line.
+    case tagLarge
 }
 
 extension View {
@@ -63,6 +67,8 @@ private struct AppFontModifier: ViewModifier {
     @ScaledMetric(relativeTo: .footnote) var rowDetailLineHeight: CGFloat = 18
     /// A tag's line height, scaled like its text style.
     @ScaledMetric(relativeTo: .caption2) var tagLineHeight: CGFloat = 14
+    /// A large tag's line height, scaled like its text style.
+    @ScaledMetric(relativeTo: .footnote) var tagLargeLineHeight: CGFloat = 18
 
     @ViewBuilder
     func body(content: Content) -> some View {
@@ -80,6 +86,10 @@ private struct AppFontModifier: ViewModifier {
             content
                 .font(.caption2.weight(.medium))
                 .lineHeight(.exact(points: tagLineHeight))
+        case .tagLarge:
+            content
+                .font(.footnote.weight(.medium))
+                .lineHeight(.exact(points: tagLargeLineHeight))
         }
     }
 }
@@ -90,6 +100,7 @@ private struct AppFontModifier: ViewModifier {
     VStack(alignment: .leading, spacing: 6) {
         Text(verbatim: "Mrs Alice Martinez").appFont(.rowTitle)
         Text(verbatim: "VIC").appFont(.tag)
+        Text(verbatim: "Opted in · WhatsApp").appFont(.tagLarge)
         Text(verbatim: "alice.martinez@example.com · +33 6 12 34 56 78").appFont(.rowDetail)
     }
     .padding()

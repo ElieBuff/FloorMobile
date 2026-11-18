@@ -5,18 +5,20 @@
 
 import Foundation
 
-/// Any JSON value, kept as it came: what the app carries without ever reading
-/// it — a filter a sentence described (`client/text-filters`), whose condition
-/// goes back whole to the search. It decodes any JSON and encodes the same
-/// value back, its keys in any order, as JSON allows.
+/// Any JSON value, kept as it came: what the app carries without ever
+/// interpreting it — a filter a sentence described (`client/text-filters`),
+/// whose condition is only compared whole with another
+/// (`ClientFilterDraft.apply`) and goes back whole to the search. It decodes
+/// any JSON and encodes the same value back, its keys in any order, as JSON
+/// allows.
 ///
 /// Not `Data`: an `Encodable` cannot write raw JSON into the list of filters a
 /// search sends (`ClientFilterChoiceWire`). Not `JSONSerialization`'s `Any`:
 /// neither `Sendable` nor `Hashable`, which the search options that hold a
 /// condition are (`ClientSearchOptions`). One type both ways, no `Request` and
 /// `Response`: the value goes back as it came. A model may hold one — the one
-/// exception to wire → model → view (floor-dev) — because the app never reads
-/// it.
+/// exception to wire → model → view (floor-dev) — because the app never looks
+/// inside it.
 ///
 /// Numbers as `Double`: a condition's are amounts and counts, well within a
 /// `Double`'s exact integers, and the server reads `10000` and `10000.0` alike.

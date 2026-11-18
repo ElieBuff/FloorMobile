@@ -7,7 +7,7 @@ import SwiftUI
 
 /// One client in a list, on three lines and without an avatar, as the mockup
 /// has it: the salutation and the name (`ClientItem.displayLabel`, in the
-/// `rowTitle` role), the segment in a `Tag` in the brand's colours
+/// `rowTitle` role), the segment as a tag (`.tagStyle()`) in the brand's colours
 /// (`ClientSegment`), and how to reach them — email and phone on one line
 /// (`ClientItem.contactLine`, in the `rowDetail` role).
 ///
@@ -28,9 +28,8 @@ struct ClientRow: View {
                 .appFont(.rowTitle)
                 .foregroundStyle(Color(.OnSurface.textPrimary))
             if let segment, let colors = segment.tagColors {
-                Tag(backgroundColor: colors.background, foregroundColor: colors.foreground) {
-                    Text(segment.code)
-                }
+                Text(segment.code)
+                    .tagStyle(background: colors.background, foreground: colors.foreground)
             }
             DetailLine(client.contactLine)
         }

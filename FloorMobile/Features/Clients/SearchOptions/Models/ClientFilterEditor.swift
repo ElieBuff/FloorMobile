@@ -5,25 +5,30 @@
 
 import Foundation
 
-/// "Sort & filter"'s draft (`ClientFilterDraft`) and the two requests around
-/// it: the draft's total (`client/count`), and the filters of the sentence
-/// sent (`client/text-filters`).
+/// A draft of "Sort & filter" (`ClientFilterDraft`) and the two requests
+/// around it: the draft's total (`client/count`), and the filters of its
+/// sentence (`client/text-filters`).
 ///
-/// Held as `@State` by the sheet (`ClientSortFilterSheet`), whose "Show"
-/// button says the total. The network is `ClientService`'s; what lives here
-/// is the choreography around it — the pause before a count, what shows
-/// meanwhile, an answer dropped once its request is cancelled, what a
-/// failure says. The draft stays a value type, its rules tested on their own.
+/// Held as `@State` by each of the two sheets, one instance each:
+/// - "Sort & filter" (`ClientSortFilterSheet`), on the draft made from the
+///   list's options, whose "Show" button says the total;
+/// - "Your description" (`ClientFiltersDescriptionSheet`), on a draft made of
+///   the sentence alone, where the sentence is read; its "Apply" hands the
+///   filters read to "Sort & filter"'s draft (`ClientFilterDraft.apply`).
 ///
-/// Not the sheet's own `@State`: there, the count and its choreography would
-/// sit in the view, untested. Not a `Service` either: a service is built once
-/// and shared by the whole app, while this state belongs to one open sheet.
+/// The network is `ClientService`'s; what lives here is the choreography
+/// around it — the pause before a count, what shows meanwhile, an answer
+/// dropped once its request is cancelled, what a failure says. The draft
+/// stays a value type, its rules tested on their own.
 ///
-/// The sheet's `.task(id:)` runs the count: a newer change, or the sheet
+/// Not a sheet's own `@State`: there, the requests and their choreography
+/// would sit in the view, untested. Not a `Service` either: a service is
+/// built once and shared by the whole app, while this state belongs to one
+/// open sheet.
+///
+/// A sheet's `.task(id:)` runs each request: a newer change, or the sheet
 /// closing, cancels the one running, and what comes back for it is dropped
-/// here, as `PagedSearchList` does. Reading a sentence has no caller since
-/// 16/11 — the sentence is only drawn (the user's decision) —, until the
-/// voice screens call it again.
+/// here, as `PagedSearchList` does.
 @Observable
 final class ClientFilterEditor {
     /// The sort and the filters being picked, and the sentence.
@@ -37,9 +42,16 @@ final class ClientFilterEditor {
     /// wait it out.
     let debounce: Duration
 
-    init(options: ClientSearchOptions, debounce: Duration = .milliseconds(300)) {
-        draft = ClientFilterDraft(options: options)
+    /// The editor of `draft` as it stands: "Your description" works on one
+    /// made of the sentence alone.
+    init(draft: ClientFilterDraft, debounce: Duration = .milliseconds(300)) {
+        self.draft = draft
         self.debounce = debounce
+    }
+
+    /// The editor of a new draft made from the list's options.
+    convenience init(options: ClientSearchOptions, debounce: Duration = .milliseconds(300)) {
+        self.init(draft: ClientFilterDraft(options: options), debounce: debounce)
     }
 
     /// Counts the draft's clients once the changes pause, "Show" alone from
@@ -66,12 +78,21 @@ final class ClientFilterEditor {
         }
     }
 
-    /// Fetches the filters of the sentence sent, for up to 80 s, for the
-    /// draft to take in place of the last sentence's pills
-    /// (`ClientFilterDraft.receive`), or the failure (`ClientFilterDraft.fail`).
-    /// Either way, the sentence can be sent again. No caller since 16/11: the
-    /// sentence is only drawn, until the voice screens.
-    func fetchFilterItems(session: AppSession, services: AppServices) async {
+    /// Reads the draft's sentence: sends it when it can be
+    /// (`ClientFilterDraft.canSend` — spaces alone, or the sentence the pills
+    /// came from, ask nothing), then fetches the filters of the sentence
+    /// waiting, for up to 80 s, for the draft to take in place of the last
+    /// sentence's pills (`ClientFilterDraft.receive`), or the failure
+    /// (`ClientFilterDraft.fail`). Either way, the sentence can be read again:
+    /// "Try again" calls this once more.
+    ///
+    /// Called by "Your description" (`ClientFiltersDescriptionSheet`) as it
+    /// opens, in its `.task`. Closing the sheet cancels it: the answer is then
+    /// dropped, and a sentence left waiting is fetched by the next call.
+    func readSentence(session: AppSession, services: AppServices) async {
+        if draft.canSend {
+            draft.send()
+        }
         guard let text = draft.pendingText else { return }
         do {
             let answer = try await services.clients.filterItems(from: text, using: session.api)

@@ -13,6 +13,10 @@ nonisolated enum ClientFilterWire {
         var id: String
         var titleKey: String
         var selection: String
+        /// The vocabulary field its values are generated from, e.g.
+        /// `"client.segment"`, on a filter the server lists from a field;
+        /// absent, or `null`, on a filter whose values are written by hand.
+        var valueField: String?
         var values: [Value]
     }
 
@@ -38,6 +42,7 @@ nonisolated extension ClientFilter {
             id: wire.id,
             titleKey: wire.titleKey,
             selectionRaw: wire.selection,
+            valueFieldRaw: wire.valueField,
             rank: rank,
             values: wire.values.map(ClientFilterValue.init(wire:))
         )

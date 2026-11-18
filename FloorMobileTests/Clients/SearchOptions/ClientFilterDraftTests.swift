@@ -220,7 +220,7 @@ struct ClientFilterDraftTests {
         draft.pick(tier.values[0], of: tier)
         draft.pick(tier.values[1], of: tier)
         draft.pick(created.values[0], of: created)
-        draft.receive(Self.answer([Self.pill("VIC")]))
+        draft.apply([Self.pill("VIC")])
 
         #expect(draft.pickedCount(in: tier) == 2)
         #expect(draft.pickedCount(in: created) == 1)
@@ -228,27 +228,84 @@ struct ClientFilterDraftTests {
 
     // MARK: - Pills
 
-    @Test("A new sentence's filters take the place of the last one's pills, and leave the ticks")
-    func receiveKeepsTheTicks() {
+    @Test("A sentence's answer gives the draft that read it its pills, in the answer's order")
+    func receiveGivesThePills() {
+        let vip = Self.pill("Clients VIP")
+        let optOut = Self.pill("Sans opt-in email", field: "client.optIn")
+        var draft = ClientFilterDraft(text: "VIP clients without email")
+        draft.send()
+
+        draft.receive(Self.answer([vip, optOut]))
+
+        #expect(draft.filterItems == [vip, optOut])
+    }
+
+    @Test("Filters applied go after the pills already there, in the answer's order, and leave the ticks")
+    func applyAddsAfterThePills() {
         let tier = Self.tier
         let vip = Self.pill("Clients VIP")
-        let optOut = Self.pill("Sans opt-in email")
+        let optOut = Self.pill("Sans opt-in email", field: "client.optIn")
+        let paris = Self.pill("Habite Paris", field: "client.city")
         var draft = ClientFilterDraft()
         draft.pick(tier.values[0], of: tier)
-        draft.receive(Self.answer([vip]))
+        draft.apply([vip])
 
-        draft.receive(Self.answer([optOut]))
+        draft.apply([optOut, paris])
 
-        #expect(draft.filterItems == [optOut])
+        #expect(draft.filterItems == [vip, optOut, paris])
         #expect(draft.isPicked(tier.values[0]))
+    }
+
+    @Test("A filter whose condition a pill already carries is not added twice, whatever its label; the others are")
+    func applySkipsAConditionAlreadyThere() {
+        let vip = Self.pill("Clients VIP")
+        let sameCondition = Self.pill("Segment · VIP")
+        let optOut = Self.pill("Sans opt-in email", field: "client.optIn")
+        var draft = ClientFilterDraft()
+        draft.apply([vip])
+
+        draft.apply([sameCondition, optOut])
+
+        #expect(draft.filterItems == [vip, optOut])
+    }
+
+    @Test("Two filters of one answer with the same condition make one pill")
+    func applyKeepsOneOfTwins() {
+        let first = Self.pill("Clients VIP")
+        let twin = Self.pill("Segment · VIP")
+        var draft = ClientFilterDraft()
+
+        draft.apply([first, twin])
+
+        #expect(draft.filterItems == [first])
+    }
+
+    @Test("Applying empties the field, and sets nothing else of the sentence's state")
+    func applyEmptiesTheField() {
+        let vip = Self.pill("Clients VIP")
+        var draft = ClientFilterDraft(text: "VIP clients")
+
+        draft.apply([vip])
+
+        #expect(draft == ClientFilterDraft(options: ClientSearchOptions(filters: [.filter(vip)])))
+    }
+
+    @Test("With nothing understood, applying still empties the field, and leaves the pills and the ticks")
+    func applyNothingEmptiesTheField() {
+        let filters: [ClientFilterChoice] = [.value(ref: "a"), .filter(Self.pill("Clients VIP"))]
+        var draft = ClientFilterDraft(options: ClientSearchOptions(filters: filters), text: "who like red")
+
+        draft.apply([])
+
+        #expect(draft == ClientFilterDraft(options: ClientSearchOptions(filters: filters)))
     }
 
     @Test("Removing a pill takes off that one only, found by its id: two pills may read alike")
     func removeTakesOffThatPillOnly() {
         let first = Self.pill("Clients VIP")
-        let twin = Self.pill("Clients VIP")
+        let twin = Self.pill("Clients VIP", field: "client.tier")
         var draft = ClientFilterDraft()
-        draft.receive(Self.answer([first, twin]))
+        draft.apply([first, twin])
 
         draft.remove(first)
 
@@ -260,7 +317,7 @@ struct ClientFilterDraftTests {
         let tier = Self.tier
         var draft = ClientFilterDraft()
 
-        draft.receive(Self.answer([Self.pill("VIC")]))
+        draft.apply([Self.pill("VIC")])
 
         #expect(!draft.isPicked(tier.values[0]))
         #expect(!draft.isPicked(tier.values[1]))
@@ -272,7 +329,7 @@ struct ClientFilterDraftTests {
         let vip = Self.pill("Clients VIP")
         var draft = ClientFilterDraft()
         draft.pick(created.values[0], of: created)
-        draft.receive(Self.answer([vip]))
+        draft.apply([vip])
 
         draft.pick(created.values[1], of: created)
 
@@ -318,18 +375,6 @@ struct ClientFilterDraftTests {
         #expect(draft.canSend)
     }
 
-    @Test("Removing a pill lets the same sentence be sent again, to bring it back")
-    func removeLetsTheTextBeSentAgain() {
-        let vip = Self.pill("Clients VIP")
-        var draft = ClientFilterDraft(text: "VIP clients")
-        draft.send()
-        draft.receive(Self.answer([vip]))
-
-        draft.remove(vip)
-
-        #expect(draft.canSend)
-    }
-
     @Test("A failure leaves the pills as they were, and the sentence can be sent again")
     func failKeepsThePills() {
         let vip = Self.pill("Clients VIP")
@@ -347,18 +392,32 @@ struct ClientFilterDraftTests {
         #expect(draft.canSend)
     }
 
+    @Test("A sentence's filters, or the parts no filter covers, are an answer to show")
+    func answerToShow() {
+        let understood = ClientFilterDraft(options: ClientSearchOptions(filters: [.filter(Self.pill("Clients VIP"))]))
+
+        #expect(understood.hasAnswer)
+        #expect(ClientFilterDraft(notUnderstood: ["last spring"]).hasAnswer)
+    }
+
+    @Test("A new draft, a sentence not read yet, or the tenant's values picked, are no answer to show")
+    func noAnswerToShow() {
+        #expect(!ClientFilterDraft().hasAnswer)
+        #expect(!ClientFilterDraft(text: "VIP clients").hasAnswer)
+        #expect(!ClientFilterDraft(options: ClientSearchOptions(filters: [.value(ref: "a")])).hasAnswer)
+    }
+
     // MARK: - Clear
 
-    @Test("A sort picked, filters, or what the last answer said, are something to clear; a sentence alone is not")
+    @Test("A sort picked, a value picked or a pill are something to clear; a sentence alone is not")
     func canClear() {
         var sorted = ClientSearchOptions()
         sorted.pick(Self.lastPurchase)
 
-        #expect(!ClientFilterDraft(text: "VIP clients", lastFetched: "VIP clients").canClear)
+        #expect(!ClientFilterDraft(text: "VIP clients").canClear)
         #expect(ClientFilterDraft(options: sorted).canClear)
         #expect(ClientFilterDraft(options: ClientSearchOptions(filters: [.value(ref: "a")])).canClear)
-        #expect(ClientFilterDraft(notUnderstood: ["last spring"]).canClear)
-        #expect(ClientFilterDraft(failure: "Couldn't read the sentence. Try again.").canClear)
+        #expect(ClientFilterDraft(options: ClientSearchOptions(filters: [.filter(Self.pill("Clients VIP"))])).canClear)
     }
 
     @Test("Clearing puts the server's default sort back: no sort is sent, the default one is ticked")
@@ -375,20 +434,16 @@ struct ClientFilterDraftTests {
         #expect(!draft.options.isPicked(Self.lastPurchase))
     }
 
-    @Test("Clearing takes every filter off with what the last answer said; the field and a sentence on its way stay")
-    func clearKeepsTheFieldAndTheRequest() {
+    @Test("Clearing takes every filter off, a value picked or a pill; the field stays")
+    func clearKeepsTheField() {
         var draft = ClientFilterDraft(
             options: ClientSearchOptions(filters: [.value(ref: "a"), .filter(Self.pill("Clients VIP"))]),
-            text: "VIP clients in Paris",
-            pendingText: "VIP clients in Paris",
-            lastFetched: "VIP clients",
-            notUnderstood: ["last spring"],
-            failure: "Couldn't read the sentence. Try again."
+            text: "VIP clients in Paris"
         )
 
         draft.clear()
 
-        #expect(draft == ClientFilterDraft(text: "VIP clients in Paris", pendingText: "VIP clients in Paris"))
+        #expect(draft == ClientFilterDraft(text: "VIP clients in Paris"))
     }
 
     // MARK: - Helpers
@@ -428,10 +483,11 @@ struct ClientFilterDraftTests {
         )
     }
 
-    /// A pill as a sentence's filters give it, a new one at each call; its
-    /// condition is never read here.
-    private static func pill(_ label: String) -> ClientFilterItem {
-        ClientFilterItem(label: label, condition: .object(["field": .string("client.segment")]))
+    /// A pill as a sentence's filters give it, a new one at each call. Its
+    /// condition is on `field`: two pills on the same field carry the same
+    /// condition, which `apply` takes for the same filter.
+    private static func pill(_ label: String, field: String = "client.segment") -> ClientFilterItem {
+        ClientFilterItem(label: label, condition: .object(["field": .string(field)]))
     }
 
     /// The server's answer for a sentence: `items` as pills, and the words no

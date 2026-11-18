@@ -317,7 +317,7 @@ struct ClientsView: View {
     private func clientLink(_ received: ClientItem) -> some View {
         let client = edits.current(received)
         return NavigationLink(value: ClientsRoute.profile(id: client.id, card: client)) {
-            ClientRow(client: client, segment: segments.first { $0.code == client.segment })
+            ClientRow(client: client, segment: ClientSegment.named(client.segment, in: segments))
         }
         // No chevron: the mockup's rows have none. Here, not in `.insetGroupedList()`,
         // whose forms keep theirs (`FormPushRow`).

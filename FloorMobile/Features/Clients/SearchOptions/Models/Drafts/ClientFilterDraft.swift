@@ -5,22 +5,26 @@
 
 import Foundation
 
-/// What the associate composes in "Sort & filter" (`ClientSortFilterSheet`):
-/// the sort and the filters picked — the tenant's values picked and a
-/// sentence's pills —, the sentence, and where its filters stand: the one on
-/// its way to `client/text-filters`, the one the pills came from, and what the
-/// last answer said beside them.
+/// What the associate composes in "Sort & filter" (`ClientSortFilterSheet`),
+/// and what "Your description" (`ClientFiltersDescriptionSheet`) reads a
+/// sentence on: one type, two drafts that never meet.
 ///
-/// Made from the list's options (`ClientSearchOptions`) when the sheet opens;
-/// "Show" writes `options` back, and the rest goes with the sheet. The
-/// sentence's state beside them rather than in `ClientSearchOptions`: that is
-/// what a search asks the server, and the list starts its search over
-/// whenever it changes.
+/// - "Sort & filter"'s holds `options` — the sort and the filters picked: the
+///   tenant's values and the pills Tolby understood — and the sentence in its
+///   field (`text`). Made from the list's options (`ClientSearchOptions`)
+///   when the sheet opens; "Show" writes `options` back, and the rest goes
+///   with the sheet. Its pills come from "Your description"'s "Apply"
+///   (`apply`); nothing of a reading — `pendingText`, `lastFetched`,
+///   `notUnderstood`, `failure` — is ever set in it.
+/// - "Your description"'s is made of the sentence alone, which its arrow
+///   hands it, and is where the sentence is read
+///   (`ClientFilterEditor.readSentence`): the text sent and waiting, then its
+///   answer — its filters as this draft's pills, what it left uncovered — or
+///   what failed. It holds no value picked, and nothing is taken off it.
 ///
-/// The sentence is only drawn since 16/11 (the user's decision): typed or
-/// dictated, never sent. Its rules below — sending it, its answer, its pills
-/// — have no caller until the sentence's arrow sends it
-/// (`ClientSortFilterSheet`).
+/// The sentence's state beside `options` rather than in
+/// `ClientSearchOptions`: that is what a search asks the server, and the list
+/// starts its search over whenever it changes.
 nonisolated struct ClientFilterDraft: Equatable, Sendable {
     /// The longest sentence `client/text-filters` takes, in characters
     /// (`clientTextFiltersRequestSchema`, 500 once trimmed): the field stops
@@ -29,7 +33,8 @@ nonisolated struct ClientFilterDraft: Equatable, Sendable {
 
     /// The sort and the filters picked, as `client/search` takes them: the
     /// sort through `ClientSearchOptions.pick`, the filters in one list — the
-    /// tenant's values picked (`.value`) and a sentence's pills (`.filter`).
+    /// tenant's values picked (`.value`) and the pills Tolby understood
+    /// (`.filter`).
     var options = ClientSearchOptions()
     /// The sentence: the clients wanted, in the associate's words — typed or
     /// dictated, cut at `maximumTextLength`.
@@ -40,34 +45,28 @@ nonisolated struct ClientFilterDraft: Equatable, Sendable {
             }
         }
     }
-    /// The text sent, trimmed, waiting for the server's answer; `nil` the
-    /// rest of the time.
+    /// A reading's: the text sent, trimmed, waiting for the server's answer;
+    /// `nil` the rest of the time.
     var pendingText: String?
-    /// The sentence the pills came from, while they are all there: it is not
-    /// sent again. `nil` once "Clear" or an X takes pills off, for the same
-    /// words to bring them back.
+    /// A reading's: the sentence this draft's pills came from, once its
+    /// answer is in — it is not sent again.
     var lastFetched: String?
-    /// What the last sentence sent left uncovered.
+    /// A reading's: what the sentence read left uncovered.
     var notUnderstood: [String] = []
-    /// Why the last request for a sentence's filters failed, until the next
-    /// one.
+    /// A reading's: why the last request for the sentence's filters failed,
+    /// until the next one.
     var failure: String?
 
-    /// Whether there is anything for "Clear" to take away: a sort picked,
-    /// filters, or what the last answer said.
+    /// Whether there is anything for "Clear" to take away: a sort picked, or
+    /// filters — values picked, Tolby's pills.
     var canClear: Bool {
-        options != ClientSearchOptions() || !notUnderstood.isEmpty || failure != nil
+        options != ClientSearchOptions()
     }
 
     /// Puts the server's default sort back and takes off every filter, a value
-    /// picked or a sentence's pill, with what the last answer said and the
-    /// sentence the pills came from. The field stays, and a sentence on its
-    /// way goes on.
+    /// picked or one of Tolby's pills. The field stays.
     mutating func clear() {
         options = ClientSearchOptions()
-        lastFetched = nil
-        notUnderstood = []
-        failure = nil
     }
 
     // MARK: - Values
@@ -147,17 +146,42 @@ nonisolated struct ClientFilterDraft: Equatable, Sendable {
 
     // MARK: - Pills
 
-    /// The pills of the sentence, in their order: the filters it described,
-    /// beside the values picked.
+    /// The pills, in their order: the filters Tolby understood — in "Sort &
+    /// filter", those "Apply" handed it, beside the values picked; in "Your
+    /// description", those of the sentence read.
     var filterItems: [ClientFilterItem] {
         options.filters.compactMap(\.item)
     }
 
-    /// Lets go of the pill `item`, by its `id` — two pills may read alike —,
-    /// and lets the same sentence be sent again, to bring it back.
+    /// Lets go of the pill `item`, by its `id` — two pills may read alike.
     mutating func remove(_ item: ClientFilterItem) {
         options.filters.removeAll { $0.item?.id == item.id }
-        lastFetched = nil
+    }
+
+    /// What "Apply" of "Your description" does to "Sort & filter"'s draft:
+    /// adds the filters Tolby `understood` after what is already there, in
+    /// the answer's order — the values picked and the sort stay —, and
+    /// empties the field, whatever was understood (decision of 18/11): the
+    /// sentence has been read. A second description adds to the first's
+    /// pills.
+    ///
+    /// A filter whose condition a pill already carries is not added twice —
+    /// checked against the pills as they grow, so two of one answer with the
+    /// same condition make one pill. By its condition, compared whole: an
+    /// item's `id` is new at each reading, and its label is the language
+    /// model's wording. Two conditions that mean the same but are written
+    /// differently both stay: the same clients, and a cross takes one off.
+    ///
+    /// Nothing of the reading comes with them — what was not understood,
+    /// the sentence the pills came from: that stays "Your description"'s.
+    /// Nor is there a ceiling here: past the server's 20 filters, values and
+    /// pills together, the count and the search fail (400) until some are
+    /// taken off — too rare to be worth the code.
+    mutating func apply(_ understood: [ClientFilterItem]) {
+        for item in understood where !filterItems.contains(where: { $0.condition == item.condition }) {
+            options.filters.append(.filter(item))
+        }
+        text = ""
     }
 
     // MARK: - Sentence
@@ -181,13 +205,11 @@ nonisolated struct ClientFilterDraft: Equatable, Sendable {
         pendingText = trimmedText
     }
 
-    /// Takes the answer for the sentence sent: its filters in place of the
-    /// last sentence's pills, the values picked left as they are, and what
-    /// no filter covers. The same words are then not sent again until the
-    /// sentence changes.
+    /// Takes the answer for the sentence sent: its filters as this draft's
+    /// pills — a reading's draft holds no other filter —, and what no filter
+    /// covers. The same words are then not sent again.
     mutating func receive(_ answer: ClientFilterItems) {
-        options.filters.removeAll { $0.item != nil }
-        options.filters.append(contentsOf: answer.items.map(ClientFilterChoice.filter))
+        options.filters = answer.items.map(ClientFilterChoice.filter)
         notUnderstood = answer.notUnderstood
         lastFetched = pendingText
         pendingText = nil
@@ -198,6 +220,14 @@ nonisolated struct ClientFilterDraft: Equatable, Sendable {
     mutating func fail(_ failure: String) {
         self.failure = failure
         pendingText = nil
+    }
+
+    /// Whether the last sentence read left anything to show: filters it
+    /// described, or parts no filter covers. "Your description" draws Tolby's
+    /// card on it (`ClientFiltersDescriptionSheet`) — no card before the
+    /// sentence is sent, nor for an answer with neither.
+    var hasAnswer: Bool {
+        !filterItems.isEmpty || !notUnderstood.isEmpty
     }
 
     /// The text as it is sent: trimmed.

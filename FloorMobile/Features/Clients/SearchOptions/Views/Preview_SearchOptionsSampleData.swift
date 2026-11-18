@@ -6,8 +6,9 @@
 import SwiftData
 import SwiftUI
 
-/// "My Clients"' catalogue as `GET setup` serves it in dev — its sorts, and
-/// the filters the dev seed writes — in an in-memory store, for the previews
+/// "My Clients"' catalogue as `GET setup` serves it in dev — its sorts, the
+/// filters the dev seed writes, and the brand's segments, whose colours the
+/// Tier's pills take for their dots — in an in-memory store, for the previews
 /// that open "Sort & filter": `#Preview(traits: .searchOptionsSampleData)`.
 ///
 /// A `PreviewModifier`, so the preview system builds the store once and shares
@@ -23,7 +24,7 @@ import SwiftUI
 struct SearchOptionsSampleData: PreviewModifier {
     static func makeSharedContext() throws -> ModelContainer {
         let container = try ModelContainer(
-            for: ClientSort.self, ClientFilter.self,
+            for: ClientSort.self, ClientFilter.self, ClientSegment.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
         let sorts: [(String, String)] = [
@@ -36,12 +37,26 @@ struct SearchOptionsSampleData: PreviewModifier {
                 isDefault: rank == 0, rank: rank
             ))
         }
+        // The dev tenant's segments, as its `GET setup` serves them: the
+        // Tier's "Repeater" is not one of them, and shows a pill without a dot.
+        let coloured: [(code: String, background: String, text: String)] = [
+            ("One Timer", "#1454601A", "#1D5560"), ("Connoisseur", "#1454600D", "#2A5A63"),
+            ("VIP", "#1454603D", "#ffffff"), ("VIC", "#14545F", "#ffffff"),
+        ]
+        for (rank, segment) in coloured.enumerated() {
+            container.mainContext.insert(ClientSegment(
+                code: segment.code, backgroundColorHex: segment.background, textColorHex: segment.text, rank: rank
+            ))
+        }
         let segments: [String] = ["VIC", "VIP", "Repeater", "One Timer"]
         let tier = segments.map {
             ClientFilterValue(ref: "tier-\($0)", labelKey: nil, label: $0, parameters: [])
         }
         let filters = [
-            ClientFilter(id: "tier", titleKey: "client.filter.tier", selectionRaw: "MULTIPLE", rank: 0, values: tier),
+            ClientFilter(
+                id: "tier", titleKey: "client.filter.tier", selectionRaw: "MULTIPLE",
+                valueFieldRaw: "client.segment", rank: 0, values: tier
+            ),
             ClientFilter(
                 id: "created", titleKey: "client.filter.created", selectionRaw: "SINGLE", rank: 1,
                 values: datedValues("created")

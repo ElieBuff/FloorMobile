@@ -8,9 +8,11 @@ import SwiftUI
 
 /// "Sort & filter" for the Clients tab's list, opened by the bar's button
 /// (`ClientsView`). From top to bottom: the close button, the title and
-/// "Clear"; the sentence; "Sort by"; the tenant's filters (`ClientFilter`) in
-/// the server's order, each a group of pills (`ClientFilterGroup`); "Show N
-/// clients".
+/// "Clear"; the sentence; "Sort by"; the groups of filter pills
+/// (`ClientFilterGroup`) — "Powered by Tolby" first, the filters a
+/// description gave, when there are any, then the tenant's filters
+/// (`ClientFilter`) in the server's order, a segment's pill with a dot in
+/// its colours (`ClientSegment`) —; "Show N clients".
 ///
 /// Everything picked goes into a draft (`ClientFilterDraft`, held by
 /// `ClientFilterEditor`), made from the list's options once, in `init` —
@@ -19,13 +21,20 @@ import SwiftUI
 /// swipe down drop them. "Clear" puts the server's default sort back and
 /// takes the filters off, in the draft.
 ///
-/// For now (decisions of 16/11 and 17/11): the sentence is only drawn.
+/// The sentence's arrow opens "Your description"
+/// (`ClientFiltersDescriptionSheet`), which reads it on a draft of its own;
+/// its "Apply" hands the filters Tolby understood back, the draft adds them
+/// to its pills and empties the field (`ClientFilterDraft.apply`), and the
+/// count starts over on its own.
 struct ClientSortFilterSheet: View {
     /// The list's options: written only by "Show".
     @Binding var options: ClientSearchOptions
 
     @Query(sort: \ClientSort.rank) private var sorts: [ClientSort]
     @Query(sort: \ClientFilter.rank) private var filters: [ClientFilter]
+    /// The brand's segments, for the dots of the filter whose values they
+    /// are (`segmentDot`).
+    @Query(sort: \ClientSegment.rank) private var segments: [ClientSegment]
     @Environment(AppSession.self) private var session
     @Environment(AppServices.self) private var services
     @Environment(\.dismiss) private var dismiss
@@ -33,6 +42,9 @@ struct ClientSortFilterSheet: View {
     @State private var editor: ClientFilterEditor
     /// Whether "Voice search" is open, from the sentence's microphone.
     @State private var isDictating = false
+    /// Whether "Your description" is open, from the sentence's arrow: the
+    /// sheet where the sentence is translated into filters.
+    @State private var isTranslatingSentence = false
     /// The `ref` of the value the calendar is open for, while it is pushed —
     /// one calendar at a time, whatever the filter. Only the ref is kept: the
     /// draft finds the filter and the value by it once a day is confirmed
@@ -42,6 +54,9 @@ struct ClientSortFilterSheet: View {
     /// The sentence's line: 22 pt, iOS's for `.body` and the mockup's, scaled
     /// like the text — what the pebble and the buttons sit on.
     @ScaledMetric(relativeTo: .body) private var sentenceLineHeight: CGFloat = 22
+    /// A segment's dot in its pill: 10 pt, the mockup's, scaled like the
+    /// pills' text.
+    @ScaledMetric(relativeTo: .subheadline) private var segmentDotSize: CGFloat = 10
 
     /// The pebble beside the sentence: 18 pt (decision of 16/11), where the
     /// mockup draws 14 beside a 15 pt text — the sentence is in 17.
@@ -56,6 +71,8 @@ struct ClientSortFilterSheet: View {
     /// under its pills, and 20 from the screen's edges — 4 past the list's
     /// 16.
     private static let filterRowInsets = EdgeInsets(top: 14, leading: 4, bottom: 10, trailing: 4)
+    /// The ring of a segment's dot, the mockup's.
+    private static let segmentDotRing: CGFloat = 1.5
 
     init(options: Binding<ClientSearchOptions>) {
         _options = options
@@ -76,9 +93,14 @@ struct ClientSortFilterSheet: View {
                             .insetGroupedRow()
                     }
                 }
-                // A tenant without filters has none to show.
-                if !filters.isEmpty {
+                // One section for every group, so the list draws its
+                // hairline between two of them and none above the first. A
+                // tenant without filters still shows Tolby's.
+                if !filters.isEmpty || !editor.draft.filterItems.isEmpty {
                     Section {
+                        if !editor.draft.filterItems.isEmpty {
+                            tolbyRow
+                        }
                         ForEach(filters) { filter in
                             filterRow(for: filter)
                         }
@@ -94,6 +116,17 @@ struct ClientSortFilterSheet: View {
             .sheet(isPresented: $isDictating) {
                 ClientVoiceSearchSheet { dictated in
                     editor.draft.text.append(dictation: dictated)
+                }
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+            }
+            // On the list and at half height, as "Voice search" above. The
+            // sheet is handed the sentence alone and reads it on its own
+            // draft; "Apply" hands back what Tolby understood, which changes
+            // the draft's filters — and so starts the count below over.
+            .sheet(isPresented: $isTranslatingSentence) {
+                ClientFiltersDescriptionSheet(sentence: editor.draft.text) { understood in
+                    editor.draft.apply(understood)
                 }
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
@@ -124,11 +157,14 @@ struct ClientSortFilterSheet: View {
     ///   (`ClientVoiceSearchSheet`) — what is said is added after what is
     ///   there (`String.append(dictation:)`), which fills the empty field;
     /// - the field written, the cross that empties it, where the microphone
-    ///   was, and the arrow that will send it.
+    ///   was, and the arrow, which opens "Your description"
+    ///   (`ClientFiltersDescriptionSheet`) on the sentence.
     ///
-    /// Only drawn for now: the arrow sends nothing, and the sentence goes with
-    /// the sheet; reading it for its filters (`ClientFilterDraft.send`,
-    /// `ClientFilterEditor.fetchFilterItems`) comes with the arrow's call.
+    /// The sentence is read for its filters there, on that sheet's own draft
+    /// (`ClientFilterEditor.readSentence`), never here. Its "Apply" empties
+    /// the field — the microphone is back — and adds what Tolby understood to
+    /// the pills of "Powered by Tolby" (`ClientFilterDraft.apply`); closed
+    /// otherwise, it leaves the sentence in the field.
     ///
     /// Up to three lines, then the text scrolls inside the field (decision of
     /// 17/11, the mockup's ceiling); a tap anywhere on the row puts the caret
@@ -202,9 +238,10 @@ struct ClientSortFilterSheet: View {
                     font: .title,
                     color: Color(.OnSurface.textPrimary)
                 ) {
-                    // Nothing yet (decision of 16/11): it will read the
-                    // sentence's filters — `ClientFilterDraft.send`, then
-                    // `ClientFilterEditor.fetchFilterItems`.
+                    // The caret out of the field first: the keyboard would
+                    // cover a sheet at half height.
+                    isSentenceFocused = false
+                    isTranslatingSentence = true
                 }
             }
         }
@@ -284,28 +321,143 @@ struct ClientSortFilterSheet: View {
 
     // MARK: - Filters
 
-    /// One of the tenant's filters, on the screen's background rather than in
-    /// a card, as the mockup draws it: no fill, the list's own hairline
-    /// between two filters — none above the first nor under the last —, from
-    /// one edge of the group to the other.
-    ///
-    /// A touch on a value lets go of it when it is picked, pushes the
-    /// calendar for one that asks for a day, and picks it otherwise — a
-    /// filter that takes one value lets go of the one it had
-    /// (`ClientFilterDraft.toggle`).
+    /// A group of filter pills as a row of the list, on the screen's
+    /// background rather than in a card, as the mockup draws it: no fill, the
+    /// list's own hairline between two groups — none above the first nor
+    /// under the last —, from one edge of the group to the other.
+    private func groupRow(_ group: some View) -> some View {
+        group
+            .listRowInsets(Self.filterRowInsets)
+            .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
+            .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] }
+            .listRowBackground(Color.clear)
+            .listRowSeparatorTint(Color(.OnSurface.borderSubtle))
+    }
+
+    /// "Powered by Tolby": the filters a description gave
+    /// (`ClientFilterDraft.filterItems`), the first of the groups, as the
+    /// mockup draws it (`C-Filtres-Applique-Noir`) — each a pill in ink, as
+    /// one chosen, with its cross, under the server's label, already in the
+    /// associate's language. No count beside the title, no violet: they are
+    /// filters like the others, once applied. The row leaves with its last
+    /// pill.
+    private var tolbyRow: some View {
+        groupRow(
+            ClientFilterGroup(title: String(localized: "Powered by Tolby")) {
+                ForEach(editor.draft.filterItems) { item in
+                    // One of Tolby's filters has no "not chosen" to go back
+                    // to: letting go of it is taking it off. So a touch on
+                    // the pill removes it as its cross does — the mockup's
+                    // whole pill is its remove button.
+                    Pill(
+                        isSelected: true,
+                        isRemovable: true,
+                        accessibilityLabel: item.label,
+                        onToggle: { _ in editor.draft.remove(item) },
+                        onRemove: { editor.draft.remove(item) }
+                    ) {
+                        Text(verbatim: item.label)
+                    }
+                }
+            }
+        )
+    }
+
+    /// One of the tenant's filters: its title, how many of its values are
+    /// picked, and its values, each a pill (`valuePill`).
     private func filterRow(for filter: ClientFilter) -> some View {
-        ClientFilterGroup(filter: filter, draft: editor.draft) { value in
+        groupRow(
+            ClientFilterGroup(
+                title: String(localized: filter.title),
+                pickedCount: editor.draft.pickedCount(in: filter)
+            ) {
+                ForEach(filter.values, id: \.ref) { value in
+                    valuePill(value, of: filter)
+                }
+            }
+        )
+    }
+
+    /// A value's pill. What it shows depends on where its filter's values
+    /// come from (`ClientFilter.valueField`), each kind in its own function:
+    /// the brand's segments (`segmentValueContent`), any other filter
+    /// (`standardValueContent`). A new kind of filter adds its case here.
+    ///
+    /// A touch lets go of the value when it is picked, pushes the calendar
+    /// for one that asks for a day, and picks it otherwise — a filter that
+    /// takes one value lets go of the one it had (`ClientFilterDraft.toggle`).
+    ///
+    /// Not in the pill yet (decision of 17/11): a status's point.
+    private func valuePill(_ value: ClientFilterValue, of filter: ClientFilter) -> some View {
+        let isPicked = editor.draft.isPicked(value)
+        let day = editor.draft.day(pickedFor: value)?.formatted(date: .abbreviated, time: .omitted)
+        return Pill(
+            isSelected: isPicked,
+            accessibilityLabel: [value.title, day].compactMap(\.self).joined(separator: ", ")
+        ) { _ in
             if editor.draft.needsDay(for: value) {
                 calendarRef = value.ref
             } else {
                 editor.draft.toggle(value, of: filter)
             }
+        } content: {
+            // `nil` rather than `default`: a kind added to `ValueField` must
+            // say here what its pills show.
+            switch filter.valueField {
+            case .segment: segmentValueContent(value, isPicked: isPicked)
+            case nil: standardValueContent(value, day: day)
+            }
         }
-        .listRowInsets(Self.filterRowInsets)
-        .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
-        .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] }
-        .listRowBackground(Color.clear)
-        .listRowSeparatorTint(Color(.OnSurface.borderSubtle))
+    }
+
+    /// A value's content as any filter shows it: its name, then the day
+    /// picked for it, if any — "Since a date" —, in the pill's secondary
+    /// level.
+    private func standardValueContent(_ value: ClientFilterValue, day: String?) -> some View {
+        // 7 pt between the name and its day, the mockup's gap in a pill.
+        HStack(spacing: 7) {
+            Text(value.title)
+            if let day {
+                Text(day)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    /// A segment's content, in the filter whose values are the brand's
+    /// segments: its dot, then its name. A value's `label` is its segment's
+    /// code; no dot for a segment the brand does not list or has not
+    /// coloured (`ClientSegment.tagColors`), as it has no tag in the list.
+    private func segmentValueContent(_ value: ClientFilterValue, isPicked: Bool) -> some View {
+        // 7 pt between the dot and the name, the mockup's gap in a pill.
+        HStack(spacing: 7) {
+            if let colors = ClientSegment.named(value.label, in: segments)?.tagColors {
+                segmentDot(colors, isPicked: isPicked)
+            }
+            Text(value.title)
+        }
+    }
+
+    /// A segment's dot, before its name in its pill: the segment's tag in
+    /// small (decision of 18/11) — filled with the tag's background and
+    /// ringed, inside, with its text colour, so a pale segment still shows.
+    /// On a picked pill, the ink, the ring is white at 75 % and outside the
+    /// dot instead, as the mockup draws it (`C-Filtres`), the name staying
+    /// where it is.
+    private func segmentDot(_ colors: (background: Color, foreground: Color), isPicked: Bool) -> some View {
+        Circle()
+            .fill(colors.background)
+            .frame(width: segmentDotSize, height: segmentDotSize)
+            .overlay {
+                if isPicked {
+                    Circle()
+                        .strokeBorder(Color(.Base.paper).opacity(0.75), lineWidth: Self.segmentDotRing)
+                        .padding(-Self.segmentDotRing)
+                } else {
+                    Circle()
+                        .strokeBorder(colors.foreground, lineWidth: Self.segmentDotRing)
+                }
+            }
     }
 
     /// The calendar pushed for the value `ref`, titled with its filter, which
@@ -342,8 +494,8 @@ struct ClientSortFilterSheet: View {
         }
     }
 
-    /// Puts the server's default sort back and takes every filter off, with
-    /// what the last sentence left; the field stays. In the draft: "Show"
+    /// Puts the server's default sort back and takes every filter off, the
+    /// values picked and Tolby's pills; the field stays. In the draft: "Show"
     /// applies it.
     private var clearButton: some View {
         Button(String(localized: "Clear")) {
@@ -385,6 +537,22 @@ struct ClientSortFilterSheet: View {
 }
 
 // MARK: - Previews
+
+#Preview("With Tolby's filters", traits: .searchOptionsSampleData) {
+    // The list's options as "Show" left them: two filters a description gave.
+    // Their conditions are never read here.
+    @Previewable @State var options = ClientSearchOptions(filters: [
+        .filter(ClientFilterItem(label: "Segment · VIC", condition: .object(["field": .string("client.segment")]))),
+        .filter(ClientFilterItem(label: "Opted in · WhatsApp", condition: .object(["field": .string("client.optIn")]))),
+    ])
+
+    Color.clear
+        .sheet(isPresented: .constant(true)) {
+            ClientSortFilterSheet(options: $options)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+        }
+}
 
 #Preview(traits: .searchOptionsSampleData) {
     @Previewable @State var options = ClientSearchOptions()

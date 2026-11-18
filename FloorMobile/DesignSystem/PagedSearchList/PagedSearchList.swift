@@ -33,7 +33,7 @@ import SwiftUI
 /// } onFirstPageFailure: { query, error in
 ///     failedSearch = (query, error)   // something else takes the list's place
 /// } row: { client in
-///     ClientRow(client: client, segment: segments.first { $0.code == client.segment })
+///     ClientRow(client: client, segment: ClientSegment.named(client.segment, in: segments))
 /// }
 /// ```
 ///

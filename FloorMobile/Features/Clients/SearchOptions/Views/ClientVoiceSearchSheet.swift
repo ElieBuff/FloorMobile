@@ -14,8 +14,10 @@ import SwiftUI
 /// close button, or a swipe down, closes without it.
 ///
 /// The sheet is the screen's, the listening the design system's (decision of
-/// 16/11). Tolby's steps after the voice — what it understood, "Show N
-/// clients" (mockup `C-Voix-Compris`) — will join here.
+/// 16/11). Tolby's steps after the voice are not this sheet's but "Your
+/// description"'s (`ClientFiltersDescriptionSheet`), which the sentence's
+/// arrow opens: working it out (mockup `C-Voix-Charge`), then what it
+/// understood and what it did not (mockup `C-Voix-Compris`).
 struct ClientVoiceSearchSheet: View {
     /// The text heard, once, on "Done" — never empty.
     let onText: (String) -> Void

@@ -78,6 +78,18 @@ struct ClientFilterTests {
         #expect(filter.selection == selection)
     }
 
+    @Test(
+        "client.segment reads as the segments' list; no field, or a list this app does not know, as none",
+        arguments: zip(["client.segment", nil, "client.status"], [ClientFilter.ValueField.segment, nil, nil])
+    )
+    func valueFieldReadsItsRaw(raw: String?, valueField: ClientFilter.ValueField?) {
+        let filter = ClientFilter(
+            id: "f", titleKey: "k", selectionRaw: "MULTIPLE", valueFieldRaw: raw, rank: 0, values: []
+        )
+
+        #expect(filter.valueField == valueField)
+    }
+
     @Test("A parameter typed date reads as a day; any other type as a kind this app does not draw")
     func parameterKind() {
         #expect(ClientFilterValue.Parameter(name: "since", typeRaw: "date").kind == .date)

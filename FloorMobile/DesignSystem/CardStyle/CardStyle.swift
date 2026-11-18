@@ -27,7 +27,7 @@ struct CardStyle: ViewModifier {
             .background(surface, in: shape)
             .overlay {
                 if let border {
-                    shape.strokeBorder(border.color, lineWidth: border.width)
+                    shape.strokeBorder(border.color, style: border.strokeStyle)
                 }
             }
             .shadow(shadow ?? .none)

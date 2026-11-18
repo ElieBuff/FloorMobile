@@ -56,8 +56,9 @@ types (`@Observable`) are out of scope.
 model's `Response` has no wire file: its `init(wire:)` lives in its own file, as for a shared fragment
 (`ClientItem.init(wire:)` reads `ClientWire.Response`). A search result that is not stored is converted to a value
 (`ClientItem`). A service returns models or values, never a page of wire types. The exception: a value the app
-carries without ever reading it — a filter's condition from a sentence (`client/text-filters`), kept as `JSONValue`
-(`Core/Networking/JSONValue.swift`) until the search — stays as it came, in the model too (`ClientFilterItem.condition`).
+carries without ever interpreting it — a filter's condition from a sentence (`client/text-filters`), kept as `JSONValue`
+(`Core/Networking/JSONValue.swift`) until the search, only compared whole with another (`ClientFilterDraft.apply`) —
+stays as it came, in the model too (`ClientFilterItem.condition`).
 
 **Reuse.** Before anything new, inventory `DesignSystem/`, `Core/Extensions/`, `Core/Models/`,
 `Features/*/Views/Components/` and the models' extensions, and start from what the app already does.
