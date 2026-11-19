@@ -8,10 +8,8 @@ import SwiftData
 
 /// What the device's SwiftData store holds, and how to empty it.
 ///
-/// The rows live in SwiftData; what describes them — whose they are, how far
-/// they go — lives here, beside them, so that a wipe takes both. A marker that
-/// outlived its rows would lie about them: the client cursor, for one, would
-/// ask only for recent changes on a store that holds no client.
+/// The rows live in SwiftData; what describes them — whose they are — lives
+/// here, beside them: a marker that outlived its rows would lie about them.
 ///
 /// Single-tenant isolation is enforced here: when the active tenant differs
 /// from the one the store holds, everything is erased before any data is
@@ -20,8 +18,6 @@ import SwiftData
 nonisolated struct LocalStore: Sendable {
     /// The tenant the store currently holds.
     var tenantID: StoredValue<String>
-    /// Where the store's client sync resumes from — see `ClientService`.
-    var clientCursor: StoredValue<String>
 
     /// Erases the store when `currentTenantID` is not the tenant it holds, and
     /// records the new one.
@@ -44,35 +40,21 @@ nonisolated struct LocalStore: Sendable {
     /// concrete type, so it cannot be derived from the schema. `LocalStoreTests`
     /// fails if a model is added there and forgotten here.
     ///
-    /// The client sync cursor goes too: it says which clients the store
-    /// already holds, and after this it holds none. Left behind, the next sync
-    /// would ask only for recent changes and leave the store all but empty.
-    /// So does every other value of `sessionValues`.
+    /// Rows only: no stored value describes them today. `tenantID` is written
+    /// by `enforceTenant` right after, and the associate signed in is
+    /// `AppSession`'s to keep and clear. A marker that came to describe the
+    /// rows — a sync cursor, say — would be wiped here with them.
     @MainActor
     func erase(in context: ModelContext) throws {
         try context.delete(model: AIAction.self)
         try context.delete(model: AgendaEvent.self)
         try context.delete(model: AgendaTask.self)
-        try context.delete(model: Client.self)
         try context.delete(model: ClientFilter.self)
         try context.delete(model: ClientSegment.self)
         try context.delete(model: ClientSort.self)
         try context.delete(model: EnumValue.self)
         try context.save()
-        sessionValues.forEach { $0.set(nil) }
     }
 
-    /// The values that belong to the session, wiped with the store. A value
-    /// added above joins this list if it describes the rows. Not `tenantID`,
-    /// which `enforceTenant` writes right after, nor a device preference,
-    /// which outlives a sign-out — nor the associate signed in, whom
-    /// `AppSession` keeps and clears.
-    private var sessionValues: [StoredValue<String>] {
-        [clientCursor]
-    }
-
-    static let live = LocalStore(
-        tenantID: .userDefaults(.lastTenantID),
-        clientCursor: .userDefaults(.clientSyncCursor)
-    )
+    static let live = LocalStore(tenantID: .userDefaults(.lastTenantID))
 }

@@ -8,28 +8,12 @@ import Foundation
 // MARK: - Client Endpoints
 
 nonisolated extension Endpoint {
-    /// The connected associate's store clients: all of them without a cursor,
-    /// then only those changed since it. The store comes from the token, never
-    /// from the request.
-    ///
-    /// Pass the previous page's `nextCursor` as `after` to get the next page —
-    /// and, once a pass is over, its last page's `nextCursor` to get only what
-    /// changed since (see `ClientService.synchronize(using:cursor:)`).
-    static func clientSync(after cursor: String? = nil) -> Endpoint {
-        Endpoint(path: "client/sync", query: after(cursor))
-    }
-
-    /// Every client id of the connected associate's store, all at once: what
-    /// the device prunes its copy against.
-    static let storeClientIDs = Endpoint(path: "client/store-ids")
-
     /// A page of the associate's own clients, 50 at most, each with their
     /// email and phone. Whose clients they are is the server's to set (their
     /// store today, from the token): the app only says `scope=mine`.
     /// Interactive: the associate waits on it, so it fails fast — without a
-    /// connection, the list falls back on the device, or, with filters
-    /// picked, which the device cannot apply, shows the failure
-    /// (`ClientsView.showsDevice`).
+    /// connection, the list shows the failure and offers to try again
+    /// (`ClientsView.failureTitle`).
     ///
     /// The text and the filters as `scopeItems` sends them; then the sort and
     /// the cursor. Without a text, the clients in the sort's order.
@@ -59,8 +43,7 @@ nonisolated extension Endpoint {
     /// associate's total, and once after a "Show" that had no total to hand
     /// it. A 503 (`search_timeout`) means a total too long to count: none is
     /// shown.
-    /// Interactive: the associate waits on it, and a count has no list on the
-    /// device to fall back on.
+    /// Interactive: the associate waits on it.
     static func countClients(_ query: String?, filters: [ClientFilterChoice] = []) -> Endpoint {
         Endpoint(path: "client/count", query: scopeItems(query, filters: filters), interactive: true)
     }

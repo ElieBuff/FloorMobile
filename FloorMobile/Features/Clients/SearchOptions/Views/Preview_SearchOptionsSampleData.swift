@@ -15,8 +15,7 @@ import SwiftUI
 /// it across the previews that apply the trait; none of them writes to it. The
 /// filters mirror `seed-client-filters.ts` (FloorPlatform's console API): the
 /// Tier with the segments its header gives as an example, Created and Last
-/// purchase with their four values. `ClientsView`'s previews keep their own
-/// store: they insert clients, which a shared one would show to every preview.
+/// purchase with their four values.
 /// The previews that apply it also get the session and the services "Sort &
 /// filter" reads for its total — the previews' own, which no server answers:
 /// "Show" stays alone. Not under `#if DEBUG`: a `#Preview` compiles in Release

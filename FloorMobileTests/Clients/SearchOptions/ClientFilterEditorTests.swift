@@ -182,8 +182,9 @@ struct ClientFilterEditorTests {
         let services: AppServices
 
         init(answer: @escaping @Sendable (URLRequest) throws -> (Int, Data)) throws {
+            // Any model: the clients' service keeps nothing, the others need a store.
             let container = try ModelContainer(
-                for: Client.self,
+                for: ClientSegment.self,
                 configurations: ModelConfiguration(isStoredInMemoryOnly: true)
             )
             let client = APIClient(

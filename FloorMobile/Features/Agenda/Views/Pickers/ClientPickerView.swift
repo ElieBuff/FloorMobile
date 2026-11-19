@@ -7,12 +7,12 @@ import SwiftUI
 
 /// Who a task or an appointment is for.
 ///
-/// The shell only. There is no Clients feature yet — no `@Model`, no search
-/// endpoint, nothing to list — so the screen says so rather than pretending to
-/// look and finding nothing. It exists now because the row that opens it is a
-/// `NavigationLink`, and a link needs somewhere to go; when the Clients feature
-/// lands, the `ContentUnavailableView` becomes a `@Query` and a `.searchable`,
-/// and nothing above this file changes.
+/// The shell only. Nothing lists clients here yet, so the screen says so
+/// rather than pretending to look and finding nothing. It exists now because
+/// the row that opens it is a `NavigationLink`, and a link needs somewhere to
+/// go. Once picking a client is built, the screen lists the server's clients
+/// — the device keeps none — in place of the `ContentUnavailableView`, and
+/// nothing above this file changes.
 struct ClientPickerView: View {
     @Binding var selection: String
 

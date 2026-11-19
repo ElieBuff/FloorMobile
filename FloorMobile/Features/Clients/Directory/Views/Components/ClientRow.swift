@@ -11,8 +11,8 @@ import SwiftUI
 /// (`ClientSegment`), and how to reach them — email and phone on one line
 /// (`ClientItem.contactLine`, in the `rowDetail` role).
 ///
-/// Shared by every client list, whatever the client's source — the server or
-/// the device both give a `ClientItem`. Only what the card holds is written:
+/// Shared by every client list — the pages of a search and the recent
+/// clients both give a `ClientItem`. Only what the card holds is written:
 /// a line the client has nothing for is left out — no tag without a segment
 /// the brand has coloured (decision of 15/11), no contact line without an
 /// email or a phone —, the name never ("Unnamed client" without one).

@@ -17,10 +17,9 @@ import SwiftUI
 /// above it stay, and "Try again" fetches it again. A first page that fails
 /// is the parent's (`onFirstPageFailure`): nothing of the search is on
 /// screen, and a closed alert would leave it empty — the parent puts
-/// something in the list's place: what the device holds (the client list
-/// without filters), or `LoadFailureView`, whose "Try again" builds the list
-/// afresh (with filters). The shortest query the server accepts is the
-/// parent's rule too — it builds the list only for a query worth sending.
+/// `LoadFailureView` in the list's place, whose "Try again" builds the list
+/// afresh. The shortest query the server accepts is the parent's rule too —
+/// it builds the list only for a query worth sending.
 ///
 /// Native inside — `.task(id:)`, `List`, `ContentUnavailableView.search`.
 /// One caller since "All Brand" left with its screen (12/11), the client
@@ -164,13 +163,13 @@ struct PagedSearchList<Item: Identifiable, Row: View>: View {
     /// page of a text waits for the typing to pause: a keystroke meanwhile is
     /// a new search, whose new request cancels the wait — so that page is
     /// never sent. Without a text nothing is being typed — a sort, filters,
-    /// the tab opening, the device's list — and it goes at once.
+    /// the tab opening — and it goes at once.
     ///
     /// Whatever comes back for a request no longer asked for — the search
     /// changed, or the answer came after a cancellation it did not heed — is
     /// dropped: no page, no alert, nothing told to the parent. A late failure
-    /// of an earlier sort would otherwise send the client list to the
-    /// device's.
+    /// of an earlier sort would otherwise put its failure in the place of the
+    /// client list that followed.
     private func load() async {
         guard pages.beginFetch() else { return }
         let request = pages.request

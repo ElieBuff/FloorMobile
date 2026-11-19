@@ -68,7 +68,7 @@ simulator, not the one the user works with.
 - **Build**:
   `xcodebuild -project FloorMobile.xcodeproj -scheme "FloorMobile Dev" -destination 'platform=iOS Simulator,name=iPhone 17' -derivedDataPath /tmp/floormobile-qa/DerivedData -resultBundlePath /tmp/floormobile-qa/<name>.xcresult -quiet build`
 - **Unit tests**: the same, ending with one or more `-only-testing:FloorMobileTests[/<Suite>[/<test>()]]` then
-  `test`. A filter naming a test function is single-quoted (`'-only-testing:FloorMobileTests/ClientWireTests/pageDecodes()'`).
+  `test`. A filter naming a test function is single-quoted (`'-only-testing:FloorMobileTests/ClientItemTests/mineCardMaps()'`).
   The filter takes the suite's struct name, not its `@Suite("…")` title.
 - **Results**: `xcrun xcresulttool get test-results summary|tests --path /tmp/floormobile-qa/<name>.xcresult`
   (`--compact` for less output), and `xcrun xcresulttool get build-results --path …`: the build's errors and

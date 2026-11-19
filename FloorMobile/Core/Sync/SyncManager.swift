@@ -93,45 +93,30 @@ final class SyncManager {
         }
     }
 
-    /// What the launch brings up to date, fanned out with `async let`:
-    /// - the app's configuration (`GET setup`): the field vocabulary, which
-    ///   every picker reads, the tenant's "My Clients" filters and sorts, the
-    ///   brand's segments, and the associate signed in with their store,
-    ///   handed on as soon as they are in;
-    /// - the store's clients — brought up to date, then cleared of those that
-    ///   left the store, in that order: the prune only means something once
-    ///   the delta is in.
+    /// What the launch brings up to date: the app's configuration
+    /// (`GET setup`) — the field vocabulary, which every picker reads, the
+    /// tenant's "My Clients" filters and sorts, the brand's segments, and the
+    /// associate signed in with their store, handed on as soon as they are in.
     ///
-    /// Feature data that changes by the hour (events, tasks, AI actions) is
-    /// deliberately absent: Home loads it on appear and on pull-to-refresh,
-    /// and it must not hold the launch back.
+    /// Nothing else holds the launch back. The clients are asked of the
+    /// server when their list opens and kept nowhere (decision of 19/11);
+    /// feature data that changes by the hour (events, tasks, AI actions) is
+    /// loaded by Home on appear and on pull-to-refresh.
     private func performSync(
         services: AppServices,
         api: APIClient,
         keepSignedInAssociate: (SalesAssociateSnapshot?, StoreSnapshot?) -> Void
     ) async throws {
-        let clients = services.clients
-        let cursor = localStore.clientCursor
-        async let configuration = services.setup.synchronize(using: api)
-        async let clientBook: Void = {
-            try await clients.synchronize(using: api, cursor: cursor)
-            try await clients.pruneDeparted(using: api)
-        }()
-        let signedIn = try await configuration
+        let signedIn = try await services.setup.synchronize(using: api)
         keepSignedInAssociate(signedIn?.associate, signedIn?.store)
-        try await clientBook
     }
 
     /// Whether an earlier run left something usable behind — one entry per
-    /// line of `performSync` that can fail it.
-    ///
-    /// For the clients, the cursor rather than a row count: it is stored only
-    /// once a pass has gone through, so it tells a complete copy from one cut
-    /// short — and a store may well have no client at all. The configuration
-    /// counts by its vocabulary alone: a tenant may have no filter, never an
-    /// empty vocabulary.
+    /// line of `performSync` that can fail it. The configuration counts by
+    /// its vocabulary alone: a tenant may have no filter, never an empty
+    /// vocabulary.
     private func hasUsableCache(in context: ModelContext) -> Bool {
         let vocabulary = (try? context.fetchCount(FetchDescriptor<EnumValue>())) ?? 0
-        return vocabulary > 0 && localStore.clientCursor.get() != nil
+        return vocabulary > 0
     }
 }

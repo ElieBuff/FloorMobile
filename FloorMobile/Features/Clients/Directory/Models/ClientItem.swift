@@ -5,26 +5,25 @@
 
 import Foundation
 
-/// A client as the app knows them: their base data, wherever it comes from —
-/// a card the server found (`client/search`), a client the device keeps
-/// (`Client`), or a client's details (`client/{id}`). The one client value
-/// every list, the profile and its editor read.
+/// A client as the app knows them: their base data, as the server's card
+/// gives it (`ClientWire.Response`) — a card a search found (`client/search`),
+/// a recent client (`client/recent`), or a client's details (`client/{id}`).
+/// The one client value every list, the profile and its editor read.
 ///
 /// A plain value: it lives as long as the list, or the profile page, that
-/// shows it. A field can be missing — the server sends only what it has on
-/// file; the associate's own clients (the sync, the client list) and any
-/// client's details have the most.
+/// shows it, and nothing of it is kept on the device. A field can be missing
+/// — the server sends only what it has on file; the associate's own clients
+/// and any client's details have the most.
 /// `storeCode` and `salesAssociateExternalId` say whose client it is, by the
 /// server's ids (`isAssigned(to:)`).
 ///
 /// Not a `ClientSnapshot`, which shipped models embed as a composite with a
-/// few names only. Its `Address` and `OptIns` are stored, though — as
-/// composites of `Client`.
+/// few names only.
 ///
 /// `Hashable` and `Codable` for the route that opens a profile, which carries
-/// the row the list showed (`ClientsRoute.profile`), and for `Client`'s
-/// composites: navigation and the store, never the network — the server's
-/// shapes stay in their wires.
+/// the row the list showed (`ClientsRoute.profile`): navigation, never the
+/// network — the server's shapes stay in their wire (`ClientWire`, where the
+/// card is read into this value).
 ///
 /// What an edit can change is a `var` — the names, the email, the phone, the
 /// address, the consents —, the rest a `let`: the editor (`ClientEditorView`)
@@ -93,9 +92,6 @@ nonisolated struct ClientItem: Identifiable, Sendable, Hashable, Codable {
     }
 
     /// A client's main address, each line as the source wrote it.
-    ///
-    /// Stored as a composite of `Client`: adding, removing or renaming a
-    /// field here changes the store's shape (`FloorSchema`).
     nonisolated struct Address: Sendable, Hashable, Codable {
         /// Both street lines, joined by a comma.
         var street: String?
@@ -107,9 +103,6 @@ nonisolated struct ClientItem: Identifiable, Sendable, Hashable, Codable {
     }
 
     /// What a client agreed to be reached by, channel by channel.
-    ///
-    /// Stored as a composite of `Client`: adding, removing or renaming a
-    /// field here changes the store's shape (`FloorSchema`).
     nonisolated struct OptIns: Sendable, Hashable, Codable {
         var email: Bool
         /// Instant messaging: WhatsApp, SMS.
@@ -149,72 +142,6 @@ nonisolated struct ClientItem: Identifiable, Sendable, Hashable, Codable {
                 }
             }
         }
-    }
-}
-
-nonisolated extension ClientItem {
-    /// A client the device keeps: the same card, stored.
-    init(client: Client) {
-        self.init(
-            id: client.id,
-            firstName: client.firstName,
-            lastName: client.lastName,
-            segment: client.segment,
-            storeCode: client.storeCode,
-            storeName: client.store?.name,
-            salesAssociateExternalId: client.salesAssociateExternalId,
-            salesAssociateName: client.salesAssociate?.displayName,
-            primaryEmail: client.primaryEmail,
-            primaryPhone: client.primaryPhone,
-            salutation: client.salutation,
-            address: client.address,
-            preferredLanguage: client.preferredLanguage,
-            optIns: client.optIns
-        )
-    }
-
-    /// A card the server sent, the store and the associate flattened into
-    /// display names. Here rather than in `ClientWire.swift`, which converts
-    /// the card for its own model, `Client`: a second model built from the
-    /// same card converts it in its own file, as one built from a shared wire
-    /// fragment does (`StoreSnapshot.init(wire:)`).
-    init(wire: ClientWire.Response) {
-        self.init(
-            id: wire.id,
-            firstName: wire.firstName,
-            lastName: wire.lastName,
-            segment: wire.segment,
-            storeCode: wire.storeCode,
-            storeName: wire.store?.name,
-            salesAssociateExternalId: wire.salesAssociateExternalId,
-            salesAssociateName: wire.salesAssociate.flatMap {
-                PersonName.display(first: $0.firstName, last: $0.lastName)
-            },
-            primaryEmail: wire.primaryEmail,
-            primaryPhone: wire.primaryPhone,
-            salutation: wire.salutation,
-            address: wire.mainAddress.map(Address.init(wire:)),
-            preferredLanguage: wire.preferredLanguage,
-            optIns: wire.optIns.map(OptIns.init(wire:))
-        )
-    }
-}
-
-nonisolated extension ClientItem.Address {
-    init(wire: ClientWire.Address) {
-        self.init(
-            street: wire.street, postalCode: wire.postalCode, city: wire.city,
-            state: wire.state, country: wire.country
-        )
-    }
-}
-
-nonisolated extension ClientItem.OptIns {
-    init(wire: ClientWire.OptIns) {
-        self.init(
-            email: wire.email, directMessage: wire.directMessage, call: wire.call,
-            wechat: wire.wechat, line: wire.line
-        )
     }
 }
 

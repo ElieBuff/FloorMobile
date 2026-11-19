@@ -85,8 +85,6 @@ nonisolated extension StoredValue where Value == StoreSnapshot {
 nonisolated enum StoredKey: String, Sendable {
     /// The tenant the local store holds — see `LocalStore`.
     case lastTenantID
-    /// Where the store's client sync resumes from — see `ClientService`.
-    case clientSyncCursor
     /// The associate signed in, as `GET setup` last described them — their
     /// language included — kept by `AppSession` for a launch offline.
     case signedInAssociate

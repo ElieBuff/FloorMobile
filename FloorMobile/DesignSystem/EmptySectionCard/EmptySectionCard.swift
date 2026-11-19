@@ -16,9 +16,8 @@ struct EmptySectionAction {
 
 /// The state card of a section: a translucent rounded card with an icon, a
 /// status message, and an optional trailing action button — for a section
-/// that has nothing to show ("No appointment today"), or whose content does
-/// not come from where it should (results from the device, standing in for a
-/// server that does not answer).
+/// that has nothing to show ("No appointment today"), or whose content could
+/// not be loaded (the parts of a client's profile that failed).
 ///
 /// Some states just inform, others offer one specific action ("New Task",
 /// "Try again"): pass an `EmptySectionAction` to show the button, or leave it

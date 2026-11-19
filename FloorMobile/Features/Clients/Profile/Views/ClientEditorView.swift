@@ -190,8 +190,9 @@ struct ClientEditorView: View {
 // MARK: - Previews
 
 #Preview {
+    // Any model: the services need a store, the editor reads none.
     let container = try! ModelContainer(
-        for: Client.self,
+        for: ClientSegment.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
     let client = ClientItem(

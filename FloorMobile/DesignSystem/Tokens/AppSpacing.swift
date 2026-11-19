@@ -15,7 +15,6 @@ enum AppSpacing {
     static let cardInset: CGFloat = 18
     /// The margin between a screen's edge and its cards — the client list's
     /// mockup (14/11). Shared by `.insetGroupedList()`'s sections and what
-    /// sits above them in line with them (the offline notice of
-    /// `ClientsView`).
+    /// sits in line with them (a sheet's bottom action, `.bottomActionStyle()`).
     static let screenInset: CGFloat = 16
 }

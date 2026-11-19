@@ -12,7 +12,7 @@ import Testing
 @MainActor
 struct SyncManagerTests {
 
-    @Test("A successful startup sync stores the configuration and the clients, and opens the app")
+    @Test("A successful startup sync stores the configuration and opens the app")
     func finishesAndPersists() async throws {
         let container = try Self.inMemoryContainer()
         let manager = SyncManager(localStore: Self.store(tenant: .inMemory("org-1")))
@@ -35,42 +35,21 @@ struct SyncManagerTests {
         #expect(options.count == valueCount)
         #expect(try ModelContext(container).fetchCount(FetchDescriptor<ClientFilter>()) == 2)
         #expect(try ModelContext(container).fetchCount(FetchDescriptor<ClientSort>()) == 6)
-        let clients = try ModelContext(container).fetchCount(FetchDescriptor<Client>())
-        #expect(clients == 3)
     }
 
-    @Test("A failure with nothing in store stops on the loading screen")
+    @Test("A failure with nothing in store stops on the loading screen, and hands nothing on to the session")
     func coldFailureBlocks() async throws {
         let container = try Self.inMemoryContainer()
         let manager = SyncManager(localStore: Self.store(tenant: .inMemory("org-1")))
+        var keptCalled = false
 
+        // `setup` is all the launch asks for, and it must not treat it as
+        // optional: the pickers need it.
         await manager.synchronize(
             context: container.mainContext,
             tenantID: "org-1",
             services: AppServices(container: container),
             api: Self.failing(),
-            keepSignedInAssociate: { _, _ in }
-        )
-
-        guard case .failed = manager.state else {
-            Issue.record("Expected .failed, got \(manager.state)")
-            return
-        }
-    }
-
-    @Test("The configuration alone down, with nothing in store: the launch still stops")
-    func setupFailureWithoutCacheBlocks() async throws {
-        let container = try Self.inMemoryContainer()
-        let manager = SyncManager(localStore: Self.store(tenant: .inMemory("org-1")))
-        var keptCalled = false
-
-        // Every other route answers: the failure can only come from `setup`,
-        // which the launch must not treat as optional — the pickers need it.
-        await manager.synchronize(
-            context: container.mainContext,
-            tenantID: "org-1",
-            services: AppServices(container: container),
-            api: Self.serving(setupFails: true),
             keepSignedInAssociate: { _, _ in keptCalled = true }
         )
 
@@ -89,10 +68,8 @@ struct SyncManagerTests {
             EnumValue(entityName: "task", field: "reason", value: "CACHED", rank: 0)
         )
         try container.mainContext.save()
-        // A complete client pass went through on that earlier run.
-        let manager = SyncManager(localStore: Self.store(
-            tenant: .inMemory("org-1"), cursor: .inMemory("cursor-pass-1")
-        ))
+        // The vocabulary of an earlier run is all the launch needs to open.
+        let manager = SyncManager(localStore: Self.store(tenant: .inMemory("org-1")))
 
         await manager.synchronize(
             context: container.mainContext,
@@ -106,30 +83,6 @@ struct SyncManagerTests {
         #expect(manager.state == .finished)
         let values = try ModelContext(container).fetch(FetchDescriptor<EnumValue>()).map(\.value)
         #expect(values == ["CACHED"])
-    }
-
-    @Test("A failure before any client pass completed stops on the loading screen")
-    func failureWithoutClientsBlocks() async throws {
-        let container = try Self.inMemoryContainer()
-        container.mainContext.insert(
-            EnumValue(entityName: "task", field: "reason", value: "CACHED", rank: 0)
-        )
-        try container.mainContext.save()
-        // The vocabulary is there, but no client pass has ever finished.
-        let manager = SyncManager(localStore: Self.store(tenant: .inMemory("org-1")))
-
-        await manager.synchronize(
-            context: container.mainContext,
-            tenantID: "org-1",
-            services: AppServices(container: container),
-            api: Self.failing(),
-            keepSignedInAssociate: { _, _ in }
-        )
-
-        guard case .failed = manager.state else {
-            Issue.record("Expected .failed, got \(manager.state)")
-            return
-        }
     }
 
     // This one aborted the whole process while the wipe still went through
@@ -185,33 +138,19 @@ struct SyncManagerTests {
 
     private static func inMemoryContainer() throws -> ModelContainer {
         try ModelContainer(
-            for: AIAction.self, AgendaEvent.self, AgendaTask.self, Client.self, ClientFilter.self, ClientSegment.self,
+            for: AIAction.self, AgendaEvent.self, AgendaTask.self, ClientFilter.self, ClientSegment.self,
             ClientSort.self, EnumValue.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
     }
 
-    private static func store(tenant: StoredValue<String>, cursor: StoredValue<String> = .inMemory()) -> LocalStore {
-        LocalStore(tenantID: tenant, clientCursor: cursor)
+    private static func store(tenant: StoredValue<String>) -> LocalStore {
+        LocalStore(tenantID: tenant)
     }
 
-    /// Every startup route answered: the configuration, a client pass in two
-    /// pages, and the store's ids. `setupFails` takes the configuration down
-    /// alone.
-    private nonisolated static func serving(setupFails: Bool = false) -> APIClient {
-        client { request in
-            let url = request.url?.absoluteString ?? ""
-            if setupFails, url.hasSuffix("setup") {
-                return (response(request, statusCode: 500), Data())
-            }
-            let name = switch true {
-            case url.contains("client/store-ids"): "client_filter_ids"
-            case url.contains("after=cursor-page-2"): "client_sync_page2"
-            case url.contains("client/sync"): "client_sync_page1"
-            default: "setup"
-            }
-            return (response(request, statusCode: 200), try Fixture.data(name))
-        }
+    /// The startup's one route answered: the configuration.
+    private nonisolated static func serving() -> APIClient {
+        client { request in (response(request, statusCode: 200), try Fixture.data("setup")) }
     }
 
     /// Every route down.

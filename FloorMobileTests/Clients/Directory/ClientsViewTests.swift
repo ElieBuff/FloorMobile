@@ -8,10 +8,9 @@ import Testing
 @testable import FloorMobile
 
 /// The Clients tab's rules, without the view: what the server is sent of the
-/// text typed in the search field, when the device's clients stand in after
-/// the server failed their first page, and what the subtitle says of the
-/// server's totals.
-@Suite("Clients search and fallback")
+/// text typed in the search field, what the title says over a first page the
+/// server failed, and what the subtitle says of the server's totals.
+@Suite("Clients search and failure")
 @MainActor
 struct ClientsViewTests {
 
@@ -56,38 +55,45 @@ struct ClientsViewTests {
         #expect(!ClientsView.showsRecents(isSearching: true, typed: "", recents: []))
     }
 
-    // MARK: - Fallback
+    // MARK: - Failure title
 
-    @Test("Without a connection, a text or a filter, the device stands in")
+    @Test("Without a connection, a text or a filter, the list itself needs the connection")
     func networkWithoutFilters() {
-        #expect(ClientsView.showsDevice(
+        #expect(ClientsView.failureTitle(
             after: AppError.network(underlying: nil), text: "", options: ClientSearchOptions()
-        ))
-        // A sort alone: the device lists by name, under the notice.
-        #expect(ClientsView.showsDevice(
+        ) == "Clients need a connection")
+        // A sort alone narrows nothing.
+        #expect(ClientsView.failureTitle(
             after: AppError.network(underlying: nil), text: "", options: ClientSearchOptions(sortBy: "lastPurchase")
-        ))
+        ) == "Clients need a connection")
     }
 
-    @Test("With filters, which the device cannot apply, the error shows")
+    @Test("With filters, the filters need the connection — with a text typed too")
     func networkWithFilters() {
-        #expect(!ClientsView.showsDevice(
-            after: AppError.network(underlying: nil), text: "", options: ClientSearchOptions(filters: [.value(ref: "a")])
-        ))
+        let filtered = ClientSearchOptions(filters: [.value(ref: "a")])
+        #expect(ClientsView.failureTitle(
+            after: AppError.network(underlying: nil), text: "", options: filtered
+        ) == "Filters need a connection")
+        #expect(ClientsView.failureTitle(
+            after: AppError.network(underlying: nil), text: "ramos", options: filtered
+        ) == "Filters need a connection")
     }
 
-    @Test("With a text, which the device does not search, the error shows")
+    @Test("With a text alone, the search needs the connection")
     func networkWithText() {
-        #expect(!ClientsView.showsDevice(
+        #expect(ClientsView.failureTitle(
             after: AppError.network(underlying: nil), text: "ramos", options: ClientSearchOptions()
-        ))
+        ) == "Search needs a connection")
     }
 
-    @Test("A server that answers with an error shows it, never the device")
+    @Test("A server that answers with an error says the search failed, whatever was picked")
     func serverError() {
-        #expect(!ClientsView.showsDevice(
+        #expect(ClientsView.failureTitle(
             after: AppError.server(statusCode: 503), text: "", options: ClientSearchOptions()
-        ))
+        ) == "Search failed")
+        #expect(ClientsView.failureTitle(
+            after: AppError.server(statusCode: 503), text: "ramos", options: ClientSearchOptions(filters: [.value(ref: "a")])
+        ) == "Search failed")
     }
 
     // MARK: - Subtitle

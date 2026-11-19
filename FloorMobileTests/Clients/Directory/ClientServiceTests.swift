@@ -4,7 +4,6 @@
 //
 
 import Foundation
-import SwiftData
 import Synchronization
 import Testing
 @testable import FloorMobile
@@ -22,115 +21,17 @@ struct ClientServiceTests {
         condition: .object(["field": .string("client.optinEmail"), "op": .string("eq"), "value": .bool(false)])
     )
 
-    // MARK: - Sync
-
-    @Test("A first sync pages through everything and keeps the last page's cursor")
-    func firstSyncLoadsEverything() async throws {
-        let container = try Self.inMemoryContainer()
-        let cursor = StoredValue<String>.inMemory()
-        let requested = Mutex<[String]>([])
-        let api = Self.makeClient { request in
-            let url = request.url?.absoluteString ?? ""
-            requested.withLock { $0.append(url) }
-            let name = url.contains("after=cursor-page-2") ? "client_sync_page2" : "client_sync_page1"
-            return (Self.response(request), try Fixture.data(name))
-        }
-
-        try await ClientService(modelContainer: container).synchronize(using: api, cursor: cursor)
-
-        let ids = try ModelContext(container).fetch(FetchDescriptor<Client>()).map(\.id)
-        #expect(Set(ids) == [
-            "0002b7b6-5167-4e0a-88c9-74d7bb83abbd",
-            "0009c1e2-77aa-4b1e-9d0f-1b2c3d4e5f60",
-            "7f38a537-b8de-48fb-baf1-9dd959b06a49",
-        ])
-        // No cursor on the first call: the server sends everything.
-        #expect(requested.withLock { $0.first?.contains("after=") } == false)
-        #expect(cursor.get() == "cursor-pass-1")
-    }
-
-    @Test("The next sync sends the kept cursor and updates in place")
-    func nextSyncIsADelta() async throws {
-        let container = try Self.inMemoryContainer()
-        let service = ClientService(modelContainer: container)
-        let cursor = StoredValue<String>.inMemory()
-        let api = Self.makeClient { request in
-            let url = request.url?.absoluteString ?? ""
-            let name = switch true {
-            case url.contains("after=cursor-pass-1"): "client_sync_delta"
-            case url.contains("after=cursor-page-2"): "client_sync_page2"
-            default: "client_sync_page1"
-            }
-            return (Self.response(request), try Fixture.data(name))
-        }
-        try await service.synchronize(using: api, cursor: cursor)
-
-        try await service.synchronize(using: api, cursor: cursor)
-
-        let clients = try ModelContext(container).fetch(FetchDescriptor<Client>())
-        // Updated in place, not duplicated; the others are untouched.
-        #expect(clients.count == 3)
-        let alice = try #require(clients.first { $0.id == "0002b7b6-5167-4e0a-88c9-74d7bb83abbd" })
-        #expect(alice.lastName == "Martinez-Durand")
-        #expect(alice.segment == "Loyal")
-        #expect(cursor.get() == "cursor-pass-2")
-    }
-
-    @Test("A pass cut short keeps the previous cursor")
-    func failedPassKeepsTheCursor() async throws {
-        let container = try Self.inMemoryContainer()
-        let cursor = StoredValue<String>.inMemory("cursor-pass-0")
-        // Page 1 comes back; page 2 fails.
-        let api = Self.makeClient { request in
-            let url = request.url?.absoluteString ?? ""
-            if url.contains("after=cursor-page-2") {
-                return (Self.response(request, statusCode: 500), Data())
-            }
-            return (Self.response(request), try Fixture.data("client_sync_page1"))
-        }
-
-        await #expect(throws: AppError.self) {
-            try await ClientService(modelContainer: container).synchronize(using: api, cursor: cursor)
-        }
-
-        // What page 1 brought is kept; the cursor is not moved past a pass
-        // that did not finish.
-        #expect(try ModelContext(container).fetchCount(FetchDescriptor<Client>()) == 2)
-        #expect(cursor.get() == "cursor-pass-0")
-    }
-
-    // MARK: - Prune
-
-    @Test("Clients the store no longer has are deleted, the others kept")
-    func pruneDeletesTheDeparted() async throws {
-        let container = try Self.inMemoryContainer()
-        let context = container.mainContext
-        for id in ["0002b7b6-5167-4e0a-88c9-74d7bb83abbd", "7f38a537-b8de-48fb-baf1-9dd959b06a49", "moved-away"] {
-            context.insert(Client(id: id, externalId: "ext-\(id)"))
-        }
-        try context.save()
-        let api = Self.makeClient { request in
-            (Self.response(request), try Fixture.data("client_filter_ids"))
-        }
-
-        try await ClientService(modelContainer: container).pruneDeparted(using: api)
-
-        let ids = try ModelContext(container).fetch(FetchDescriptor<Client>()).map(\.id)
-        #expect(Set(ids) == ["0002b7b6-5167-4e0a-88c9-74d7bb83abbd", "7f38a537-b8de-48fb-baf1-9dd959b06a49"])
-    }
-
     // MARK: - My clients search
 
     @Test("A search of my clients sends scope=mine, the query and cursor, and hands back clients and where to go on")
     func myClientsSearchSendsAndMaps() async throws {
-        let container = try Self.inMemoryContainer()
         let requested = Mutex<URLComponents?>(nil)
         let api = Self.makeClient { request in
             requested.withLock { $0 = request.url.flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) } }
             return (Self.response(request), try Fixture.data("client_my_clients_page"))
         }
 
-        let page = try await ClientService(modelContainer: container)
+        let page = try await ClientService()
             .searchClients("aliette mar", after: "my-clients-cursor-1", using: api)
 
         let url = try #require(requested.withLock { $0 })
@@ -142,8 +43,6 @@ struct ClientServiceTests {
         #expect(page.clients.map(\.displayName) == ["Aliette Martin", nil])
         #expect(page.clients.first?.primaryPhone == "+33612345678")
         #expect(page.nextCursor == "my-clients-cursor-2")
-        // Shown, never stored.
-        #expect(try ModelContext(container).fetchCount(FetchDescriptor<Client>()) == 0)
     }
 
     @Test("The last page of a search of my clients has nowhere to go on, whatever cursor it carries")
@@ -154,7 +53,7 @@ struct ClientServiceTests {
             return (Self.response(request), body)
         }
 
-        let page = try await ClientService(modelContainer: try Self.inMemoryContainer())
+        let page = try await ClientService()
             .searchClients("aliette", using: api)
 
         #expect(page.clients.isEmpty)
@@ -232,7 +131,7 @@ struct ClientServiceTests {
         }
         let filters: [ClientFilterChoice] = [.value(ref: "a"), .value(ref: "b", parameters: ["since": "2026-07-01"])]
 
-        let total = try await ClientService(modelContainer: try Self.inMemoryContainer())
+        let total = try await ClientService()
             .countClients("aliette", filters: filters, using: api)
 
         #expect(total == 473245)
@@ -267,7 +166,7 @@ struct ClientServiceTests {
         #expect(names == ["scope", "filters"])
     }
 
-    @Test("A count fails fast: the associate waits on it, and nothing on the device stands in")
+    @Test("A count fails fast: the associate waits on it")
     func countIsInteractive() {
         #expect(Endpoint.countClients("aliette").interactive)
     }
@@ -279,7 +178,7 @@ struct ClientServiceTests {
         }
 
         let error = await #expect(throws: AppError.self) {
-            try await ClientService(modelContainer: try Self.inMemoryContainer())
+            try await ClientService()
                 .countClients(nil, filters: [.value(ref: "a")], using: api)
         }
 
@@ -298,7 +197,7 @@ struct ClientServiceTests {
         let api = Self.makeClient { _ in throw URLError(code) }
 
         let error = await #expect(throws: AppError.self) {
-            try await ClientService(modelContainer: try Self.inMemoryContainer())
+            try await ClientService()
                 .searchClients("aliette", using: api)
         }
 
@@ -315,7 +214,7 @@ struct ClientServiceTests {
         }
 
         let error = await #expect(throws: AppError.self) {
-            try await ClientService(modelContainer: try Self.inMemoryContainer())
+            try await ClientService()
                 .searchClients("aliette", using: api)
         }
 
@@ -335,7 +234,7 @@ struct ClientServiceTests {
             return (Self.response(request), try Fixture.data("client_text_filters"))
         }
 
-        let answer = try await ClientService(modelContainer: try Self.inMemoryContainer())
+        let answer = try await ClientService()
             .filterItems(from: Self.sentence, using: api)
 
         #expect(answer.items.map(\.label) == ["Clients VIP", "Plus de 10 000 € dépensés en 2026", "Sans opt-in email"])
@@ -352,7 +251,7 @@ struct ClientServiceTests {
         let fixture = try Fixture.data("client_text_filters")
         let api = Self.makeClient { request in (Self.response(request), fixture) }
 
-        let answer = try await ClientService(modelContainer: try Self.inMemoryContainer())
+        let answer = try await ClientService()
             .filterItems(from: Self.sentence, using: api)
 
         let received = try #require(JSONSerialization.jsonObject(with: fixture) as? [String: Any])
@@ -371,7 +270,7 @@ struct ClientServiceTests {
         }
 
         // The sentence this real answer was given for.
-        let answer = try await ClientService(modelContainer: try Self.inMemoryContainer())
+        let answer = try await ClientService()
             .filterItems(from: "VIP clients who like K-Way", using: api)
 
         #expect(answer.items.map(\.label) == ["Clients VIP"])
@@ -385,7 +284,7 @@ struct ClientServiceTests {
         }
 
         let error = await #expect(throws: AppError.self) {
-            try await ClientService(modelContainer: try Self.inMemoryContainer())
+            try await ClientService()
                 .filterItems(from: Self.sentence, using: api)
         }
 
@@ -434,7 +333,7 @@ struct ClientServiceTests {
         let api = Self.makeClient { request in
             (Self.response(request, statusCode: 404), Data(#"{"error":"Client not found"}"#.utf8))
         }
-        let service = ClientService(modelContainer: try Self.inMemoryContainer())
+        let service = ClientService()
 
         let error = await #expect(throws: AppError.self) {
             switch part {
@@ -495,7 +394,7 @@ struct ClientServiceTests {
             return (Self.response(request), try Fixture.data("client_details"))
         }
 
-        let saved = try await ClientService(modelContainer: try Self.inMemoryContainer())
+        let saved = try await ClientService()
             .update(edited, from: original, signature: nil, using: api)
 
         #expect(saved == original)
@@ -506,52 +405,17 @@ struct ClientServiceTests {
         #expect(try JSONDecoder().decode([String: String].self, from: body) == ["mobile": "+351 912 345 678"])
     }
 
-    @Test("The client the device keeps takes the answer; one it does not keep is not created")
-    func updateKeepsTheStoredClient() async throws {
-        let original = try Self.details()
-        let container = try Self.inMemoryContainer()
-        let context = ModelContext(container)
-        context.insert(Client(id: original.id, externalId: "seed", firstName: "Kim", searchWords: ["kim"]))
-        try context.save()
-        let api = Self.makeClient { request in (Self.response(request), try Fixture.data("client_details")) }
-
-        _ = try await ClientService(modelContainer: container)
-            .update(original, from: original, signature: nil, using: api)
-
-        let stored = try ModelContext(container).fetch(FetchDescriptor<Client>())
-        #expect(stored.count == 1)
-        #expect(stored.first?.firstName == "Vincent")
-        #expect(stored.first?.primaryEmail == "vincent.adam32@example.test")
-        #expect(stored.first?.searchWords == ["kim"])
-    }
-
-    @Test("An edit the device keeps no copy of creates none")
-    func updateCreatesNothing() async throws {
-        let original = try Self.details()
-        let container = try Self.inMemoryContainer()
-        let api = Self.makeClient { request in (Self.response(request), try Fixture.data("client_details")) }
-
-        _ = try await ClientService(modelContainer: container)
-            .update(original, from: original, signature: nil, using: api)
-
-        #expect(try ModelContext(container).fetchCount(FetchDescriptor<Client>()) == 0)
-    }
-
-    @Test("Consents refused without a signature fail with the 422, and the device's copy is left as it was")
-    func refusedUpdateWritesNothing() async throws {
+    @Test("Consents refused without a signature fail with the 422")
+    func refusedUpdateFails() async throws {
         let original = try Self.details()
         var edited = original
         edited.optIns?.line = true
-        let container = try Self.inMemoryContainer()
-        let context = ModelContext(container)
-        context.insert(Client(id: original.id, externalId: "seed", firstName: "Kim"))
-        try context.save()
         let api = Self.makeClient { request in
             (Self.response(request, statusCode: 422), Data(#"{"error":"A signature is required"}"#.utf8))
         }
 
         let error = await #expect(throws: AppError.self) {
-            try await ClientService(modelContainer: container)
+            try await ClientService()
                 .update(edited, from: original, signature: nil, using: api)
         }
 
@@ -559,9 +423,6 @@ struct ClientServiceTests {
             Issue.record("Expected AppError.server(422), got \(String(describing: error))")
             return
         }
-        let stored = try ModelContext(container).fetch(FetchDescriptor<Client>())
-        #expect(stored.first?.firstName == "Kim")
-        #expect(stored.first?.optIns == nil)
     }
 
     @Test("An edit whose answer is lost stands when the server holds it: read again, not sent again")
@@ -569,21 +430,15 @@ struct ClientServiceTests {
         let edited = try Self.details()
         var original = edited
         original.primaryPhone = "+351 900 000 000"
-        let container = try Self.inMemoryContainer()
-        let context = ModelContext(container)
-        context.insert(Client(id: edited.id, externalId: "seed", firstName: "Kim"))
-        try context.save()
         let api = Self.makeClient { request in
             guard request.httpMethod == "GET" else { throw URLError(.timedOut) }
             return (Self.response(request), try Fixture.data("client_details"))
         }
 
-        let saved = try await ClientService(modelContainer: container)
+        let saved = try await ClientService()
             .update(edited, from: original, signature: nil, using: api)
 
         #expect(saved == edited)
-        let stored = try ModelContext(container).fetch(FetchDescriptor<Client>())
-        #expect(stored.first?.firstName == "Vincent")
     }
 
     @Test("An edit whose answer is lost fails when the server does not hold it")
@@ -597,7 +452,7 @@ struct ClientServiceTests {
         }
 
         let error = await #expect(throws: AppError.self) {
-            try await ClientService(modelContainer: try Self.inMemoryContainer())
+            try await ClientService()
                 .update(edited, from: original, signature: nil, using: api)
         }
 
@@ -615,7 +470,7 @@ struct ClientServiceTests {
         let api = Self.makeClient { _ in throw URLError(.timedOut) }
 
         let error = await #expect(throws: AppError.self) {
-            try await ClientService(modelContainer: try Self.inMemoryContainer())
+            try await ClientService()
                 .update(edited, from: original, signature: nil, using: api)
         }
 
@@ -626,13 +481,6 @@ struct ClientServiceTests {
     }
 
     // MARK: - Helpers
-
-    private static func inMemoryContainer() throws -> ModelContainer {
-        try ModelContainer(
-            for: Client.self,
-            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-        )
-    }
 
     private nonisolated static func makeClient(
         handler: @escaping MockURLProtocol.Handler

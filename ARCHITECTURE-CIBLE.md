@@ -56,7 +56,7 @@ FloorMobile/
 │   └── Sync/
 │       └── SyncEngine.swift           // @ModelActor, moteur à dépendances (conservé)
 └── Features/
-    ├── Clients/       // ClientsView + Client(@Model) + ClientService
+    ├── Clients/       // ClientsView + ClientItem (valeur, non stockée) + ClientService
     ├── Products/      // vues + Product(@Model) + ProductService
     ├── Agenda/        // vues + Activity + ActivityStore(@Observable) + ActivityService
     ├── Feeds/         // vues + FeedItem + FeedStore(@Observable) + FeedService
@@ -96,7 +96,7 @@ Un seul objet, observable au niveau propriété (une vue qui lit `generalInfo` n
 
 **b) Données de référence / offline → SwiftData, les vues lisent via `@Query` :**
 
-Clients, Products/Categories/Variants, ReferenceValues, ThemeColors/Assets restent des `@Model`. La vue lit `@Query` (local-first, offline gratuit), le `SyncEngine` remplit en arrière-plan. Exception décidée le 12/11 : la liste des clients lit le serveur d'abord, et le store seulement sans connexion (`Client.page`). Pour un accès hors vue (ex. `ReferenceValueHelper`), un fetch direct sur le `ModelContext` suffit — et en iOS 27, `ResultsObserver` le rend observable.
+Products/Categories/Variants, ReferenceValues, ThemeColors/Assets restent des `@Model`. La vue lit `@Query` (local-first, offline gratuit), le `SyncEngine` remplit en arrière-plan. Exception décidée le 19/11 : **les clients ne sont pas stockés** — leur liste, leur fiche et leur édition lisent le serveur, et sans connexion la liste montre l'échec. Les exemples de code de ce document bâtis sur un `@Model Client` (plus bas) datent d'avant cette décision : ils illustrent le pattern, pas l'app. Pour un accès hors vue (ex. `ReferenceValueHelper`), un fetch direct sur le `ModelContext` suffit — et en iOS 27, `ResultsObserver` le rend observable.
 
 Reste online-only (cache RAM dans le store de la feature) : Feeds, Conversations, Agenda — sauf si tu veux l'agenda offline, auquel cas `Activity` devient un `@Model` de plus.
 

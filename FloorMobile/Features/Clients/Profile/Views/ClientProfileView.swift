@@ -261,9 +261,7 @@ private struct ClientProfileContent: View {
 
     /// The one notice for every part that failed — their sections hidden —
     /// with why, and "Try again", which asks for all of them again. An
-    /// `EmptySectionCard` on the background like the tabs, mounted as
-    /// `ClientsView.fallbackNotice` mounts it for a silent server: keep the
-    /// two alike.
+    /// `EmptySectionCard` on the background like the tabs.
     private func failureNotice(_ error: any Error) -> some View {
         Section {
             EmptySectionCard(

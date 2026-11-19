@@ -208,8 +208,8 @@ nonisolated struct APIClient: Sendable {
     // MARK: - Interactive calls
 
     /// Cancels a task that would wait for a connection, so an interactive call
-    /// fails at once, as `AppError.network`, and its screen falls back on what
-    /// the device holds. `URLSession` asks at most once per task, and only when
+    /// fails at once, as `AppError.network`, and its screen says so and offers
+    /// to try again. `URLSession` asks at most once per task, and only when
     /// the connection is missing at the start — the case Apple documents it
     /// for, presenting an offline mode.
     ///

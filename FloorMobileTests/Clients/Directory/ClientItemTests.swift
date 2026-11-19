@@ -4,7 +4,6 @@
 //
 
 import Foundation
-import SwiftData
 import Testing
 @testable import FloorMobile
 
@@ -74,58 +73,36 @@ struct ClientItemTests {
         #expect(item.salesAssociateName == nil)
     }
 
-    // MARK: - From the device
+    @Test("A card from a BFF that does not send the store yet maps, its store's name left empty")
+    func cardWithoutStoreMaps() throws {
+        // client_sync_page2.json is a client as the BFF served it before the card, on a route the app no longer
+        // calls: no store, and fields the app does not read — decoding ignores them.
+        let item = ClientItem(wire: try #require(try Self.page("client_sync_page2").items.first))
 
-    @Test("A client the device keeps maps onto the same item")
-    @MainActor
-    func storedClientMaps() throws {
-        let container = try ModelContainer(
-            for: Client.self,
-            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-        )
-        let client = Client(
-            id: "1", externalId: "seed-client-1", firstName: "Alice", lastName: "Martinez",
-            primaryEmail: "alice.martinez@example.com", primaryPhone: "+33 6 12 34 56 78", segment: "VIC",
-            storeCode: "90917634296", store: StoreSnapshot(name: "Shop location", storeCode: "90917634296"),
-            salesAssociateExternalId: "378970372512460673",
-            salesAssociate: SalesAssociateSnapshot(firstName: "Elie", lastName: "Buff"),
-            salutation: "misses",
-            preferredLanguage: "fr",
-            address: Self.address,
-            optIns: Self.optIns
-        )
-        container.mainContext.insert(client)
-
-        #expect(ClientItem(client: client) == ClientItem(
-            id: "1", firstName: "Alice", lastName: "Martinez", segment: "VIC",
-            storeCode: "90917634296", storeName: "Shop location",
-            salesAssociateExternalId: "378970372512460673", salesAssociateName: "Elie Buff",
-            primaryEmail: "alice.martinez@example.com", primaryPhone: "+33 6 12 34 56 78",
-            salutation: "misses", address: Self.address, preferredLanguage: "fr", optIns: Self.optIns
-        ))
+        #expect(item.storeCode == "90917634296")
+        #expect(item.storeName == nil)
+        #expect(item.salesAssociateName == "Elie Buff")
     }
 
-    @Test("A card gives the same item, from the server or kept on the device")
-    @MainActor
-    func storedCardMapsLikeTheCard() throws {
-        let container = try ModelContainer(
-            for: Client.self,
-            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+    @Test("The salutation, language, address and consents map onto the item as sent")
+    func baseDataMaps() throws {
+        // Set on the decoded wire: no fixture copied from the BFF carries an address yet.
+        var wire = try #require(try Self.page("client_my_clients_page").items.first)
+        wire.salutation = "misses"
+        wire.preferredLanguage = "fr"
+        wire.mainAddress = ClientWire.Address(
+            street: "12 Rue Royale", postalCode: "75008", city: "Paris", state: nil, country: "FR"
         )
-        let cards = try Self.page("client_my_clients_page").items
-        for card in cards {
-            container.mainContext.insert(Client(wire: card))
-        }
-        try container.mainContext.save()
+        wire.optIns = ClientWire.OptIns(email: true, directMessage: false, call: true, wechat: false, line: true)
 
-        // Read back through another context: what the store kept, its store
-        // snapshot included, not the objects just built.
-        let stored = try ModelContext(container).fetch(FetchDescriptor<Client>())
-        #expect(stored.count == cards.count)
-        for card in cards {
-            let client = try #require(stored.first { $0.id == card.id })
-            #expect(ClientItem(client: client) == ClientItem(wire: card))
-        }
+        let item = ClientItem(wire: wire)
+
+        #expect(item.salutation == "misses")
+        #expect(item.preferredLanguage == "fr")
+        #expect(item.address == ClientItem.Address(
+            street: "12 Rue Royale", postalCode: "75008", city: "Paris", state: nil, country: "FR"
+        ))
+        #expect(item.optIns == ClientItem.OptIns(email: true, directMessage: false, call: true, wechat: false, line: true))
     }
 
     // MARK: - Whose client

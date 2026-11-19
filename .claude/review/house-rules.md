@@ -52,11 +52,11 @@ types (`@Observable`) are out of scope.
 
 **Wire → model → view, one exception.** Server JSON is decoded into a wire type in `Data/Wire/`, converted by
 `init(wire:)`, and views see only the model. One `<Model>Wire.swift` per local model, an `enum` namespace holding
-`Response` and, if the app writes, `Request` — two types, never one shared `Codable`. A model built from another
-model's `Response` has no wire file: its `init(wire:)` lives in its own file, as for a shared fragment
-(`ClientItem.init(wire:)` reads `ClientWire.Response`). A search result that is not stored is converted to a value
-(`ClientItem`). A service returns models or values, never a page of wire types. The exception: a value the app
-carries without ever interpreting it — a filter's condition from a sentence (`client/text-filters`), kept as `JSONValue`
+`Response` and, if the app writes, `Request` — two types, never one shared `Codable`. A model built from a
+shared wire fragment has no wire file: its `init(wire:)` lives in its own file (`StoreSnapshot.init(wire:)`). A
+server answer that is not stored is converted to a value all the same (`ClientItem`, read in `ClientWire.swift`). A
+service returns models or values, never a page of wire types. The exception: a value the app carries without ever
+interpreting it — a filter's condition from a sentence (`client/text-filters`), kept as `JSONValue`
 (`Core/Networking/JSONValue.swift`) until the search, only compared whole with another (`ClientFilterDraft.apply`) —
 stays as it came, in the model too (`ClientFilterItem.condition`).
 
@@ -84,7 +84,9 @@ feature. A feature never imports another feature's views: what two features shar
 `FloorSchemaV1.models`; `LocalStore.erase` **and** both lists of `LocalStoreTests` (they are hand-mirrored, nothing
 cross-checks them); `AppServices` if it gets a service; the preview containers that list every model
 (`RootView.swift`); its trigger — at startup `SyncManager.performSync` **and** a `hasUsableCache` term, or on screen;
-a cursor or marker as a `StoredKey` owned by `LocalStore` and reset in `erase`. A missing one is a finding.
+a cursor or marker as a `StoredKey` owned by `LocalStore` and reset in `erase` (none exists today: the first one
+adds its reset there). A missing one is a finding. Clients are not a local entity (the user's decision, 2026-11-19):
+they are read from the server and kept nowhere on the device — a plan that stores them again needs the user's word.
 
 **Clean, by Apple's and the industry's standards.**
 - One type per file, named for what it is (a tightly coupled companion type may share its file); protocol /
@@ -104,7 +106,7 @@ a cursor or marker as a `StoredKey` owned by `LocalStore` and reset in `erase`. 
 **Documented.** The comments are the context the next AI reads before it writes in a file; the code already sets the
 standard. Every type and non-trivial function has a `///` comment that says **what** it does, then **why** it is built
 so — the measured reason, the known limit, often the alternative that was rejected (`LocalStore.erase`,
-`ClientService.synchronize`, `AgendaService.setStatus` show the tone). What must stay in step with something elsewhere
+`ClientService.update`, `AgendaService.setStatus` show the tone). What must stay in step with something elsewhere
 is named (a list mirrored in a test, a rule mirrored from the BFF). A comment the change made false is a defect. No
 comment that paraphrases the code, no history ("used to…"). In English, like the code and the names.
 
@@ -155,13 +157,12 @@ such cost. In both cases, the evidence is the existing code or the `floor-dev` r
   scrolls (`.searchable`, navigation bar drawer, 15/11). Touched, the field shows the associate's recent clients
   (`client/recent`, kept in memory by `RecentClients`, asked again each time the list comes on screen, a failure
   ignored) until the text is long enough — none, the list stays (`ClientsView.showsRecents`, tested); the device
-  stores no recent client. Without a connection, without a text and
-  without filters, the device's copy stands in, read a page at a time (`Client.page`), unfiltered: the device does not
-  search. With a text or filters, which the device cannot apply, or after any other error — a 503 `search_timeout` must not fall
-  back silently — the failure shows (`ClientsView.showsDevice`, tested). "All Brand" is gone (12/11): nothing asks
-  `client/search` without a scope. Both sources go through `PagedSearchList`. The device does not reimplement the
-  server's rules: a future search on the device follows them (`floor_search_fold`, the shared vectors in
-  `../FloorPlatform/floor/packages/domain/test/client-search.vectors.json`), never invents its own.
+  stores no client, recent or not (the user's decision, 2026-11-19): the server is the list's only source, through
+  `PagedSearchList`. A first page that fails — no connection, a silent server, a 503 `search_timeout` — shows the
+  failure in the list's place, under a title that says what needed the connection (`ClientsView.failureTitle`,
+  tested); nothing stands in for the server. "All Brand" is gone (12/11): nothing asks `client/search` without a
+  scope. The device does not reimplement the server's search rules (`floor_search_fold`, the shared vectors in
+  `../FloorPlatform/floor/packages/domain/test/client-search.vectors.json`).
 - **SPM dependencies** only with a real added value over the native APIs.
 - **Swift files live in `FloorMobile/`**, never at the root of the repository.
 - **A file's order** (the user's decision, 2026-10-26, the same as FloorPlatform's). Its constants sit at the top: a

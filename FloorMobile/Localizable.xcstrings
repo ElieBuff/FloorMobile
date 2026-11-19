@@ -346,6 +346,9 @@
     "Clients" : {
 
     },
+    "Clients need a connection" : {
+
+    },
     "Close" : {
 
     },
@@ -611,9 +614,6 @@
 
     },
     "Now, %@" : {
-
-    },
-    "Online search isn't responding. Showing results from this device." : {
 
     },
     "Open Settings" : {

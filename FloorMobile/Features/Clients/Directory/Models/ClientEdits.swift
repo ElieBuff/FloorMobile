@@ -8,15 +8,13 @@ import Observation
 
 /// The clients edited while the client list is on screen, so it shows an
 /// edit without searching again: each row reads `current(_:)` rather than
-/// the card its page holds — a page of the server's or, without a
-/// connection, of the device's.
+/// the card its page holds.
 ///
-/// Lives only as long as those pages: a new search reads a source that has
-/// the edit already — the server, or the device, which the save updates
-/// (`ClientService.update`) — so the list calls `removeAll()` when it asks
-/// for a first page, whatever started it: a sort or a filter, "Try again",
-/// the fallback on the device. An edit never hides what changed elsewhere
-/// since (the console, the ingestion, a reassignment).
+/// Lives only as long as those pages: a new search reads the server, which
+/// has the edit already, so the list calls `removeAll()` when it asks for a
+/// first page, whatever started it: a text, a sort or a filter, "Try again".
+/// An edit never hides what changed elsewhere since (the console, the
+/// ingestion, a reassignment).
 ///
 /// A type rather than a callback: the profile is a route's destination, and
 /// a route carries no closure — the list that pushed it cannot be called

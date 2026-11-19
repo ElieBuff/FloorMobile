@@ -124,6 +124,6 @@ enum AppTab: Hashable {
 
 #Preview {
     MainTabView()
-        .modelContainer(for: [AIAction.self, Client.self, ClientSegment.self, ClientSort.self], inMemory: true)
+        .modelContainer(for: [AIAction.self, ClientSegment.self, ClientSort.self], inMemory: true)
         .environment(AppSession(auth: .preview, api: .preview))
 }

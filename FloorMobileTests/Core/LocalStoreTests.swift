@@ -12,8 +12,8 @@ import Testing
 @MainActor
 struct LocalStoreTests {
 
-    private func makeStore(tenant: StoredValue<String>, cursor: StoredValue<String> = .inMemory()) -> LocalStore {
-        LocalStore(tenantID: tenant, clientCursor: cursor)
+    private func makeStore(tenant: StoredValue<String>) -> LocalStore {
+        LocalStore(tenantID: tenant)
     }
 
     /// A store holding one row of **every** model in the schema.
@@ -24,7 +24,7 @@ struct LocalStoreTests {
     /// next session. `wipedRowCount` below turns that into a failing test.
     private func seededContext() throws -> ModelContext {
         let container = try ModelContainer(
-            for: AIAction.self, AgendaEvent.self, AgendaTask.self, Client.self, ClientFilter.self, ClientSegment.self,
+            for: AIAction.self, AgendaEvent.self, AgendaTask.self, ClientFilter.self, ClientSegment.self,
             ClientSort.self, EnumValue.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
@@ -38,7 +38,6 @@ struct LocalStoreTests {
         context.insert(AgendaTask(id: "t", statusRaw: "TO_DO", reasonRaw: "FOLLOW_UP",
                                   title: "t", startDate: epoch,
                                   createdAt: epoch, updatedAt: epoch))
-        context.insert(Client(id: "c", externalId: "c"))
         context.insert(ClientFilter(id: "f", titleKey: "client.filter.f", selectionRaw: "SINGLE", rank: 0, values: []))
         context.insert(ClientSegment(code: "VIC", backgroundColorHex: "#14545F", textColorHex: "#ffffff", rank: 0))
         context.insert(ClientSort(value: "name", labelKey: "client.sort.name", directionRaw: "asc", isDefault: true, rank: 0))
@@ -52,7 +51,6 @@ struct LocalStoreTests {
         try context.fetchCount(FetchDescriptor<AIAction>())
             + context.fetchCount(FetchDescriptor<AgendaEvent>())
             + context.fetchCount(FetchDescriptor<AgendaTask>())
-            + context.fetchCount(FetchDescriptor<Client>())
             + context.fetchCount(FetchDescriptor<ClientFilter>())
             + context.fetchCount(FetchDescriptor<ClientSegment>())
             + context.fetchCount(FetchDescriptor<ClientSort>())
@@ -63,30 +61,24 @@ struct LocalStoreTests {
     func sameTenantKeepsStore() throws {
         let context = try seededContext()
         let tenant = StoredValue<String>.inMemory("org-1")
-        let cursor = StoredValue<String>.inMemory("cursor")
 
-        try makeStore(tenant: tenant, cursor: cursor).enforceTenant("org-1", context: context)
+        try makeStore(tenant: tenant).enforceTenant("org-1", context: context)
 
-        #expect(try remainingRowCount(in: context) == 8)
+        #expect(try remainingRowCount(in: context) == 7)
         #expect(tenant.get() == "org-1")
-        #expect(cursor.get() == "cursor")
     }
 
     @Test("A different tenant wipes every model and updates the marker")
     func differentTenantWipesStore() throws {
         let context = try seededContext()
         let tenant = StoredValue<String>.inMemory("org-1")
-        let cursor = StoredValue<String>.inMemory("cursor")
 
-        try makeStore(tenant: tenant, cursor: cursor).enforceTenant("org-2", context: context)
+        try makeStore(tenant: tenant).enforceTenant("org-2", context: context)
 
         // Not a single row of any model survives: this is what keeps one
         // tenant's data from surfacing under another.
         #expect(try remainingRowCount(in: context) == 0)
         #expect(tenant.get() == "org-2")
-        // Nor the client cursor: kept, it would ask the new tenant's server
-        // for recent changes only, on a store that now holds no client.
-        #expect(cursor.get() == nil)
     }
 
     @Test("First login (no previous tenant) records the tenant")

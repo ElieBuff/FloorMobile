@@ -10,55 +10,44 @@ import SwiftUI
 /// server sets it — under the large title "All my clients", how many they
 /// are below it, and the header's three buttons.
 ///
-/// The subtitle's totals are the server's alone (decision of 18/11), never
-/// the device's count: the associate's own (`bookTotal`), asked on entry
-/// (`client/count`), and the filters' (`filteredTotal`), which "Sort &
-/// filter" hands back with them on "Show" — it has just counted it — rather
-/// than the list asking again (`show`). Nothing shows until the server has
-/// answered.
+/// The subtitle's totals are the server's (decision of 18/11): the
+/// associate's own (`bookTotal`), asked on entry (`client/count`), and the
+/// filters' (`filteredTotal`), which "Sort & filter" hands back with them on
+/// "Show" — it has just counted it — rather than the list asking again
+/// (`show`). Nothing shows until the server has answered.
 ///
-/// The server answers first (`ClientService.searchClients`, `.mine`), with the
-/// sort and the filters picked in "Sort & filter" (`options`), a page at a
-/// time (`PagedSearchList`), each client a `ClientRow` — and with
-/// the name typed in the search field, under the title. Touched, the field
-/// shows the associate's recent clients instead, until three characters are
-/// typed (`showsRecents`, `RecentClients`).
+/// The server is the list's only source — the device keeps no client
+/// (decision of 19/11): `ClientService.searchClients`, with the sort and the
+/// filters picked in "Sort & filter" (`options`), a page at a time
+/// (`PagedSearchList`), each client a `ClientRow` — and with the name typed
+/// in the search field, under the title. Touched, the field shows the
+/// associate's recent clients instead, until three characters are typed
+/// (`showsRecents`, `RecentClients`).
 ///
-/// When the server fails the first page without a connection, with no filter
-/// picked and no text typed, the device's clients stand in, under a notice
-/// that says so (`showsDevice`); otherwise the failure itself
-/// (`LoadFailureView`). The request is interactive (`Endpoint.interactive`):
+/// A first page the server fails shows the failure in the list's place
+/// (`LoadFailureView`), under a title that says what needed the connection
+/// (`failureTitle`). The request is interactive (`Endpoint.interactive`):
 /// without a connection it fails as soon as it is sent, with a silent server
 /// once `APIClient`'s short timeout runs out.
 ///
-/// The fallback, or the failure, lasts one search: every new sort or filter
-/// asks the server first, and so does their "Try again". A next page that
-/// fails keeps the pages on screen under the list's own alert
-/// (`PagedSearchList`).
+/// The failure lasts one search: every new text, sort or filter asks the
+/// server again, and so does "Try again". A next page that fails keeps the
+/// pages on screen under the list's own alert (`PagedSearchList`).
 ///
-/// What the server first costs (decision of 12/11): opening the tab shows a
-/// spinner until the server answers, where the device's list showed at once;
-/// and the device's list, read a page at a time (`Client.page`), does not
-/// follow the store live — nothing writes it while the list is on screen but
-/// an edit from a profile, which `ClientEdits` shows.
-///
-/// The device's list is the store's, as the sync keeps it: it stands in for
-/// the server's "mine" only while "mine" is the store — a tenant that narrows
-/// "mine" to the associate's own book needs the sync narrowed with it.
+/// Opening the tab shows a spinner until the server answers. An edit saved
+/// from a profile shows in the list at once, over the page that carried the
+/// client, until the next search (`ClientEdits`).
 struct ClientsView: View {
     /// The fewest characters, spaces aside, a search sends to the server,
     /// which refuses fewer: below it, the server is asked without the text.
     static let searchMinimumLength = 3
-    /// How many of the device's clients a page holds, without a connection.
-    private static let devicePageSize = 50
-    /// What an empty list says when nothing narrows it, from either source.
+    /// What an empty list says when nothing narrows it.
     private static let noClients = (title: String(localized: "No clients yet"), systemImage: "person.2")
 
     /// What the search field holds. The field sits under the title and folds
     /// away as the list scrolls (decision of 15/11): it searches a name inside
     /// the list on screen, with its sort and its filters, where the Search tab
-    /// searches everything. Only the server reads the text: the device does
-    /// not search (decision of 12/11).
+    /// searches everything.
     @State private var query = ""
     /// Whether the search field is active: touched, risen into the bar, until
     /// "Cancel".
@@ -78,9 +67,9 @@ struct ClientsView: View {
     /// Whether "Sort & filter" is open.
     @State private var isSortingAndFiltering = false
     /// The first page the server failed, while its text is still the search:
-    /// the device's clients stand in for the server's, or the error does
-    /// (`showsDevice`). Its text, not a flag, says which search failed, so a
-    /// failure reported late for an earlier text never reaches a later one.
+    /// the failure shows in the list's place (`failedFirstPage`). Its text,
+    /// not a flag, says which search failed, so a failure reported late for
+    /// an earlier text never reaches a later one.
     @State private var failedSearch: (query: String, error: any Error)?
     /// How many clients the associate has: the server's total without a
     /// filter (`client/count`), for the subtitle. Asked when the list comes
@@ -96,7 +85,6 @@ struct ClientsView: View {
 
     @Environment(AppSession.self) private var session
     @Environment(AppServices.self) private var services
-    @Environment(\.modelContext) private var modelContext
 
     /// The text the search sends: the field's, spaces around it aside, once it
     /// is long enough for the server — empty until then, so the first letters
@@ -118,19 +106,6 @@ struct ClientsView: View {
     /// recent clients to show — without any, the list shows as before.
     static func showsRecents(isSearching: Bool, typed: String, recents: [ClientItem]?) -> Bool {
         isSearching && searchText(typed: typed).isEmpty && !(recents ?? []).isEmpty
-    }
-
-    /// Whether a first page the server failed gives way to the device's
-    /// clients: only without a connection — `AppError.network`: none, or a
-    /// server silent past `APIClient`'s short timeout — and with neither a
-    /// text nor filters, which the device cannot apply. Any other error shows
-    /// as it is: after a 503 `search_timeout`, the BFF asks not to fall back
-    /// silently on the device. A sort alone lets the device stand in, by
-    /// name, without the sort: the notice already says the list comes from
-    /// the device.
-    static func showsDevice(after error: any Error, text: String, options: ClientSearchOptions) -> Bool {
-        guard case .network? = error as? AppError else { return false }
-        return text.isEmpty && options.filters.isEmpty
     }
 
     var body: some View {
@@ -261,6 +236,19 @@ struct ClientsView: View {
         return String(localized: "\(filteredTotal) of \(bookTotal) clients")
     }
 
+    /// The title over a first page the server failed. For a network error —
+    /// no connection, or a server silent past `APIClient`'s short timeout,
+    /// which `AppError.network` does not tell apart — what needed the
+    /// connection: the filters when some are picked, else the text typed,
+    /// else the list itself, a sort alone included. "Search failed" for any
+    /// other error — a 503 `search_timeout`, for one.
+    static func failureTitle(after error: any Error, text: String, options: ClientSearchOptions) -> String {
+        guard case .network? = error as? AppError else { return String(localized: "Search failed") }
+        if !options.filters.isEmpty { return String(localized: "Filters need a connection") }
+        if !text.isEmpty { return String(localized: "Search needs a connection") }
+        return String(localized: "Clients need a connection")
+    }
+
     /// What "Show" hands back from "Sort & filter": the sort and the filters,
     /// and their total when the screen had it — the list does not ask the
     /// server again for a total just counted (decision of 18/11). Without
@@ -295,25 +283,15 @@ struct ClientsView: View {
     // MARK: - List
 
     /// The server's clients — or, once it failed their first page, the
-    /// device's under the notice, or the error (`showsDevice`). Separate
-    /// branches, so moving between them builds the list afresh: "Try again"
-    /// builds a new one, which asks the server for its first page again.
+    /// failure. Separate branches, so moving between them builds the list
+    /// afresh: "Try again" builds a new one, which asks the server for its
+    /// first page again.
     @ViewBuilder
     private var content: some View {
         if Self.showsRecents(isSearching: isSearching, typed: query, recents: recents.clients) {
             recentClients
         } else if let failedSearch, failedSearch.query == text {
-            if Self.showsDevice(after: failedSearch.error, text: text, options: options) {
-                // Above the list rather than over it: the card is translucent,
-                // and rows scrolling under it would bury its message.
-                VStack(spacing: 0) {
-                    fallbackNotice
-                        .padding(.top, 8)
-                    deviceClients
-                }
-            } else {
-                failedFirstPage(failedSearch.error)
-            }
+            failedFirstPage(failedSearch.error)
         } else {
             serverClients
         }
@@ -330,8 +308,8 @@ struct ClientsView: View {
                 text.isEmpty ? nil : text, options: options, after: cursor, using: session.api
             )
         } onFirstPageFailure: { query, error in
-            // Nothing of the server's on screen yet: the device stands in, or
-            // the error does.
+            // Nothing of the server's on screen yet: the failure takes the
+            // list's place.
             failedSearch = (query, error)
         } row: { clientLink($0) }
     }
@@ -357,17 +335,6 @@ struct ClientsView: View {
         .insetGroupedList()
     }
 
-    /// The store's clients, by name, as the sync keeps them — no sort, no
-    /// filter. A store that cannot be read (very rare) leaves the list empty
-    /// under the notice, without saying why: too rare for code.
-    private var deviceClients: some View {
-        PagedSearchList(query: "", emptyLabel: Self.noClients) { _, cursor in
-            // The store has every edit already (`Client.apply`).
-            if cursor == nil { edits.removeAll() }
-            return try Client.page(after: cursor, size: Self.devicePageSize, in: modelContext)
-        } onFirstPageFailure: { _, _ in } row: { clientLink($0) }
-    }
-
     /// A client's row, opening their profile, with any edit saved since its
     /// page came (`ClientEdits`) — here and in the profile — and the brand's
     /// segment its client's `segment` names: the same code, as the server
@@ -390,45 +357,11 @@ struct ClientsView: View {
             : (String(localized: "No clients match these filters"), "line.3.horizontal.decrease")
     }
 
-    /// Says the list comes from the device because the server did not answer,
-    /// and offers to ask it again.
-    private var fallbackNotice: some View {
-        EmptySectionCard(
-            icon: {
-                Image(systemName: "wifi.slash")
-                    .foregroundStyle(Color(.OnCanvas.textPrimary))
-                    // The message says what happened — and a silent server is
-                    // not a missing connection.
-                    .accessibilityHidden(true)
-            },
-            message: String(localized: "Online search isn't responding. Showing results from this device."),
-            action: EmptySectionAction(label: String(localized: "Try again")) {
-                failedSearch = nil
-            }
-        )
-        // One element for VoiceOver: the message, then its button, labelled by
-        // its visible "Try again".
-        .accessibilityElement(children: .combine)
-        // In line with the list below it (`.insetGroupedList()`'s margin).
-        .padding(.horizontal, AppSpacing.screenInset)
-    }
-
-    /// What went wrong with a first page the device does not stand in for.
-    /// For any network error, which `showsDevice` leaves here only with
-    /// filters picked or a text typed — no connection, or a server silent past
-    /// `APIClient`'s short timeout, which `AppError.network` does not tell
-    /// apart: "Filters need a connection", or "Search needs a connection" for
-    /// a text alone. "Search failed" otherwise. And "Try again", which builds
-    /// the list afresh, so it asks for that first page again.
+    /// A first page the server failed: what needed the connection in its
+    /// title (`failureTitle`), the error's own message, and "Try again", which
+    /// builds the list afresh, so it asks for that first page again.
     private func failedFirstPage(_ error: any Error) -> some View {
-        let title = if case .network? = error as? AppError {
-            options.filters.isEmpty
-                ? String(localized: "Search needs a connection")
-                : String(localized: "Filters need a connection")
-        } else {
-            String(localized: "Search failed")
-        }
-        return LoadFailureView(title: title, error: error) {
+        LoadFailureView(title: Self.failureTitle(after: error, text: text, options: options), error: error) {
             failedSearch = nil
         }
     }
@@ -437,41 +370,10 @@ struct ClientsView: View {
 // MARK: - Previews
 
 // The preview's API client aims at a host that does not answer: the first
-// page fails as without a connection, and the device's clients stand in.
-// `ClientSort` in each container: "Sort & filter" reads it.
-#Preview("Without a connection") {
-    let container = try! ModelContainer(
-        for: Client.self, ClientSegment.self, ClientSort.self,
-        configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-    )
-    container.mainContext.insert(Client(
-        id: "1", externalId: "1", firstName: "Alice", lastName: "Martinez",
-        primaryEmail: "alice.martinez@example.com", primaryPhone: "+33 6 12 34 56 78", segment: "VIC"
-    ))
-    container.mainContext.insert(
-        ClientSegment(code: "VIC", backgroundColorHex: "#14545F", textColorHex: "#ffffff", rank: 0)
-    )
-    container.mainContext.insert(Client(
-        id: "2", externalId: "2", firstName: "Raphaël", lastName: "Van den Berg",
-        primaryPhone: "+33 6 98 76 54 32"
-    ))
-    return NavigationStack {
+// page fails as without a connection, and the failure shows. The trait brings
+// the store "Sort & filter" reads, the session and the services.
+#Preview("Without a connection", traits: .searchOptionsSampleData) {
+    NavigationStack {
         ClientsView()
     }
-    .modelContainer(container)
-    .environment(AppSession(auth: .preview, api: .preview))
-    .environment(AppServices(container: container))
-}
-
-#Preview("No clients yet") {
-    let container = try! ModelContainer(
-        for: Client.self, ClientSegment.self, ClientSort.self,
-        configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-    )
-    return NavigationStack {
-        ClientsView()
-    }
-    .modelContainer(container)
-    .environment(AppSession(auth: .preview, api: .preview))
-    .environment(AppServices(container: container))
 }

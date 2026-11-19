@@ -26,7 +26,7 @@ nonisolated struct Endpoint: Sendable {
     /// A call a person is waiting on, such as a search while they type: it
     /// fails at once without a connection instead of waiting for one, and
     /// after a few seconds of silence from the server — unless `timeout` sets
-    /// its own —, so the screen can fall back on what the device holds. Every
+    /// its own —, so the screen can say so and offer to try again. Every
     /// other call waits, as the session is set up to.
     let interactive: Bool
     /// How long the server may stay silent before the call fails, for a call

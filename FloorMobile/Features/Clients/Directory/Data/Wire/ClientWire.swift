@@ -6,30 +6,28 @@
 import Foundation
 
 /// Wire format of a client: the one card the server sends for every client
-/// route — one client (`client/{id}`, and an edit's answer), the store's
-/// clients the device keeps (`client/sync`), the associate's own clients a
-/// search finds (`client/search?scope=mine`), and their recent clients
-/// (`client/recent`) — and the edit the app sends (`Request`,
+/// route — one client (`client/{id}`, and an edit's answer), the associate's
+/// own clients a search finds (`client/search?scope=mine`), and their recent
+/// clients (`client/recent`) — and the edit the app sends (`Request`,
 /// `PATCH client/{id}`).
 ///
-/// One card for two readers, to keep in step with it: `Client` keeps it
-/// (`init(wire:)`, below), `ClientItem` shows it (`ClientItem.init(wire:)`,
-/// in its own file).
+/// The app reads the card as a `ClientItem`, its one client value
+/// (`init(wire:)`, below), and writes an edit from two of them (`Request`).
+/// Named after the server's resource rather than after the value: every
+/// client route speaks this card.
 nonisolated enum ClientWire {
-    /// One client card — of a page, which decodes as a `CursorPage` (the
-    /// sync's `storeCode` on it is not needed), of the recent clients
-    /// (`Recents`), or alone. The store and the associate come as the shared
-    /// projections an agenda item embeds them with.
+    /// One client card — of a page, which decodes as a `CursorPage`, of the
+    /// recent clients (`Recents`), or alone. The store and the associate come
+    /// as the shared projections an agenda item embeds them with.
     ///
-    /// The email, the phone, the address, the consents and the search's
-    /// words — drawn from the name, the email and the phone — are left out
-    /// of a card the server has none for (`client_search_page.json`, a card
-    /// read in tests, has no email or phone). The salutation, the language,
-    /// the address and the consents are absent from a BFF that does not send
-    /// them yet.
+    /// The email, the phone, the address and the consents are left out of a
+    /// card the server has none for (`client_search_page.json`, a card read
+    /// in tests, has no email or phone). The salutation, the language, the
+    /// address and the consents are absent from a BFF that does not send them
+    /// yet. The card carries more — the client's external id, the words the
+    /// server searches by — which the app does not read.
     struct Response: Decodable, Sendable {
         var id: String
-        var externalId: String
         var firstName: String?
         var lastName: String?
         var segment: String?
@@ -41,12 +39,6 @@ nonisolated enum ClientWire {
         var salesAssociate: SalesAssociateSnapshotWire?
         var primaryEmail: String?
         var primaryPhone: String?
-        /// The words the server finds the client by — the first name's, the
-        /// last name's and the email's before its @, folded, each multi-word
-        /// value also glued — and its phone numbers as digits: what the
-        /// server's `floor_clients_search_columns` writes.
-        var searchWords: [String]?
-        var searchPhones: [String]?
         /// The server's own value (`mister`, `misses`, `miss`), an open set.
         var salutation: String?
         /// An ISO 639-1 code ("fr", "en", "zh").
@@ -57,10 +49,10 @@ nonisolated enum ClientWire {
         /// The server spells the associate `SA` and the consents `optins`;
         /// the app spells them out.
         enum CodingKeys: String, CodingKey {
-            case id, externalId, firstName, lastName, segment, storeCode, store
+            case id, firstName, lastName, segment, storeCode, store
             case salesAssociateExternalId = "SAExternalId"
             case salesAssociate = "SA"
-            case primaryEmail, primaryPhone, searchWords, searchPhones
+            case primaryEmail, primaryPhone
             case salutation, preferredLanguage, mainAddress
             case optIns = "optins"
         }
@@ -95,13 +87,6 @@ nonisolated enum ClientWire {
     /// which the app does not show.
     struct Recents: Decodable, Sendable {
         var items: [Response]
-    }
-
-    /// Every client id of the store, as `client/store-ids` serves it — what
-    /// the device checks its own copy against.
-    struct StoreIDs: Decodable, Sendable {
-        var storeCode: String
-        var ids: [String]
     }
 
     /// How many clients a search would list, as `client/count` serves it.
@@ -230,29 +215,45 @@ nonisolated enum ClientWire {
     }
 }
 
-nonisolated extension Client {
-    /// Maps the card into the local model, the store and the associate kept
-    /// as display snapshots; search words a card leaves out become empty
-    /// lists.
-    convenience init(wire: ClientWire.Response) {
+nonisolated extension ClientItem {
+    /// A card the server sent, the store and the associate flattened into
+    /// display names.
+    init(wire: ClientWire.Response) {
         self.init(
             id: wire.id,
-            externalId: wire.externalId,
             firstName: wire.firstName,
             lastName: wire.lastName,
-            primaryEmail: wire.primaryEmail,
-            primaryPhone: wire.primaryPhone,
             segment: wire.segment,
             storeCode: wire.storeCode,
-            store: wire.store.map(StoreSnapshot.init(wire:)),
+            storeName: wire.store?.name,
             salesAssociateExternalId: wire.salesAssociateExternalId,
-            salesAssociate: wire.salesAssociate.map(SalesAssociateSnapshot.init(wire:)),
-            searchWords: wire.searchWords ?? [],
-            searchPhones: wire.searchPhones ?? [],
+            salesAssociateName: wire.salesAssociate.flatMap {
+                PersonName.display(first: $0.firstName, last: $0.lastName)
+            },
+            primaryEmail: wire.primaryEmail,
+            primaryPhone: wire.primaryPhone,
             salutation: wire.salutation,
+            address: wire.mainAddress.map(Address.init(wire:)),
             preferredLanguage: wire.preferredLanguage,
-            address: wire.mainAddress.map(ClientItem.Address.init(wire:)),
-            optIns: wire.optIns.map(ClientItem.OptIns.init(wire:))
+            optIns: wire.optIns.map(OptIns.init(wire:))
+        )
+    }
+}
+
+nonisolated extension ClientItem.Address {
+    init(wire: ClientWire.Address) {
+        self.init(
+            street: wire.street, postalCode: wire.postalCode, city: wire.city,
+            state: wire.state, country: wire.country
+        )
+    }
+}
+
+nonisolated extension ClientItem.OptIns {
+    init(wire: ClientWire.OptIns) {
+        self.init(
+            email: wire.email, directMessage: wire.directMessage, call: wire.call,
+            wechat: wire.wechat, line: wire.line
         )
     }
 }

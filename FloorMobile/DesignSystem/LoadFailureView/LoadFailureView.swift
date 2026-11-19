@@ -10,8 +10,8 @@ import SwiftUI
 /// the caller to start the load again.
 ///
 /// One view for every load that fails as a whole — a list's first page (the
-/// client list with filters), a client's profile — so they read alike and
-/// cannot drift apart.
+/// client list), a client's profile — so they read alike and cannot drift
+/// apart.
 /// Native inside: a `ContentUnavailableView`.
 ///
 /// ```swift
