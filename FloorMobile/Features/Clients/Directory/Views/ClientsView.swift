@@ -7,8 +7,15 @@ import SwiftData
 import SwiftUI
 
 /// The Clients tab: the associate's own clients — their store's today, as the
-/// server sets it — under the large title "All my clients", how many the
-/// device holds below it, and the header's three buttons.
+/// server sets it — under the large title "All my clients", how many they
+/// are below it, and the header's three buttons.
+///
+/// The subtitle's totals are the server's alone (decision of 18/11), never
+/// the device's count: the associate's own (`bookTotal`), asked on entry
+/// (`client/count`), and the filters' (`filteredTotal`), which "Sort &
+/// filter" hands back with them on "Show" — it has just counted it — rather
+/// than the list asking again (`show`). Nothing shows until the server has
+/// answered.
 ///
 /// The server answers first (`ClientService.searchClients`, `.mine`), with the
 /// sort and the filters picked in "Sort & filter" (`options`), a page at a
@@ -75,9 +82,14 @@ struct ClientsView: View {
     /// (`showsDevice`). Its text, not a flag, says which search failed, so a
     /// failure reported late for an earlier text never reaches a later one.
     @State private var failedSearch: (query: String, error: any Error)?
-    /// How many clients the device holds, for the subtitle; `nil` until
-    /// counted, or when the count failed.
-    @State private var clientCount: Int?
+    /// How many clients the associate has: the server's total without a
+    /// filter (`client/count`), for the subtitle. Asked when the list comes
+    /// on screen until it is known, then handed again by a "Show" without
+    /// filters; `nil` until the server answers.
+    @State private var bookTotal: Int?
+    /// How many clients the filters picked keep, for the subtitle: handed by
+    /// "Show" with them; `nil` without filters, and while not counted.
+    @State private var filteredTotal: Int?
     /// The brand's segments, as `GET setup` stored them on the device at
     /// launch — read here, never fetched: each row's tag takes its client's.
     @Query(sort: \ClientSegment.rank) private var segments: [ClientSegment]
@@ -130,7 +142,9 @@ struct ClientsView: View {
             .ambientBackground()
             .navigationTitle("All my clients")
             .toolbarTitleDisplayMode(.large)
-            .navigationSubtitle(subtitle)
+            .navigationSubtitle(
+                Self.subtitle(bookTotal: bookTotal, filteredTotal: filteredTotal, isFiltered: !options.filters.isEmpty)
+            )
             // In the navigation bar's drawer: under the large title at the top
             // of the list, folded away as it scrolls — iOS shows it whenever
             // the list is at its top. The default placement shows no field at
@@ -148,11 +162,15 @@ struct ClientsView: View {
             // filters being picked. Its two sheets — "Voice search", "Your
             // description" — open over it at half height.
             .fullScreenCover(isPresented: $isSortingAndFiltering) {
-                ClientSortFilterView(options: $options)
+                ClientSortFilterView(options: options, onShow: show)
+            }
+            // The associate's total, asked on entry (decision of 18/11), and
+            // on a later appearance only while it is still unknown.
+            .task {
+                guard bookTotal == nil, let total = await countClients(matching: []) else { return }
+                bookTotal = total
             }
             .onAppear {
-                // Read again on every appearance: a sync may have changed it.
-                countClients()
                 // Back from a profile, the server has its view, that client
                 // first. In a task of its own rather than `.task`, which the
                 // list leaving would cancel: the answer is kept for later.
@@ -176,7 +194,8 @@ struct ClientsView: View {
     // MARK: - Header
 
     /// The header's three buttons, each in its own glass: "‹ Lists" where a
-    /// back button goes, sort-and-filter and add at the other end.
+    /// back button goes, sort-and-filter — under the number of filters
+    /// picked — and add at the other end.
     @ToolbarContentBuilder
     private var headerButtons: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
@@ -207,6 +226,12 @@ struct ClientsView: View {
                 HStack { Image(systemName: "slider.horizontal.3") }
             }
             .accessibilityLabel(String(localized: "Sort and filter"))
+            // How many filters are picked, in iOS's own badge: none at zero,
+            // and VoiceOver reads the count after the label. Red, where the
+            // mockup draws it in ink (`C-ListeFiltree`): no SwiftUI setting
+            // recolours it (tried on iOS 27.2), and an ink one needs the
+            // button to draw its own glass — for later (decision of 19/11).
+            .badge(options.filters.count)
             .barButtonStyle()
         }
         ToolbarSpacer(.fixed, placement: .topBarTrailing)
@@ -220,17 +245,51 @@ struct ClientsView: View {
         }
     }
 
-    /// "42 in your book" — nothing while the device holds no client or could
-    /// not count them.
-    private var subtitle: String {
-        guard let clientCount, clientCount > 0 else { return "" }
-        return String(localized: "\(clientCount) in your book")
+    /// The subtitle, from the server's totals alone: "42 in your book" without
+    /// filters, as the mockup writes it (`C-Liste`), "12 of 42 clients" with
+    /// them — nothing until the totals it needs are known, and for an empty
+    /// book. With filters, the mockup writes "12 clients" (`C-ListeFiltree`)
+    /// over the filters' pills: the list shows no pills (decision of 18/11),
+    /// so the subtitle says itself that the list is filtered — "0 of 42
+    /// clients" when the filters keep no one. Neither counts the list's
+    /// text: the totals speak of the book and of the filters, not of a name
+    /// searched.
+    static func subtitle(bookTotal: Int?, filteredTotal: Int?, isFiltered: Bool) -> String {
+        guard let bookTotal, bookTotal > 0 else { return "" }
+        guard isFiltered else { return String(localized: "\(bookTotal) in your book") }
+        guard let filteredTotal else { return "" }
+        return String(localized: "\(filteredTotal) of \(bookTotal) clients")
     }
 
-    /// Counts the device's clients, without loading them (`@Query` would, to
-    /// count them). A failed count only leaves the subtitle out.
-    private func countClients() {
-        clientCount = try? modelContext.fetchCount(FetchDescriptor<Client>())
+    /// What "Show" hands back from "Sort & filter": the sort and the filters,
+    /// and their total when the screen had it — the list does not ask the
+    /// server again for a total just counted (decision of 18/11). Without
+    /// filters, that total is the associate's own. With filters and no total
+    /// — "Show" touched before its count came back, or after one that failed
+    /// —, it is asked once, here: no second try, a failure leaves the
+    /// subtitle empty until the next "Show".
+    private func show(_ shown: ClientSearchOptions, total: Int?) {
+        options = shown
+        guard !shown.filters.isEmpty else {
+            filteredTotal = nil
+            if let total { bookTotal = total }
+            return
+        }
+        filteredTotal = total
+        guard total == nil else { return }
+        // In a task of its own, as the recents': the list leaving for a
+        // profile must not cancel it.
+        Task {
+            let counted = await countClients(matching: shown.filters)
+            // Only for the filters still on the list.
+            if options.filters == shown.filters { filteredTotal = counted }
+        }
+    }
+
+    /// The server's total for `filters`, without the list's text; `nil` on
+    /// any failure: a total is a hint, the subtitle goes without it.
+    private func countClients(matching filters: [ClientFilterChoice]) async -> Int? {
+        try? await services.clients.countClients(nil, filters: filters, using: session.api)
     }
 
     // MARK: - List

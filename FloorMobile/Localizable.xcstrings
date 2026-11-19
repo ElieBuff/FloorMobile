@@ -32,6 +32,16 @@
         }
       }
     },
+    "%lld of %lld clients" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld of %2$lld clients"
+          }
+        }
+      }
+    },
     "%lld selected" : {
 
     },

@@ -11,10 +11,10 @@ import Foundation
 /// sort `GET setup` marks `isDefault`, every client).
 ///
 /// The Clients tab keeps it whole (`ClientsView`), and "Sort & filter"
-/// (`ClientSortFilterView`) changes it through one binding. Hashable so
+/// (`ClientSortFilterView`) hands it a new one on "Show". Hashable so
 /// `PagedSearchList` starts the search over, without its cursor, when any of
 /// it changes: a cursor belongs to one search. The screen composes it in a
-/// draft (`ClientFilterDraft`), and "Show" writes it back.
+/// draft (`ClientFilterDraft`), and "Show" hands the draft's back.
 nonisolated struct ClientSearchOptions: Hashable, Sendable {
     /// A sort's `value` (`ClientSort.value`), e.g. `"lastPurchase"`.
     var sortBy: String?

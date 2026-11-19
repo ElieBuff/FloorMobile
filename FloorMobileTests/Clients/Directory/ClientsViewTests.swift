@@ -8,8 +8,9 @@ import Testing
 @testable import FloorMobile
 
 /// The Clients tab's rules, without the view: what the server is sent of the
-/// text typed in the search field, and when the device's clients stand in
-/// after the server failed their first page.
+/// text typed in the search field, when the device's clients stand in after
+/// the server failed their first page, and what the subtitle says of the
+/// server's totals.
 @Suite("Clients search and fallback")
 @MainActor
 struct ClientsViewTests {
@@ -87,5 +88,29 @@ struct ClientsViewTests {
         #expect(!ClientsView.showsDevice(
             after: AppError.server(statusCode: 503), text: "", options: ClientSearchOptions()
         ))
+    }
+
+    // MARK: - Subtitle
+
+    @Test("Without filters, the subtitle says the associate's total")
+    func subtitleSaysTheBook() {
+        #expect(ClientsView.subtitle(bookTotal: 536, filteredTotal: nil, isFiltered: false) == "536 in your book")
+    }
+
+    @Test("Until the server has answered, or for an empty book, the subtitle says nothing", arguments: [nil, 0] as [Int?])
+    func subtitleWaitsForTheServer(bookTotal: Int?) {
+        #expect(ClientsView.subtitle(bookTotal: bookTotal, filteredTotal: nil, isFiltered: false).isEmpty)
+        #expect(ClientsView.subtitle(bookTotal: bookTotal, filteredTotal: 12, isFiltered: true).isEmpty)
+    }
+
+    @Test("With filters, the subtitle says how many they keep, of how many — even none", arguments: [12, 1, 0])
+    func subtitleSaysTheFilters(filteredTotal: Int) {
+        let subtitle = ClientsView.subtitle(bookTotal: 536, filteredTotal: filteredTotal, isFiltered: true)
+        #expect(subtitle == "\(filteredTotal) of 536 clients")
+    }
+
+    @Test("With filters not counted yet, the subtitle says nothing rather than the book alone")
+    func subtitleWaitsForTheFilters() {
+        #expect(ClientsView.subtitle(bookTotal: 536, filteredTotal: nil, isFiltered: true).isEmpty)
     }
 }

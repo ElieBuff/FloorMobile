@@ -18,9 +18,10 @@ import SwiftUI
 /// Everything picked goes into a draft (`ClientFilterDraft`, held by
 /// `ClientFilterEditor`), made from the list's options once, in `init` —
 /// `onAppear` would make it again on the way back from the calendar. Only
-/// "Show" writes them back, and closes the screen; the close button drops
-/// them — no swipe down closes a full screen. "Clear" puts the server's
-/// default sort back and takes the filters off, in the draft.
+/// "Show" hands them back to the list, with their total when it is counted
+/// (`onShow`), and closes the screen; the close button drops them — no swipe
+/// down closes a full screen. "Clear" puts the server's default sort back
+/// and takes the filters off, in the draft.
 ///
 /// The sentence's arrow opens "Your description"
 /// (`ClientFiltersDescriptionSheet`), which reads it on a draft of its own;
@@ -28,8 +29,10 @@ import SwiftUI
 /// to its pills and empties the field (`ClientFilterDraft.apply`), and the
 /// count starts over on its own.
 struct ClientSortFilterView: View {
-    /// The list's options: written only by "Show".
-    @Binding var options: ClientSearchOptions
+    /// What "Show" hands back to the list: the sort and the filters picked,
+    /// and their total when it is counted — `nil` while a count is on its
+    /// way, and after one that failed.
+    private let onShow: (ClientSearchOptions, Int?) -> Void
 
     @Query(sort: \ClientSort.rank) private var sorts: [ClientSort]
     @Query(sort: \ClientFilter.rank) private var filters: [ClientFilter]
@@ -75,9 +78,11 @@ struct ClientSortFilterView: View {
     /// The ring of a segment's dot, the mockup's.
     private static let segmentDotRing: CGFloat = 1.5
 
-    init(options: Binding<ClientSearchOptions>) {
-        _options = options
-        _editor = State(initialValue: ClientFilterEditor(options: options.wrappedValue))
+    /// `options`, the list's own, only seeds the draft: nothing reads them
+    /// again, "Show" hands the draft's back.
+    init(options: ClientSearchOptions, onShow: @escaping (ClientSearchOptions, Int?) -> Void) {
+        self.onShow = onShow
+        _editor = State(initialValue: ClientFilterEditor(options: options))
     }
 
     var body: some View {
@@ -515,16 +520,18 @@ struct ClientSortFilterView: View {
     /// the while: the total is a hint, not a gate. The last total stays while
     /// a newer one is counted, faded, then its digits roll to the new one
     /// (decision of 18/11); VoiceOver reads that last total meanwhile, the
-    /// fading being for the eye only. Writes the draft's sort and filters
-    /// into the list's options, which starts its search over if they changed,
-    /// and closes the screen.
+    /// fading being for the eye only. Hands the draft's sort and filters back
+    /// to the list (`onShow`), which starts its search over if they changed,
+    /// with their total for its subtitle, and closes the screen.
     ///
     /// The list's search then fails ("Search failed") on a value the tenant
     /// removed since the app's launch (409 `filters_changed`), until it is
     /// let go of or the app relaunched: too rare to be worth the code.
     private var showButton: some View {
         Button {
-            options = editor.draft.options
+            // The total only if it is the draft's: the last one, kept while
+            // a newer is counted, would be another filter's.
+            onShow(editor.draft.options, editor.isCounting ? nil : editor.total)
             dismiss()
         } label: {
             Text(showLabel)
@@ -558,22 +565,20 @@ struct ClientSortFilterView: View {
 #Preview("With Tolby's filters", traits: .searchOptionsSampleData) {
     // The list's options as "Show" left them: two filters a description gave.
     // Their conditions are never read here.
-    @Previewable @State var options = ClientSearchOptions(filters: [
+    let options = ClientSearchOptions(filters: [
         .filter(ClientFilterItem(label: "Segment · VIC", condition: .object(["field": .string("client.segment")]))),
         .filter(ClientFilterItem(label: "Opted in · WhatsApp", condition: .object(["field": .string("client.optIn")]))),
     ])
 
     Color.clear
         .fullScreenCover(isPresented: .constant(true)) {
-            ClientSortFilterView(options: $options)
+            ClientSortFilterView(options: options) { _, _ in }
         }
 }
 
 #Preview(traits: .searchOptionsSampleData) {
-    @Previewable @State var options = ClientSearchOptions()
-
     Color.clear
         .fullScreenCover(isPresented: .constant(true)) {
-            ClientSortFilterView(options: $options)
+            ClientSortFilterView(options: ClientSearchOptions()) { _, _ in }
         }
 }

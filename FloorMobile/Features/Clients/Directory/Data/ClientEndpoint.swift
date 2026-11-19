@@ -50,12 +50,15 @@ nonisolated extension Endpoint {
 
     /// How many clients `searchClients` would list, page after page, for the
     /// same text and filters (`scopeItems`): the total "Sort & filter" says on
-    /// its "Show" button. Neither a sort nor a cursor: neither changes a
-    /// total.
+    /// its "Show" button, and the ones the clients' list says in its subtitle
+    /// (`ClientsView`). Neither a sort nor a cursor: neither changes a total.
     ///
-    /// Asked once the associate pauses in their changes, for the last state only:
-    /// a request given up on runs on, server side, until its time limit. A 503
-    /// (`search_timeout`) means a total too long to count: none is shown.
+    /// "Sort & filter" asks once the associate pauses in their changes, for
+    /// the last state only: a request given up on runs on, server side, until
+    /// its time limit. The list asks without a pause: on entry, for the
+    /// associate's total, and once after a "Show" that had no total to hand
+    /// it. A 503 (`search_timeout`) means a total too long to count: none is
+    /// shown.
     /// Interactive: the associate waits on it, and a count has no list on the
     /// device to fall back on.
     static func countClients(_ query: String?, filters: [ClientFilterChoice] = []) -> Endpoint {
